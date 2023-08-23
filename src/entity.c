@@ -65,15 +65,6 @@ void entities_update(Mix* m) {
     Entity* e = &m->entities[i];
     continue_if(e->state == STATE_DEAD);
     entity_update(m, e);
-    if (IsMouseButtonPressed(1)) {
-      if (e == m->hover) {
-        m->select = e;
-      }
-      if (m->hover == NULL) {
-        m->select = NULL;
-        m->grab = false;
-      }
-    }
   }
 }
 
@@ -98,28 +89,25 @@ void entity_render(Mix* m, Entity* e) {
   const f32 roundness = 0.1f;
   const i32 thickness = 2;
   const i32 segments  = 4;
+  const i32 padding = 4;
   Rectangle rect = (Rectangle) { e->x, e->y, e->w, e->h };
 
-  Color color_active = COLOR_RGB(200, 200, 200);
-  Color color_text = color_active;
+  Color color = COLOR_RGB(210, 210, 210);
+  Color color_text = color;
   Color color_inactive = COLOR_RGB(130, 130, 130);
   Color color_bg = COLOR_RGB(40, 44, 60);
 
   if (e->hover && m->hover == e) {
-    color_active = COLOR_RGB(250, 250, 250);
+    color = COLOR_RGB(240, 240, 240);
   }
   if (e == m->select) {
-    color_active = COLOR_RGB(250, 100, 100);
+    color = COLOR_RGB(250, 100, 100);
+  }
+  if (e->state == STATE_INACTIVE) {
+    color = color_inactive;
   }
 
   DrawRectangleRounded(rect, roundness, segments, color_bg);
-  if (e->state == STATE_ACTIVE) {
-    DrawRectangleRoundedLines(rect, roundness, segments, thickness, color_active);
-    DrawText(e->name, e->x + 4, e->y - FONT_SIZE_SMALLER, FONT_SIZE_SMALLER, color_active);
-    return;
-  }
-  if (e->state == STATE_INACTIVE) {
-    DrawRectangleRoundedLines(rect, roundness, segments, thickness, color_inactive);
-    return;
-  }
+  DrawRectangleRoundedLines(rect, roundness, segments, thickness, color);
+  DrawText(e->name, e->x + padding, e->y - FONT_SIZE_SMALLER, FONT_SIZE_SMALLER, color);
 }

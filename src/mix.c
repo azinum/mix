@@ -85,20 +85,24 @@ void mix_update(Mix* m) {
       }
     }
   }
-  if (IsKeyPressed(KEY_G)) {
-    Entity* e = m->select;
+  if (IsMouseButtonPressed(1)) {
+    Entity* e = m->hover;
     if (e) {
-      if (m->grab) {
-        m->grab = false;
-        m->select = NULL;
-      }
-      else {
+      if (e->state == STATE_ACTIVE) {
+        m->select = e;
+        m->grab = true;
         m->grab_offset = (Vector2) {
           e->x - m->mouse.x,
           e->y - m->mouse.y
         };
-        m->grab = true;
       }
+    }
+  }
+  if (IsMouseButtonReleased(1)) {
+    Entity* e = m->select;
+    if (e && m->grab) {
+      m->grab = false;
+      m->select = NULL;
     }
   }
   if (m->grab && m->select) {
