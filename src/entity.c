@@ -109,5 +109,5 @@ void entity_render(Mix* m, Entity* e) {
 
   DrawRectangleRounded(rect, roundness, segments, color_bg);
   DrawRectangleRoundedLines(rect, roundness, segments, thickness, color);
-  DrawText(e->name, e->x + padding, e->y - FONT_SIZE_SMALLER, FONT_SIZE_SMALLER, color);
+  DrawText(e->name, e->x + padding, e->y - FONT_SIZE_SMALLER, FONT_SIZE_SMALLER, color_text);
 }
