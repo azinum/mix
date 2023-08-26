@@ -11,5 +11,9 @@ static size_t FONT_SIZE         = 22;
 static size_t FONT_SIZE_SMALLER = 20;
 static Color  COLOR_BG          = (Color) { .r = 32, .g = 32, .b = 32, .a = 255, };
 static size_t TARGET_FPS        = 60;
+static size_t FRAMES_PER_BUFFER = 512;
+static size_t SAMPLE_SIZE       = sizeof(f32);
+static size_t SAMPLE_RATE       = 44100;
+static size_t CHANNEL_COUNT     = 2;
 
 #endif // _CONFIG_H

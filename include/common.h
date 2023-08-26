@@ -103,6 +103,8 @@ typedef enum { Ok = 0, Error } Result;
   size_t strnlen(const char* s, size_t maxlen);
   i32 strcmp(const char* s1, const char* s2);
   i32 strncmp(const char* s1, const char* s2, size_t n);
+  char* strcpy(char* dest, const char* src);
+  char* strncpy(char* dest, const char* src, size_t n);
 #else
   #include <stdlib.h>
   #include <string.h> // memset, memcpy
@@ -268,6 +270,28 @@ i32 strncmp(const char* s1, const char* s2, size_t n) {
     return 0;
   }
   return *(u8*)s1 - *(u8*)s2;
+}
+
+char* strcpy(char* dest, const char* src) {
+  char* result = dest;
+  for (;; ++dest, ++src) {
+    *dest = *src;
+    if (*dest == '\0') {
+      return result;
+    }
+  }
+  return NULL;
+}
+
+char* strncpy(char* dest, const char* src, size_t n) {
+  size_t i = 0;
+  for (; i < n && src[i] != '\0'; ++i) {
+    dest[i] = src[i];
+  }
+  for (; i < n; ++i) {
+    dest[i] = '\0';
+  }
+  return dest;
 }
 
 #endif // NO_STDLIB

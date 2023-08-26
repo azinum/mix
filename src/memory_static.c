@@ -16,7 +16,7 @@ typedef struct {
   u8 data[MEMORY_ALLOC_STATIC_SIZE];
   size_t size;
   size_t index;
-} Memory;
+} __attribute__((aligned(sizeof(size_t)))) Memory;
 
 typedef enum {
   BLOCK_TAG_FREE = 0,
@@ -148,7 +148,7 @@ void* memory_calloc(const size_t n, const size_t size) {
     return NULL;
   }
   memset(p, 0, n * size);
-  return NULL;
+  return p;
 }
 
 void* memory_realloc(void* p, size_t size) {

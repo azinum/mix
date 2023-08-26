@@ -7,7 +7,7 @@
 #include "ext/stb_sprintf.h"
 
 #define COMMON_IMPLEMENTATION
-// #define NO_STDLIB
+#define NO_STDLIB
 #define NO_STDIO
 #include "common.h"
 #include "mix.h"
@@ -34,7 +34,6 @@ i32 mix_main(i32 argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  SetTraceLogLevel(LOG_WARNING);
   ConfigFlags config_flags = 0;
   if (WINDOW_RESIZABLE) {
     config_flags |= FLAG_WINDOW_RESIZABLE;
@@ -54,6 +53,7 @@ i32 mix_main(i32 argc, char** argv) {
     mix_update(&mix);
     EndDrawing();
   }
+
   CloseWindow();
   mix_free(&mix);
   return EXIT_SUCCESS;
