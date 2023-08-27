@@ -18,6 +18,7 @@
 #define MAX_ENTITY 512
 
 typedef struct Mix {
+  Entity null;
   Entity entities[MAX_ENTITY];
   size_t id;
   Entity* select;

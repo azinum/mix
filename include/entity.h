@@ -25,6 +25,8 @@ typedef struct Rect {
   i32 h;
 } Rect;
 
+struct Entity;
+
 typedef struct Entity {
   char name[MAX_ENTITY_NAME_LENGTH];
   size_t id;

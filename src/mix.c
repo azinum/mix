@@ -122,13 +122,15 @@ Result mix_init(Mix* m) {
 }
 
 void mix_reset(Mix* m) {
-  entities_init(m);
-  m->id = 0;
+  Entity* e = &m->null;
+  entity_init(e);
+  m->id = 1;
   m->select = NULL;
   m->hover = NULL;
   m->mouse = (Vector2) {0, 0};
   m->grab_offset = (Vector2) {0, 0};
   m->grab = false;
+  entities_init(m);
 }
 
 void mix_free(Mix* m) {
