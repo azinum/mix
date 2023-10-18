@@ -7,6 +7,10 @@
 #include "log.h"
 #include "memory.h"
 #include "entity.h"
+#include "module.h"
+#include "audio.h"
+
+#include <raylib.h>
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })

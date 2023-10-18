@@ -1,7 +1,5 @@
 // mix.c
 
-#include <raylib.h>
-
 #define STB_SPRINTF_IMPLEMENTATION
 #define USE_STB_SPRINTF
 #include "ext/stb_sprintf.h"
@@ -19,6 +17,10 @@
 #define MEMORY_ALLOC_STATIC
 #include "memory.c"
 #include "entity.c"
+#include "module.c"
+#include "audio.c"
+
+static Color COLOR_BG = (Color) { .r = 25, .g = 25, .b = 32, .a = 255, };
 
 Result mix_init(Mix* m);
 void mix_reset(Mix* m);
@@ -118,6 +120,10 @@ Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
   mix_reset(m);
+  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER);
+  if (audio_engine_start(&audio_engine) != Ok) {
+    log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
+  }
   return Ok;
 }
 
@@ -135,4 +141,5 @@ void mix_reset(Mix* m) {
 
 void mix_free(Mix* m) {
   (void)m;
+  audio_engine_exit(&audio_engine);
 }

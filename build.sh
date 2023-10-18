@@ -13,11 +13,12 @@ PROG=mix
 set -xe
 
 function build_default() {
-	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS}
+	# ${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS}
+	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} -lportaudio -DUSE_PORTAUDIO
 }
 
 function build_shared() {
-	${CC} src/main.c -o ${PROG}.so ${FLAGS} ${LIBS} -rdynamic -shared -fPIC
+	${CC} src/main.c -o lib${PROG}.so ${FLAGS} ${LIBS} -rdynamic -shared -fPIC
 }
 
 function install() {
@@ -26,8 +27,8 @@ function install() {
 }
 
 function install_shared() {
-	chmod o+x ${PROG}.so
-	cp ${PROG}.so ${PREFIX}/lib
+	chmod o+x lib${PROG}.so
+	cp lib${PROG}.so ${PREFIX}/lib
 	mkdir -p ${PREFIX}/include/${PROG}
 	cp -r ${INC}/* ${PREFIX}/include/${PROG}
 }
