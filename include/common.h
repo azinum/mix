@@ -11,7 +11,7 @@
 //  CACHELINESIZE = 64
 //  BITS
 //  MAX_PATH_LENGTH = 512
-//  RAND_MAX
+//  RANDOM_MAX
 //  USE_STB_SPRINTF
 //  SPRINTF_BUFFER_SIZE
 
@@ -92,8 +92,8 @@ typedef enum { Ok = 0, Error } Result;
 #define MB(n) (KB(n * 1024))
 #define GB(n) (MB(n * 1024))
 
-#ifndef RAND_MAX
-  #define RAND_MAX (size_t)((~0-1) >> 1)
+#ifndef RANDOM_MAX
+  #define RANDOM_MAX (size_t)((~0-1) >> 1)
 #endif
 
 #ifdef NO_STDLIB

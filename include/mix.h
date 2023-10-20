@@ -4,6 +4,7 @@
 #define _MIX_H
 
 #include "config.h"
+#include "lut.h"
 #include "log.h"
 #include "memory.h"
 #include "entity.h"
