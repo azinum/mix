@@ -92,6 +92,8 @@ typedef enum { Ok = 0, Error } Result;
 #define MB(n) (KB(n * 1024))
 #define GB(n) (MB(n * 1024))
 
+#define PI32 3.14159265359f
+
 #ifndef RANDOM_MAX
   #define RANDOM_MAX (size_t)((~0-1) >> 1)
 #endif

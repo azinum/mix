@@ -5,8 +5,6 @@
 #include "ext/stb_sprintf.h"
 
 #define COMMON_IMPLEMENTATION
-#define NO_STDLIB
-#define NO_STDIO
 #include "common.h"
 #include "mix.h"
 #define ARENA_IMPLEMENTATION

@@ -7,7 +7,7 @@ static PaStreamParameters out_port;
 static PaStreamParameters in_port;
 
 static i32 stereo_callback(const void* in, void* out, unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags flags, void* userdata) {
-  return ((const int[]){paAbort, paContinue})[audio_engine_process(in, out) == Ok];
+  return ((const int[]){paAbort, paContinue})[audio_engine_process(in, out, -1) == Ok];
 }
 
 static Result open_stream(void) {

@@ -8,25 +8,6 @@
 
 #define WIDTH 7
 
-typedef i32 (*generator_fn)(i32);
-
-typedef enum {
-  TYPE_FLOAT,
-  TYPE_INTEGER,
-
-  MAX_TYPE,
-} Type;
-
-const char* type_str[] = {
-  "f32",
-  "i32",
-};
-
-const char* type_fmt_str[] = {
-  "%.6ff",
-  "%d",
-};
-
 static void print_header(i32 fd, const char* name, const char* type, size_t size);
 static void print_sine_table(i32 fd, const char* name, const char* type, size_t size);
 
@@ -38,7 +19,7 @@ i32 main(void) {
     exit(EXIT_FAILURE);
   }
   dprintf(fd, "// lut.h\n");
-  print_sine_table(fd, "sine", "f32", WIDTH*20);
+  print_sine_table(fd, "sine", "f32", 44100);
   close(fd);
   return EXIT_SUCCESS;
 }
@@ -50,7 +31,7 @@ void print_header(i32 fd, const char* name, const char* type, size_t size) {
 void print_sine_table(i32 fd, const char* name, const char* type, size_t size) {
   print_header(fd, name, type, size);
   for (size_t i = 0; i < size; ++i) {
-    f32 v = sinf((f32)i);
+    f32 v = sinf((i * 2 * 110) / (f32)size);
     dprintf(fd, "%.6ff,", v);
     if (!((i+1) % WIDTH)) {
       dprintf(fd, "\n");
