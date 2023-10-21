@@ -32,7 +32,7 @@ typedef struct {
 
 static const char* block_tag_str[MAX_BLOCK_TAG] = { "free", "used", };
 
-static Memory memory = {{0}};
+static Memory memory = {0};
 
 static Result block_header_from_pointer(Memory* const m, void* p, Block_header** header);
 static void* allocate_block(Memory* const m, const size_t size, Block_tag tag, Block_header** block_header);
@@ -41,6 +41,7 @@ static void memory_sweep(Memory* const m);
 
 Result block_header_from_pointer(Memory* const m, void* p, Block_header** header) {
   ASSERT(header != NULL);
+  (void)m;
   *header = ((Block_header*)p) - 1;
   return Ok;
 }

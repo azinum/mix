@@ -29,6 +29,7 @@ void audio_engine_exit(Audio_engine* e) {
 }
 
 Result audio_engine_process(const void* in, void* out, i32 sample_count) {
+  (void)in;
   Audio_engine* e = &audio_engine;
   f32* buffer = (f32*)out;
   static size_t tick = 0;

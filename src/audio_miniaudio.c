@@ -33,5 +33,6 @@ Result audio_new(Audio_engine* e) {
 }
 
 void audio_exit(Audio_engine* e) {
+  (void)e;
   ma_device_uninit(&device);
 }
