@@ -45,7 +45,7 @@ void log_print(i32 fd, Log_tag tag, const char* fmt, ...) {
   log_print_tag(fd, tags[tag], tag_colors[tag]);
   va_list argp;
   va_start(argp, fmt);
-  vprintf(fmt, argp);
+  STB_WRAP(vprintf)(fmt, argp);
   va_end(argp);
 }
 
@@ -54,10 +54,10 @@ void log_print_tag(i32 fd, const char* tag, Log_color tag_color) {
   ASSERT(tag_color < MAX_COLOR);
 
   if (log_state.use_colors) {
-    dprintf(fd, "%s", color_str[tag_color]);
+    STB_WRAP(dprintf)(fd, "%s", color_str[tag_color]);
   }
-  dprintf(fd, "[%s]: ", tag);
+  STB_WRAP(dprintf)(fd, "[%s]: ", tag);
   if (log_state.use_colors) {
-    dprintf(fd, "%s", color_str[COLOR_RESET]);
+    STB_WRAP(dprintf)(fd, "%s", color_str[COLOR_RESET]);
   }
 }

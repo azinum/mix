@@ -113,18 +113,30 @@ typedef enum { Ok = 0, Error } Result;
 #endif
 
 #ifdef NO_STDIO
-  i32 printf(const char* fmt, ...);
-  i32 dprintf(i32 fd, const char* fmt, ...);
-  i32 sprintf(char* str, const char* fmt, ...);
-  i32 snprintf(char* str, size_t size, const char* fmt, ...);
 
-  i32 vprintf(const char* fmt, va_list argp);
-  i32 vdprintf(i32 fd, const char* fmt, va_list argp);
-  i32 vsprintf(char* str, const char* fmt, va_list argp);
-  i32 vsnprintf(char* str, size_t size, const char* fmt, va_list argp);
+#ifdef USE_STB_SPRINTF
+  #define STB_WRAP(...) __VA_ARGS__
+#else // USE_STB_SPRINTF
+  #define STB_WRAP(...) stb_##__VA_ARGS__
+#endif
+
 #else
   #include <stdio.h>
+#ifdef USE_STB_SPRINTF
+  #define STB_WRAP(...) stb_##__VA_ARGS__
 #endif
+
+#endif
+
+i32 STB_WRAP(printf(const char* fmt, ...));
+i32 STB_WRAP(dprintf(i32 fd, const char* fmt, ...));
+i32 STB_WRAP(sprintf(char* str, const char* fmt, ...));
+i32 STB_WRAP(snprintf(char* str, size_t size, const char* fmt, ...));
+
+i32 STB_WRAP(vprintf(const char* fmt, va_list argp));
+i32 STB_WRAP(vdprintf(i32 fd, const char* fmt, va_list argp));
+i32 STB_WRAP(vsprintf(char* str, const char* fmt, va_list argp));
+i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
 
 #if defined(TARGET_LINUX) || defined(TARGET_APPLE)
   #include <unistd.h> // read, write
@@ -220,9 +232,9 @@ typedef enum { Ok = 0, Error } Result;
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message);
 i32 is_terminal(i32 fd);
 #ifdef TARGET_WINDOWS
-bool enable_vt100_mode(void);
+  bool enable_vt100_mode(void);
 #else
-#define enable_vt100_mode(...) 1
+  #define enable_vt100_mode(...) true
 #endif
 
 #endif // _COMMON_H
@@ -298,17 +310,15 @@ char* strncpy(char* dest, const char* src, size_t n) {
 
 #endif // NO_STDLIB
 
-#ifdef NO_STDIO
-
 #ifdef USE_STB_SPRINTF
 
 #ifndef SPRINTF_BUFFER_SIZE
   #define SPRINTF_BUFFER_SIZE 4096
 #endif
 
-static char sprintf_buffer[SPRINTF_BUFFER_SIZE] = {0};
+char sprintf_buffer[SPRINTF_BUFFER_SIZE] = {0};
 
-i32 printf(const char* fmt, ...) {
+inline i32 STB_WRAP(printf(const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
   size_t n = vprintf(fmt, argp);
@@ -316,7 +326,7 @@ i32 printf(const char* fmt, ...) {
   return n;
 }
 
-i32 dprintf(i32 fd,  const char* fmt, ...) {
+inline i32 STB_WRAP(dprintf(i32 fd,  const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
   size_t n = vdprintf(fd, fmt, argp);
@@ -324,7 +334,7 @@ i32 dprintf(i32 fd,  const char* fmt, ...) {
   return n;
 }
 
-i32 sprintf(char* str, const char* fmt, ...) {
+inline i32 STB_WRAP(sprintf(char* str, const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
   size_t n = stbsp_vsprintf(str, fmt, argp);
@@ -332,7 +342,7 @@ i32 sprintf(char* str, const char* fmt, ...) {
   return n;
 }
 
-i32 snprintf(char* str, size_t size, const char* fmt, ...) {
+inline i32 STB_WRAP(snprintf(char* str, size_t size, const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
   size_t n = stbsp_vsnprintf(str, size, fmt, argp);
@@ -340,27 +350,25 @@ i32 snprintf(char* str, size_t size, const char* fmt, ...) {
   return n;
 }
 
-i32 vprintf(const char* fmt, va_list argp) {
+inline i32 STB_WRAP(vprintf(const char* fmt, va_list argp)) {
   return vdprintf(STDOUT_FILENO, fmt, argp);
 }
 
-i32 vdprintf(i32 fd, const char* fmt, va_list argp) {
+inline i32 STB_WRAP(vdprintf(i32 fd, const char* fmt, va_list argp)) {
   size_t n = stbsp_vsnprintf(sprintf_buffer, SPRINTF_BUFFER_SIZE, fmt, argp);
   write(fd, sprintf_buffer, n);
   return n;
 }
 
-i32 vsprintf(char* str, const char* fmt, va_list argp) {
+inline i32 STB_WRAP(vsprintf(char* str, const char* fmt, va_list argp)) {
   return stbsp_vsprintf(str, fmt, argp);
 }
 
-i32 vsnprintf(char* str, size_t size, const char* fmt, va_list argp) {
+inline i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp)) {
   return stbsp_vsnprintf(str, size, fmt, argp);
 }
 
 #endif // USE_STB_SPRINTF
-
-#endif // NO_STDIO
 
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message) {
   dprintf(fd, "[assert-failed]: %s:%zu %s(): %s\n", filename, line, function_name, message);
