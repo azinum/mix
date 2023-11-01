@@ -20,14 +20,17 @@
   (x0 >= x1 && x0 < x1 + w) && \
   (y0 >= y1 && y0 < y1 + h)
 
+#define TIMER_START(...) \
+  struct timeval _end = {0}; \
+  struct timeval _start = {0}; \
+  gettimeofday(&_start, NULL); \
+  __VA_ARGS__
+
+#define TIMER_END(...) (gettimeofday(&_end, NULL), ((((_end.tv_sec - _start.tv_sec) * 1000000.0f) + _end.tv_usec) - (_start.tv_usec)) / 1000000.0f)
+
 #define MAX_ENTITY 512
 
 typedef struct Mix {
-  Entity null;
-  Entity entities[MAX_ENTITY];
-  size_t id;
-  Entity* select;
-  Entity* hover;
   Vector2 mouse;
   Vector2 grab_offset;
   bool grab;

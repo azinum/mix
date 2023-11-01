@@ -12,7 +12,6 @@
 
 #include "config.c"
 #include "log.c"
-#define MEMORY_ALLOC_STATIC
 #include "memory.c"
 #include "entity.c"
 #include "module.c"
@@ -60,11 +59,11 @@ i32 mix_main(i32 argc, char** argv) {
 }
 
 void mix_update(Mix* m) {
-  m->hover = NULL;
   if (IsKeyPressed(KEY_R)) {
     mix_reset(m);
   }
   m->mouse = GetMousePosition();
+#if 0
   entities_update(m);
 
   if (IsKeyPressed(KEY_X)) {
@@ -112,11 +111,13 @@ void mix_update(Mix* m) {
   }
 
   entities_render(m);
+#endif
 }
 
 Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
+  config_init();
   mix_reset(m);
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER);
   if (audio_engine_start(&audio_engine) != Ok) {
@@ -126,15 +127,9 @@ Result mix_init(Mix* m) {
 }
 
 void mix_reset(Mix* m) {
-  Entity* e = &m->null;
-  entity_init(e);
-  m->id = 1;
-  m->select = NULL;
-  m->hover = NULL;
   m->mouse = (Vector2) {0, 0};
   m->grab_offset = (Vector2) {0, 0};
   m->grab = false;
-  entities_init(m);
 }
 
 void mix_free(Mix* m) {

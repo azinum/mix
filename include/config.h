@@ -11,8 +11,11 @@ static size_t FONT_SIZE         = 22;
 static size_t FONT_SIZE_SMALLER = 20;
 static size_t TARGET_FPS        = 60;
 static size_t FRAMES_PER_BUFFER = 512;
-static size_t SAMPLE_SIZE       = sizeof(f32);
 static size_t SAMPLE_RATE       = 44100;
 static size_t CHANNEL_COUNT     = 2;
+
+void config_init(void);
+Result config_store(const char* path);
+Result config_load(const char* path);
 
 #endif // _CONFIG_H

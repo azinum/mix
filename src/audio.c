@@ -33,9 +33,6 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   Audio_engine* e = &audio_engine;
   f32* buffer = (f32*)out;
   static size_t tick = 0;
-  if (sample_count < 0) {
-    sample_count = e->frames_per_buffer;
-  }
   for (i32 i = 0; i < sample_count * e->channel_count; ++i) {
     *buffer++ = 0.1f * sine[tick % LENGTH(sine)];
     tick += 1;

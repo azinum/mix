@@ -7,7 +7,10 @@ static PaStreamParameters out_port;
 static PaStreamParameters in_port;
 
 static i32 stereo_callback(const void* in, void* out, unsigned long frames_per_buffer, const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags flags, void* userdata) {
-  return ((const int[]){paAbort, paContinue})[audio_engine_process(in, out, -1) == Ok];
+  (void)time_info;
+  (void)userdata;
+  (void)flags;
+  return ((const int[]){paAbort, paContinue})[audio_engine_process(in, out, (i32)frames_per_buffer) == Ok];
 }
 
 static Result open_stream(void) {
@@ -73,6 +76,7 @@ Result audio_new(Audio_engine* e) {
 }
 
 void audio_exit(Audio_engine* e) {
+  (void)e;
   Pa_CloseStream(stream);
   Pa_Terminate();
 }

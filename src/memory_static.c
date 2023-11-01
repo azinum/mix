@@ -213,7 +213,6 @@ void memory_print_info(i32 fd) {
 }
 
 void memory_test(void) {
-  memory_init();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "starting memory test...\n");
   Result result = Ok;
 
@@ -241,5 +240,4 @@ void memory_test(void) {
   else {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "memory test failed...\n");
   }
-  memory_init();
 }
