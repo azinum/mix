@@ -17,6 +17,8 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer) {
     .sample_rate = sample_rate,
     .frames_per_buffer = frames_per_buffer,
     .channel_count = CHANNEL_COUNT,
+    .buffer = memory_calloc(frames_per_buffer * CHANNEL_COUNT, sizeof(f32)),
+    .dt = DT_MIN,
   };
 }
 
@@ -30,12 +32,32 @@ void audio_engine_exit(Audio_engine* e) {
 
 Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   (void)in;
+  TIMER_START();
+
+  Mix* m = &mix;
   Audio_engine* e = &audio_engine;
+
   f32* buffer = (f32*)out;
-  static size_t tick = 0;
-  for (i32 i = 0; i < sample_count * e->channel_count; ++i) {
-    *buffer++ = 0.1f * sine[tick % LENGTH(sine)];
-    tick += 1;
+  const i32 frames_per_buffer = m->audio->frames_per_buffer;
+  const i32 channel_count = m->audio->channel_count;
+
+  // clear master audio buffer
+  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+    e->buffer[i] = 0;
   }
+
+  // process instruments and effects
+  waveshaper_process(m, &m->waveshaper, e->dt);
+
+  // sum all audio buffers
+  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+    e->buffer[i] += m->waveshaper.buffer[i];
+  }
+
+  // write to output buffer
+  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+    buffer[i] = e->buffer[i];
+  }
+  e->dt = TIMER_END();
   return Ok;
 }

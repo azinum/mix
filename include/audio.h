@@ -7,6 +7,8 @@ typedef struct Audio_engine {
   i32 sample_rate;
   i32 frames_per_buffer;
   i32 channel_count;
+  f32* buffer;
+  f32 dt;
 } Audio_engine;
 
 extern Audio_engine audio_engine;

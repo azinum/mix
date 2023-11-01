@@ -1,5 +1,9 @@
 #!/usr/bin/env -S tcc -run -Iinclude -Wall -lm
 
+#define STB_SPRINTF_IMPLEMENTATION
+#define USE_STB_SPRINTF
+#include "src/ext/stb_sprintf.h"
+
 #define COMMON_IMPLEMENTATION
 #include "common.h"
 
@@ -19,7 +23,7 @@ i32 main(void) {
     exit(EXIT_FAILURE);
   }
   dprintf(fd, "// lut.h\n");
-  print_sine_table(fd, "sine", "f32", 44100);
+  print_sine_table(fd, "sine", "f32", 2096);
   close(fd);
   return EXIT_SUCCESS;
 }

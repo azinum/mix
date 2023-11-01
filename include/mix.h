@@ -3,16 +3,21 @@
 #ifndef _MIX_H
 #define _MIX_H
 
+struct Mix;
+
 #include "config.h"
+#include "misc.h"
 #include "lut.h"
 #include "log.h"
 #include "memory.h"
 #include "entity.h"
 #include "module.h"
 #include "audio.h"
+#include "wave_shaper.h"
 
 #include <raylib.h>
 #include <sys/time.h>
+#include <math.h>
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })
@@ -32,12 +37,16 @@
 #define DT_MIN 0.001f
 
 typedef struct Mix {
+  Audio_engine* audio;
   Vector2 mouse;
   Vector2 grab_offset;
   bool grab;
   f32 fps;
   f32 dt;
+  Waveshaper waveshaper;
 } Mix;
+
+extern Mix mix;
 
 i32 mix_main(i32 argc, char** argv);
 

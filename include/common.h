@@ -30,6 +30,13 @@
   #error "unsupported architecture"
 #endif
 
+#ifndef NO_SIMD
+  #if __SSE__
+    #define USE_SIMD
+    #include <xmmintrin.h>
+  #endif
+#endif
+
 // common type definitions
 #if BITS == 64
   typedef double f64;
@@ -87,6 +94,8 @@ typedef uint8_t u8;
 #define continue_if(cond) if ((cond)) { continue; }
 #define return_if(cond, ...) if ((cond)) { return __VA_ARGS__; }
 typedef enum { Ok = 0, Error } Result;
+
+const char* bool_str[] = { "false", "true" };
 
 #define KB(n) (n * 1024)
 #define MB(n) (KB(n * 1024))
