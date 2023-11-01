@@ -12,6 +12,7 @@
 #include "audio.h"
 
 #include <raylib.h>
+#include <sys/time.h>
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })
@@ -28,12 +29,14 @@
 
 #define TIMER_END(...) (gettimeofday(&_end, NULL), ((((_end.tv_sec - _start.tv_sec) * 1000000.0f) + _end.tv_usec) - (_start.tv_usec)) / 1000000.0f)
 
-#define MAX_ENTITY 512
+#define DT_MIN 0.001f
 
 typedef struct Mix {
   Vector2 mouse;
   Vector2 grab_offset;
   bool grab;
+  f32 fps;
+  f32 dt;
 } Mix;
 
 i32 mix_main(i32 argc, char** argv);

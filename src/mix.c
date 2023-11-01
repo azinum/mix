@@ -47,10 +47,16 @@ i32 mix_main(i32 argc, char** argv) {
   SetExitKey(KEY_NULL);
 
   while (!WindowShouldClose()) {
+    TIMER_START();
     BeginDrawing();
     ClearBackground(COLOR_BG);
     mix_update(&mix);
     EndDrawing();
+    mix.dt = TIMER_END();
+    if (mix.dt < DT_MIN) {
+      mix.dt = DT_MIN;
+    }
+    mix.fps = 1.0f / mix.dt;
   }
 
   CloseWindow();
@@ -59,10 +65,18 @@ i32 mix_main(i32 argc, char** argv) {
 }
 
 void mix_update(Mix* m) {
+
   if (IsKeyPressed(KEY_R)) {
     mix_reset(m);
   }
   m->mouse = GetMousePosition();
+RLAPI void DrawText(const char *text, int posX, int posY, int fontSize, Color color);       // Draw text (using default font)
+
+{
+  char text[128] = {0};
+  snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g", (i32)m->mouse.x, (i32)m->mouse.y, m->fps);
+  DrawText(text, 4, 4, 10, COLOR_RGB(255, 255, 255));
+}
 #if 0
   entities_update(m);
 
@@ -130,6 +144,8 @@ void mix_reset(Mix* m) {
   m->mouse = (Vector2) {0, 0};
   m->grab_offset = (Vector2) {0, 0};
   m->grab = false;
+  m->fps = 0;
+  m->dt = DT_MIN;
 }
 
 void mix_free(Mix* m) {
