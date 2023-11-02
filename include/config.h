@@ -6,7 +6,7 @@
 static i32 WINDOW_WIDTH       = 1600;
 static i32 WINDOW_HEIGHT      = 900;
 static i32 WINDOW_RESIZABLE   = true;
-static i32 MSAA_4X            = true;
+static i32 MSAA_4X            = false;
 static i32 FONT_SIZE          = 22;
 static i32 FONT_SIZE_SMALLER  = 20;
 static i32 FONT_SIZE_SMALLEST = 10;

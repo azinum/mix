@@ -120,6 +120,7 @@ Result memory_init(void) {
   memory_state.num_allocs = 0;
   memory_state.num_deallocs = 0;
   memory_state.usage = 0;
+  memory_state.max_usage = sizeof(memory.data);
   memory.size = sizeof(memory.data);
   memory.index = 0;
   Block_header header = {

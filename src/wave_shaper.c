@@ -85,8 +85,8 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
   i32 width = w->size/2;
   i32 height = 80;
   Color color_map[] = {
-    COLOR_RGB(100, 200, 100),
-    COLOR_RGB(20, 70, 30),
+    COLOR_RGB(100, 250, 100),
+    COLOR_RGB(20, 100, 30),
   };
   for (i32 i = 0; i < width; ++i) {
     DrawLine(

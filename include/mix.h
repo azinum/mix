@@ -5,6 +5,7 @@
 
 struct Mix;
 
+#include "buffer.h"
 #include "config.h"
 #include "misc.h"
 #include "lut.h"

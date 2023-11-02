@@ -7,6 +7,7 @@ struct {
   size_t num_allocs;
   size_t num_deallocs;
   ssize_t usage;
+  ssize_t max_usage;
 } memory_state = {0};
 
 void memory_print_stats(i32 fd);

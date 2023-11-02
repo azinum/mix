@@ -10,6 +10,7 @@
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
 
+#include "buffer.c"
 #include "config.c"
 #include "misc.c"
 #include "log.c"
@@ -81,7 +82,7 @@ void mix_update(Mix* m) {
 
 {
   char text[512] = {0};
-  snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g", (i32)m->mouse.x, (i32)m->mouse.y, m->fps);
+  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage));
   DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR_RGB(255, 255, 255));
 }
 }
