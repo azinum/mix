@@ -37,7 +37,6 @@ struct Mix;
 #define DT_MIN 0.001f
 
 typedef struct Mix {
-  Audio_engine* audio;
   Vector2 mouse;
   Vector2 grab_offset;
   bool grab;

@@ -9,7 +9,8 @@ typedef struct Waveshaper {
   size_t tick;
   f32 freq;
   f32 freq_target;
-  f32 latency;
+  f32 latency; // overall latency
+  f32 audio_latency; // audio processing latency
   f32 lfo;
   f32 lfo_target;
   bool reshape;

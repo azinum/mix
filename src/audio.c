@@ -30,6 +30,7 @@ void audio_engine_exit(Audio_engine* e) {
   audio_exit(e);
 }
 
+// TODO(lucas): handle variable sample_count, number of ready samples may not be predictable
 Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   (void)in;
   TIMER_START();
@@ -38,8 +39,8 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   Audio_engine* e = &audio_engine;
 
   f32* buffer = (f32*)out;
-  const i32 frames_per_buffer = m->audio->frames_per_buffer;
-  const i32 channel_count = m->audio->channel_count;
+  const i32 frames_per_buffer = e->frames_per_buffer;
+  const i32 channel_count = e->channel_count;
 
   // clear master audio buffer
   for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {

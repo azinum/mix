@@ -79,7 +79,7 @@ void mix_update(Mix* m) {
 {
   char text[512] = {0};
   snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g", (i32)m->mouse.x, (i32)m->mouse.y, m->fps);
-  DrawText(text, 4, 4, 10, COLOR_RGB(255, 255, 255));
+  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR_RGB(255, 255, 255));
 }
 }
 
@@ -89,7 +89,6 @@ Result mix_init(Mix* m) {
   config_init();
   mix_reset(m);
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER);
-  m->audio = &audio_engine;
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
   if (audio_engine_start(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
