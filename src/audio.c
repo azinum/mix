@@ -12,12 +12,12 @@ extern void audio_exit(Audio_engine* e);
   #include "audio_null.c"
 #endif
 
-Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer) {
+Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channel_count) {
   return (Audio_engine) {
     .sample_rate = sample_rate,
     .frames_per_buffer = frames_per_buffer,
-    .channel_count = CHANNEL_COUNT,
-    .buffer = memory_calloc(frames_per_buffer * CHANNEL_COUNT, sizeof(f32)),
+    .channel_count = channel_count,
+    .buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32)),
     .dt = DT_MIN,
   };
 }
@@ -33,6 +33,7 @@ void audio_engine_exit(Audio_engine* e) {
 // TODO(lucas): handle variable sample_count, number of ready samples may not be predictable
 Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   (void)in;
+  (void)sample_count;
   TIMER_START();
 
   Mix* m = &mix;

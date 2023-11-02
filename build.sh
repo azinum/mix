@@ -5,7 +5,7 @@ CACHELINESIZE=`getconf LEVEL1_DCACHE_LINESIZE`
 
 CC="clang"
 INC=include
-FLAGS="-O0 -pedantic -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
+FLAGS="-O0 -ffast-math -pedantic -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
 LIBS="-lraylib -lm -lpthread -lglfw -ldl"
 PREFIX=/usr/local
 PROG=mix

@@ -19,6 +19,8 @@
 #include "audio.c"
 #include "wave_shaper.c"
 
+#define CONFIG_PATH "data/default.cfg"
+
 static Color COLOR_BG = (Color) { .r = 25, .g = 25, .b = 32, .a = 255, };
 
 Mix mix = {0};
@@ -64,6 +66,7 @@ i32 mix_main(i32 argc, char** argv) {
 
   CloseWindow();
   mix_free(&mix);
+  config_store(CONFIG_PATH);
   return EXIT_SUCCESS;
 }
 
@@ -88,7 +91,7 @@ Result mix_init(Mix* m) {
   memory_init();
   config_init();
   mix_reset(m);
-  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER);
+  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
   if (audio_engine_start(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");

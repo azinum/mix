@@ -17,6 +17,8 @@ Result audio_new(Audio_engine* e) {
   device_config.sampleRate = e->sample_rate;
   device_config.dataCallback = stereo_callback;
   device_config.pUserData = NULL;
+  device_config.periodSizeInFrames = e->frames_per_buffer;
+
   if (ma_device_init(NULL, &device_config, &device) != MA_SUCCESS) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "miniaudio error: failed to open playback device\n");
     return Error;
