@@ -18,6 +18,7 @@
 #include "entity.c"
 #include "module.c"
 #include "audio.c"
+#include "debug_ui.c"
 #include "wave_shaper.c"
 
 #define CONFIG_PATH "data/default.cfg"
@@ -28,7 +29,7 @@ Mix mix = {0};
 
 Result mix_init(Mix* m);
 void mix_reset(Mix* m);
-void mix_update(Mix* m);
+void mix_update_and_render(Mix* m);
 void mix_free(Mix* m);
 
 i32 mix_main(i32 argc, char** argv) {
@@ -56,7 +57,7 @@ i32 mix_main(i32 argc, char** argv) {
     TIMER_START();
     BeginDrawing();
     ClearBackground(COLOR_BG);
-    mix_update(&mix);
+    mix_update_and_render(&mix);
     EndDrawing();
     mix.dt = TIMER_END();
     if (mix.dt < DT_MIN) {
@@ -71,19 +72,25 @@ i32 mix_main(i32 argc, char** argv) {
   return EXIT_SUCCESS;
 }
 
-void mix_update(Mix* m) {
+void mix_update_and_render(Mix* m) {
+  m->mouse = GetMousePosition();
+
   if (IsKeyPressed(KEY_R)) {
     mix_reset(m);
   }
-  m->mouse = GetMousePosition();
 
+  ui_update();
+  ui_render();
+
+#if 0
   waveshaper_update(m, &m->waveshaper);
   waveshaper_render(m, &m->waveshaper);
+#endif
 
 {
   char text[512] = {0};
-  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage));
-  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR_RGB(255, 255, 255));
+  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_get_latency());
+  DrawText(text, GetScreenWidth()/2, GetScreenHeight()/2, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 140));
 }
 }
 
@@ -92,6 +99,12 @@ Result mix_init(Mix* m) {
   memory_init();
   config_init();
   mix_reset(m);
+  ui_init();
+
+  Element e = ui_container(true);
+  Element* container = ui_attach_element(NULL, &e);
+  ui_attach_element(container, &e);
+
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
   if (audio_engine_start(&audio_engine) != Ok) {
@@ -102,8 +115,6 @@ Result mix_init(Mix* m) {
 
 void mix_reset(Mix* m) {
   m->mouse = (Vector2) {0, 0};
-  m->grab_offset = (Vector2) {0, 0};
-  m->grab = false;
   m->fps = 0;
   m->dt = DT_MIN;
 }
@@ -112,4 +123,5 @@ void mix_free(Mix* m) {
   (void)m;
   audio_engine_exit(&audio_engine);
   waveshaper_free(&m->waveshaper);
+  ui_free();
 }

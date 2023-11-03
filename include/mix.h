@@ -14,6 +14,7 @@ struct Mix;
 #include "entity.h"
 #include "module.h"
 #include "audio.h"
+#include "debug_ui.h"
 #include "wave_shaper.h"
 
 #include <raylib.h>
@@ -23,6 +24,9 @@ struct Mix;
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })
+#define MIN(x, y) (x < y ? x : y)
+#define MAX(x, y) (x > y ? x : y)
+#define CLAMP(x, x_min, x_max) MIN(MAX(x_min, x), x_max)
 
 #define OVERLAP(x0, y0, x1, y1, w, h) \
   (x0 >= x1 && x0 < x1 + w) && \
@@ -40,8 +44,6 @@ struct Mix;
 
 typedef struct Mix {
   Vector2 mouse;
-  Vector2 grab_offset;
-  bool grab;
   f32 fps;
   f32 dt;
   Waveshaper waveshaper;

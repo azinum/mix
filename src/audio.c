@@ -49,7 +49,7 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   }
 
   // process instruments and effects
-  waveshaper_process(m, &m->waveshaper, e->dt);
+  // waveshaper_process(m, &m->waveshaper, e->dt);
 
   // sum all audio buffers
   for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {

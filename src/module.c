@@ -21,15 +21,17 @@ void module_close(void* handle) {
 #else
 
 void* module_open(const char* path) {
+  NOT_IMPLEMENTED();
   return NULL;
 }
 
 void* module_symbol(const void* handle, const char* name) {
+  NOT_IMPLEMENTED();
   return NULL;
 }
 
 void module_close(void* handle) {
-
+  NOT_IMPLEMENTED();
 }
 
 #endif

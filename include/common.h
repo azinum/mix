@@ -52,7 +52,7 @@ typedef int8_t i8;
 typedef uint8_t u8;
 
 #ifndef bool
-  typedef char bool;
+  #include <stdbool.h>
 #endif
 
 #ifndef true
