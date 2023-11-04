@@ -23,7 +23,7 @@
 
 #define CONFIG_PATH "data/default.cfg"
 
-static Color COLOR_BG = (Color) { .r = 25, .g = 25, .b = 32, .a = 255, };
+static Color COLOR_BG = (Color) { .r = 35, .g = 35, .b = 42, .a = 255, };
 
 Mix mix = {0};
 
@@ -90,7 +90,7 @@ void mix_update_and_render(Mix* m) {
 {
   char text[512] = {0};
   stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_get_latency());
-  DrawText(text, GetScreenWidth()/2, GetScreenHeight()/2, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 140));
+  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 230));
 }
 }
 
@@ -101,9 +101,30 @@ Result mix_init(Mix* m) {
   mix_reset(m);
   ui_init();
 
-  Element e = ui_container(true);
-  Element* container = ui_attach_element(NULL, &e);
-  ui_attach_element(container, &e);
+
+  u32 cols = 4;
+  u32 rows = 4;
+  Element grid = ui_grid(cols, true);
+  Element e = ui_text("hello");
+  e.background = true;
+  Element* g = ui_attach_element(NULL, &grid);
+  Color colors[9] = {
+    COLOR_RGB(0, 102, 153),
+    COLOR_RGB(0, 153, 255),
+    COLOR_RGB(153, 102, 255),
+
+    COLOR_RGB(255, 153, 204),
+    COLOR_RGB(255, 153, 102),
+    COLOR_RGB(153, 255, 102),
+
+    COLOR_RGB(0, 204, 153),
+    COLOR_RGB(204, 0, 0),
+    COLOR_RGB(51, 153, 102),
+  };
+  for (size_t i = 0; i < cols*rows; ++i) {
+    e.background_color = colors[i % LENGTH(colors)];
+    ui_attach_element(g, &e);
+  }
 
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);

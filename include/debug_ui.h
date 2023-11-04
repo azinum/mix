@@ -44,7 +44,12 @@ typedef struct Element {
 
   u32 padding;
 
+  Color text_color;
+  Color background_color;
+  Color border_color;
+
   bool render;
+  bool background;
   bool border;
 } Element;
 

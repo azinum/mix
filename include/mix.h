@@ -5,6 +5,11 @@
 
 struct Mix;
 
+#include <raylib.h>
+#include <sys/time.h>
+#include <math.h>
+#include <fcntl.h>
+
 #include "buffer.h"
 #include "config.h"
 #include "misc.h"
@@ -16,11 +21,6 @@ struct Mix;
 #include "audio.h"
 #include "debug_ui.h"
 #include "wave_shaper.h"
-
-#include <raylib.h>
-#include <sys/time.h>
-#include <math.h>
-#include <fcntl.h>
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })

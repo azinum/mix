@@ -61,6 +61,18 @@ void ui_update_elements(UI_state* ui, Element* e) {
         break;
       }
       case ELEMENT_GRID: {
+        const u32 cols = e->data.grid.cols;
+        const u32 rows = (u32)ceilf((f32)e->count / cols);
+        const u32 w = ceilf((f32)e->box.w / cols);
+        const u32 h = ceilf((f32)e->box.h / rows);
+        const u32 x = i % cols;
+        const u32 y = (u32)floorf((f32)i / cols);
+        item->box = BOX(
+          e->box.x + x * w + e->padding,
+          e->box.y + y * h + e->padding,
+          w - 2 * e->padding,
+          h - 2 * e->padding
+        );
         break;
       }
       case ELEMENT_TEXT: {
@@ -86,9 +98,14 @@ void ui_render_elements(UI_state* ui, Element* e) {
   if (!e->render) {
     return;
   }
-  Color border_color = COLOR_RGB(255, 255, 255);
 
-  DrawRectangleLines(e->box.x, e->box.y, e->box.w, e->box.h, border_color);
+  if (e->background) {
+    DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, e->background_color);
+  }
+
+  if (e->border) {
+    DrawRectangleLines(e->box.x, e->box.y, e->box.w, e->box.h, e->border_color);
+  }
 
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
@@ -113,9 +130,15 @@ void ui_element_init(Element* e) {
   e->id = 0;
   e->box = BOX(0, 0, 0, 0);
   e->type = ELEMENT_NONE;
-  e->padding = 8;
+  e->padding = 4;
+
+  e->text_color = COLOR_RGB(0, 0, 0);
+  e->background_color = COLOR_RGB(255, 255, 255);
+  e->border_color = COLOR_RGB(0, 0, 0);
+
   e->render = true;
-  e->border = false;
+  e->background = false;
+  e->border = true;
 }
 
 Result ui_init(void) {
@@ -129,6 +152,9 @@ void ui_update(void) {
   ui->latency = 0;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
+  root->padding = 0;
+  root->border = false;
+
   ui_update_elements(ui, root);
   ui->latency += TIMER_END();
 }
