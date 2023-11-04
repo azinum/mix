@@ -89,9 +89,19 @@ void mix_update_and_render(Mix* m) {
 
 {
   char text[512] = {0};
-  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_get_latency());
+  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency);
   DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 230));
 }
+}
+
+static Element* grid = NULL;
+
+void on_click(Element* e, void* userdata) {
+  Element button = ui_button("button");
+  button.onclick = on_click;
+  button.background = true;
+  button.background_color = e->background_color;
+  ui_attach_element(grid, &button);
 }
 
 Result mix_init(Mix* m) {
@@ -101,13 +111,6 @@ Result mix_init(Mix* m) {
   mix_reset(m);
   ui_init();
 
-
-  u32 cols = 4;
-  u32 rows = 4;
-  Element grid = ui_grid(cols, true);
-  Element e = ui_text("hello");
-  e.background = true;
-  Element* g = ui_attach_element(NULL, &grid);
   Color colors[9] = {
     COLOR_RGB(0, 102, 153),
     COLOR_RGB(0, 153, 255),
@@ -121,9 +124,16 @@ Result mix_init(Mix* m) {
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
-  for (size_t i = 0; i < cols*rows; ++i) {
+
+  u32 cols = 4;
+  Element grid_element = ui_grid(cols, true);
+  Element e = ui_button("button");
+  e.onclick = on_click;
+  e.background = true;
+  grid = ui_attach_element(NULL, &grid_element);
+  for (size_t i = 0; i < cols; ++i) {
     e.background_color = colors[i % LENGTH(colors)];
-    ui_attach_element(g, &e);
+    ui_attach_element(grid, &e);
   }
 
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);

@@ -41,8 +41,9 @@ typedef struct Element {
   Box box;
   Element_type type;
   Element_data data;
+  void* userdata;
 
-  u32 padding;
+  i32 padding;
 
   Color text_color;
   Color background_color;
@@ -51,12 +52,25 @@ typedef struct Element {
   bool render;
   bool background;
   bool border;
+  bool scissor;
+
+  void (*onclick)(struct Element* e, void* userdata);
 } Element;
+
+typedef struct UI_state {
+  Element root;
+  u32 id_counter;
+  f32 latency;
+  Element* hover;
+  Element* active;
+  Element* select;
+} UI_state;
+
+extern UI_state ui_state;
 
 Result ui_init(void);
 void ui_update(void);
 void ui_render(void);
-f32 ui_get_latency(void);
 void ui_free(void);
 
 Element* ui_attach_element(Element* target, Element* e);

@@ -23,31 +23,35 @@
 
 #define list_free(list) memory_free((list)->items)
 
-typedef struct UI_state {
-  Element root;
-  u32 id_counter;
-  f32 latency;
-} UI_state;
-
-static UI_state ui_state = {0};
+UI_state ui_state = {0};
 
 static void ui_state_init(UI_state* ui);
 static void ui_update_elements(UI_state* ui, Element* e);
 static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
+static bool ui_overlap(i32 x, i32 y, Box box);
+static void ui_onclick(struct Element* e, void* userdata);
 
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root);
   ui->root.type = ELEMENT_CONTAINER;
+  ui->root.padding = 0;
+  ui->root.border = false;
+
   ui->id_counter = 1;
   ui->latency = 0;
+  ui->hover = NULL;
+  ui->active = NULL;
+  ui->select = NULL;
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
   if (!e) {
     return;
   }
+  Vector2 mouse = GetMousePosition();
+
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     switch (e->type) {
@@ -85,6 +89,34 @@ void ui_update_elements(UI_state* ui, Element* e) {
         break;
     }
   }
+
+  if (ui_overlap((i32)mouse.x, (i32)mouse.y, e->box)) {
+    ui->hover = e;
+  }
+
+  switch (e->type) {
+    case ELEMENT_CONTAINER: {
+      break;
+    }
+    case ELEMENT_GRID: {
+      break;
+    }
+    case ELEMENT_TEXT: {
+      break;
+    }
+    case ELEMENT_BUTTON: {
+      if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+        ui->active = e;
+      }
+      if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+        ui->select = e;
+        e->onclick(e, e->userdata);
+      }
+      break;
+    }
+    default:
+      break;
+  }
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     ui_update_elements(ui, item);
@@ -98,18 +130,51 @@ void ui_render_elements(UI_state* ui, Element* e) {
   if (!e->render) {
     return;
   }
+  if (e->scissor) {
+    BeginScissorMode(e->box.x, e->box.y, e->box.w, e->box.h);
+  }
+
+  Color background_color = e->background_color;
+
+  if (e->type == ELEMENT_BUTTON && e == ui->hover) {
+    f32 factor = 0.1f;
+    if (e == ui->active) {
+      factor = 0.25f;
+    }
+    background_color = lerpcolor(background_color, COLOR_RGB(0, 0, 0), factor);
+  }
 
   if (e->background) {
-    DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, e->background_color);
+    DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, background_color);
   }
 
   if (e->border) {
     DrawRectangleLines(e->box.x, e->box.y, e->box.w, e->box.h, e->border_color);
   }
 
+  switch (e->type) {
+    case ELEMENT_TEXT: {
+      if (e->data.text.string) {
+        DrawText(e->data.text.string, e->box.x, e->box.y, FONT_SIZE_SMALL, e->text_color);
+      }
+      break;
+    }
+    case ELEMENT_BUTTON: {
+      if (e->data.text.string) {
+        DrawText(e->data.text.string, e->box.x, e->box.y, FONT_SIZE_SMALL, e->text_color);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     ui_render_elements(ui, item);
+  }
+  if (e->scissor) {
+    EndScissorMode();
   }
 }
 
@@ -130,15 +195,30 @@ void ui_element_init(Element* e) {
   e->id = 0;
   e->box = BOX(0, 0, 0, 0);
   e->type = ELEMENT_NONE;
-  e->padding = 4;
+  memset(&e->data, 0, sizeof(e->data));
+  e->userdata = NULL;
 
-  e->text_color = COLOR_RGB(0, 0, 0);
+  e->padding = UI_PADDING;
+
+  e->text_color = COLOR_RGB(255, 255, 255);
   e->background_color = COLOR_RGB(255, 255, 255);
   e->border_color = COLOR_RGB(0, 0, 0);
 
   e->render = true;
   e->background = false;
   e->border = true;
+  e->scissor = false;
+
+  e->onclick = ui_onclick;
+}
+
+bool ui_overlap(i32 x, i32 y, Box box) {
+  return (x >= box.x && x <= box.x + box.w)
+    && (y >= box.y && y <= box.y + box.h);
+}
+
+void ui_onclick(struct Element* e, void* userdata) {
+  (void)e; (void)userdata;
 }
 
 Result ui_init(void) {
@@ -152,8 +232,10 @@ void ui_update(void) {
   ui->latency = 0;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
-  root->padding = 0;
-  root->border = false;
+
+  ui->hover = NULL;
+  ui->active = NULL;
+  ui->select = NULL;
 
   ui_update_elements(ui, root);
   ui->latency += TIMER_END();
@@ -165,10 +247,6 @@ void ui_render(void) {
   Element* root = &ui->root;
   ui_render_elements(ui, root);
   ui->latency += TIMER_END();
-}
-
-f32 ui_get_latency(void) {
-  return ui_state.latency;
 }
 
 void ui_free(void) {
@@ -210,6 +288,7 @@ Element ui_text(char* text) {
   e.type = ELEMENT_TEXT;
   e.data.text.string = text;
   e.render = true;
+  e.scissor = true;
   return e;
 }
 

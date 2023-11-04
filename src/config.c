@@ -27,7 +27,7 @@ Result config_store(const char* path) {
   write_variable(fd, "window_resizable", T_INT, &WINDOW_RESIZABLE);
   write_variable(fd, "msaa_4x", T_INT, &MSAA_4X);
   write_variable(fd, "font_size", T_INT, &FONT_SIZE);
-  write_variable(fd, "font_size_smaller", T_INT, &FONT_SIZE_SMALLER);
+  write_variable(fd, "font_size_small", T_INT, &FONT_SIZE_SMALL);
   write_variable(fd, "font_size_smallest", T_INT, &FONT_SIZE_SMALLEST);
   write_variable(fd, "target_fps", T_INT, &TARGET_FPS);
   write_variable(fd, "frames_per_buffer", T_INT, &FRAMES_PER_BUFFER);
