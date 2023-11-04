@@ -90,7 +90,7 @@ void mix_update_and_render(Mix* m) {
 {
   char text[512] = {0};
   stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency);
-  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 230));
+  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(100, 255, 100, 255));
 }
 }
 
@@ -100,6 +100,7 @@ void on_click(Element* e, void* userdata) {
   Element button = ui_button("button");
   button.onclick = on_click;
   button.background = true;
+  button.scissor = true;
   button.background_color = e->background_color;
   ui_attach_element(grid, &button);
 }
@@ -126,12 +127,14 @@ Result mix_init(Mix* m) {
   };
 
   u32 cols = 4;
+  u32 rows = 4;
   Element grid_element = ui_grid(cols, true);
-  Element e = ui_button("button");
+  Element e = ui_button("this\nis\na\nbutton");
   e.onclick = on_click;
   e.background = true;
+  e.scissor = true;
   grid = ui_attach_element(NULL, &grid_element);
-  for (size_t i = 0; i < cols; ++i) {
+  for (size_t i = 0; i < rows*cols; ++i) {
     e.background_color = colors[i % LENGTH(colors)];
     ui_attach_element(grid, &e);
   }

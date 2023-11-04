@@ -161,7 +161,29 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
     case ELEMENT_BUTTON: {
       if (e->data.text.string) {
-        DrawText(e->data.text.string, e->box.x, e->box.y, FONT_SIZE_SMALL, e->text_color);
+        i32 lines = 1;
+        i32 max_width = 0;
+        i32 font_size = FONT_SIZE_SMALL;
+        char* s = e->data.text.string;
+        i32 i = 0;
+        while (*s++ != 0) {
+          i += 1;
+          if (*s == '\n') {
+            lines += 1;
+            i = 0;
+          }
+          if (i >= max_width) {
+            max_width = i;
+          }
+        }
+        i32 x = e->box.x + e->box.w / 2;
+        i32 y = e->box.y + e->box.h / 2;
+        i32 w = font_size * max_width;
+        i32 h = font_size * lines;
+        x -= (font_size * max_width) / 2;
+        y -= (font_size * lines) / 2;
+        DrawText(e->data.text.string, x, y, font_size, e->text_color);
+        // DrawRectangleLines(x, y, w, h, COLOR_RGB(255, 50, 50));
       }
       break;
     }
