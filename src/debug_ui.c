@@ -1,27 +1,6 @@
 // debug_ui.c
 
-#define INIT_ITEMS_SIZE 16
-#define list_init(list, desired_size) \
-  if ((list)->size < desired_size) { \
-    (list)->size = desired_size; \
-    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
-    ASSERT((list)->items != NULL && "out of memory"); \
-  }
-
-#define list_push(list, item) \
-  if ((list)->count >= (list)->size) { \
-    if ((list)->size == 0) { \
-      (list)->size = INIT_ITEMS_SIZE; \
-    } \
-    else { \
-      (list)->size *= 2; \
-    } \
-    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
-    ASSERT((list)->items != NULL && "out of memory"); \
-  } \
-  (list)->items[(list)->count++] = (item)
-
-#define list_free(list) memory_free((list)->items)
+#define DRAW_GUIDES 0
 
 UI_state ui_state = {0};
 
@@ -152,39 +131,43 @@ void ui_render_elements(UI_state* ui, Element* e) {
     DrawRectangleLines(e->box.x, e->box.y, e->box.w, e->box.h, e->border_color);
   }
 
+#if DRAW_GUIDES
+  Color guide_color = COLOR(255, 50, 255, 255);
+  DrawLine(e->box.x, e->box.y + e->box.h / 2, e->box.x + e->box.w, e->box.y + e->box.h / 2, guide_color);
+  DrawLine(e->box.x + e->box.w / 2, e->box.y, e->box.x + e->box.w / 2, e->box.y + e->box.h, guide_color);
+#endif
+
   switch (e->type) {
     case ELEMENT_TEXT: {
-      if (e->data.text.string) {
-        DrawText(e->data.text.string, e->box.x, e->box.y, FONT_SIZE_SMALL, e->text_color);
+      if (!e->data.text.string) {
+        break;
       }
+      const Font font = assets.font;
+      const i32 font_size = FONT_SIZE_SMALL;
+      const i32 spacing = 2;
+      const i32 x = e->box.x;
+      const i32 y = e->box.y;
+      DrawTextEx(font, e->data.text.string, (Vector2) { x, y }, font_size, spacing, e->text_color);
       break;
     }
     case ELEMENT_BUTTON: {
-      if (e->data.text.string) {
-        i32 lines = 1;
-        i32 max_width = 0;
-        i32 font_size = FONT_SIZE_SMALL;
-        char* s = e->data.text.string;
-        i32 i = 0;
-        while (*s++ != 0) {
-          i += 1;
-          if (*s == '\n') {
-            lines += 1;
-            i = 0;
-          }
-          if (i >= max_width) {
-            max_width = i;
-          }
-        }
-        i32 x = e->box.x + e->box.w / 2;
-        i32 y = e->box.y + e->box.h / 2;
-        i32 w = font_size * max_width;
-        i32 h = font_size * lines;
-        x -= (font_size * max_width) / 2;
-        y -= (font_size * lines) / 2;
-        DrawText(e->data.text.string, x, y, font_size, e->text_color);
-        // DrawRectangleLines(x, y, w, h, COLOR_RGB(255, 50, 50));
+      if (!e->data.text.string) {
+        break;
       }
+      char* text = e->data.text.string;
+      const Font font = assets.font;
+      i32 font_size = FONT_SIZE_SMALL;
+      i32 spacing = 2;
+      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
+      i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;
+      i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
+      i32 w = (i32)text_size.x;
+      i32 h = (i32)text_size.y;
+      DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      (void)w; (void)h;
+#if DRAW_GUIDES
+      DrawRectangleLines(x, y, w, h, guide_color);
+#endif
       break;
     }
     default:

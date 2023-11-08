@@ -26,11 +26,14 @@
 static Color COLOR_BG = (Color) { .r = 35, .g = 35, .b = 42, .a = 255, };
 
 Mix mix = {0};
+Assets assets = {0};
 
 Result mix_init(Mix* m);
 void mix_reset(Mix* m);
 void mix_update_and_render(Mix* m);
 void mix_free(Mix* m);
+void assets_load(Assets* a);
+void assets_unload(Assets* a);
 
 i32 mix_main(i32 argc, char** argv) {
   (void)argc;
@@ -53,6 +56,8 @@ i32 mix_main(i32 argc, char** argv) {
   SetTargetFPS(TARGET_FPS);
   SetExitKey(KEY_NULL);
 
+  assets_load(&assets);
+
   while (!WindowShouldClose()) {
     TIMER_START();
     BeginDrawing();
@@ -66,8 +71,8 @@ i32 mix_main(i32 argc, char** argv) {
     mix.fps = 1.0f / mix.dt;
   }
 
-  CloseWindow();
   mix_free(&mix);
+  CloseWindow();
   config_store(CONFIG_PATH);
   return EXIT_SUCCESS;
 }
@@ -90,7 +95,7 @@ void mix_update_and_render(Mix* m) {
 {
   char text[512] = {0};
   stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency);
-  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(100, 255, 100, 255));
+  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 255));
 }
 }
 
@@ -105,6 +110,24 @@ void on_click(Element* e, void* userdata) {
   ui_attach_element(grid, &button);
 }
 
+void on_increment_font_size(Element* e, void* userdata) {
+  FONT_SIZE_SMALL += 1;
+}
+
+void on_decrement_font_size(Element* e, void* userdata) {
+  FONT_SIZE_SMALL -= 1;
+}
+
+void on_increment_line_spacing(Element* e, void* userdata) {
+  UI_LINE_SPACING += 1;
+  SetTextLineSpacing(UI_LINE_SPACING);
+}
+
+void on_decrement_line_spacing(Element* e, void* userdata) {
+  UI_LINE_SPACING -= 1;
+  SetTextLineSpacing(UI_LINE_SPACING);
+}
+
 Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
@@ -113,13 +136,13 @@ Result mix_init(Mix* m) {
   ui_init();
 
   Color colors[9] = {
-    COLOR_RGB(0, 102, 153),
-    COLOR_RGB(0, 153, 255),
-    COLOR_RGB(153, 102, 255),
-
     COLOR_RGB(255, 153, 204),
     COLOR_RGB(255, 153, 102),
     COLOR_RGB(153, 255, 102),
+
+    COLOR_RGB(0, 102, 153),
+    COLOR_RGB(0, 153, 255),
+    COLOR_RGB(153, 102, 255),
 
     COLOR_RGB(0, 204, 153),
     COLOR_RGB(204, 0, 0),
@@ -128,8 +151,61 @@ Result mix_init(Mix* m) {
 
   u32 cols = 4;
   u32 rows = 4;
-  Element grid_element = ui_grid(cols, true);
-  Element e = ui_button("this\nis\na\nbutton");
+  {
+    Element grid_element = ui_grid(cols, true);
+    grid = ui_attach_element(NULL, &grid_element);
+  }
+  for (size_t i = 0; i < cols; ++i){
+    char* text = "spawn new button";
+    if (i+1 == cols) {
+      text = "here are\na\nfew\nlines.";
+    }
+    Element e = ui_button(text);
+    e.onclick = on_click;
+    e.background = true;
+    e.scissor = true;
+    e.background_color = colors[5];
+    ui_attach_element(grid, &e);
+  }
+
+  Element grid_element = ui_grid(2, true);
+  grid_element.border = false;
+  Element* grid2 = ui_attach_element(grid, &grid_element);
+
+  {
+    Element e = ui_button("font+");
+    e.onclick = on_increment_font_size;
+    e.background = true;
+    e.scissor = true;
+    e.background_color = colors[0];
+    ui_attach_element(grid2, &e);
+  }
+  {
+    Element e = ui_button("font-");
+    e.onclick = on_decrement_font_size;
+    e.background = true;
+    e.scissor = true;
+    e.background_color = colors[0];
+    ui_attach_element(grid2, &e);
+  }
+  {
+    Element e = ui_button("line spacing+");
+    e.onclick = on_increment_line_spacing;
+    e.background = true;
+    e.scissor = true;
+    e.background_color = colors[1];
+    ui_attach_element(grid2, &e);
+  }
+  {
+    Element e = ui_button("line spacing-");
+    e.onclick = on_decrement_line_spacing;
+    e.background = true;
+    e.scissor = true;
+    e.background_color = colors[1];
+    ui_attach_element(grid2, &e);
+  }
+#if 0
+  Element e = ui_button("this is a line of text\nand here is another one\nthe end.\nno this is not the end just yet.");
   e.onclick = on_click;
   e.background = true;
   e.scissor = true;
@@ -138,6 +214,7 @@ Result mix_init(Mix* m) {
     e.background_color = colors[i % LENGTH(colors)];
     ui_attach_element(grid, &e);
   }
+#endif
 
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
@@ -158,4 +235,14 @@ void mix_free(Mix* m) {
   audio_engine_exit(&audio_engine);
   waveshaper_free(&m->waveshaper);
   ui_free();
+  assets_unload(&assets);
+}
+
+void assets_load(Assets* a) {
+  a->font = LoadFontEx(UI_FONT, UI_FONT_BASE_SIZE, NULL, 0);
+  SetTextLineSpacing(UI_LINE_SPACING);
+}
+
+void assets_unload(Assets* a) {
+  UnloadFont(a->font);
 }
