@@ -20,6 +20,7 @@ Waveshaper waveshaper_new(size_t size) {
 }
 
 void waveshaper_update(Mix* m, Waveshaper* w) {
+  (void)m;
   TIMER_START();
   w->latency = 0;
 
@@ -52,6 +53,7 @@ f32 filter(f32 cutoff, f32 sample_rate) {
 }
 
 void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
+  (void)m;
   TIMER_START();
   Audio_engine* e = &audio_engine;
   const i32 sample_rate = e->sample_rate;
@@ -78,6 +80,7 @@ void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
 }
 
 void waveshaper_render(Mix* m, Waveshaper* const w) {
+  (void)m;
   TIMER_START();
 
   i32 x = 40;

@@ -97,9 +97,9 @@ typedef enum { Ok = 0, Error } Result;
 
 const char* bool_str[] = { "false", "true" };
 
-#define KB(n) (n * 1024)
-#define MB(n) (KB(n * 1024))
-#define GB(n) (MB(n * 1024))
+#define Kb(n) (n * 1024)
+#define Mb(n) (Kb(n * 1024))
+#define Gb(n) (Mb(n * 1024))
 
 #define PI32 3.14159265359f
 

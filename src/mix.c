@@ -2,13 +2,15 @@
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define USE_STB_SPRINTF
-#include "ext/stb_sprintf.h"
+#include "ext/stb/stb_sprintf.h"
 
 #define COMMON_IMPLEMENTATION
 #include "common.h"
 #include "mix.h"
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
+
+#include "ext/lua/luaone.c"
 
 #include "buffer.c"
 #include "config.c"
@@ -21,7 +23,7 @@
 #include "debug_ui.c"
 #include "wave_shaper.c"
 
-#define CONFIG_PATH "data/default.cfg"
+#define CONFIG_PATH "data/init.lua"
 
 static Color COLOR_BG = (Color) { .r = 35, .g = 35, .b = 42, .a = 255, };
 
@@ -70,10 +72,10 @@ i32 mix_main(i32 argc, char** argv) {
     }
     mix.fps = 1.0f / mix.dt;
   }
-
+  // config_store(CONFIG_PATH);
+  config_free();
   mix_free(&mix);
   CloseWindow();
-  config_store(CONFIG_PATH);
   return EXIT_SUCCESS;
 }
 
@@ -82,6 +84,9 @@ void mix_update_and_render(Mix* m) {
 
   if (IsKeyPressed(KEY_R)) {
     mix_reset(m);
+  }
+  if (IsKeyPressed(KEY_L)) {
+    config_load(CONFIG_PATH);
   }
 
   ui_update();
@@ -102,6 +107,7 @@ void mix_update_and_render(Mix* m) {
 static Element* grid = NULL;
 
 void on_click(Element* e, void* userdata) {
+  (void)userdata;
   Element button = ui_button("button");
   button.onclick = on_click;
   button.background = true;
@@ -111,19 +117,27 @@ void on_click(Element* e, void* userdata) {
 }
 
 void on_increment_font_size(Element* e, void* userdata) {
+  (void)e;
+  (void)userdata;
   FONT_SIZE_SMALL += 1;
 }
 
 void on_decrement_font_size(Element* e, void* userdata) {
+  (void)e;
+  (void)userdata;
   FONT_SIZE_SMALL -= 1;
 }
 
 void on_increment_line_spacing(Element* e, void* userdata) {
+  (void)e;
+  (void)userdata;
   UI_LINE_SPACING += 1;
   SetTextLineSpacing(UI_LINE_SPACING);
 }
 
 void on_decrement_line_spacing(Element* e, void* userdata) {
+  (void)e;
+  (void)userdata;
   UI_LINE_SPACING -= 1;
   SetTextLineSpacing(UI_LINE_SPACING);
 }
@@ -132,6 +146,7 @@ Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
   config_init();
+  config_load(CONFIG_PATH);
   mix_reset(m);
   ui_init();
 
@@ -150,7 +165,6 @@ Result mix_init(Mix* m) {
   };
 
   u32 cols = 4;
-  u32 rows = 4;
   {
     Element grid_element = ui_grid(cols, true);
     grid = ui_attach_element(NULL, &grid_element);
@@ -204,17 +218,6 @@ Result mix_init(Mix* m) {
     e.background_color = colors[1];
     ui_attach_element(grid2, &e);
   }
-#if 0
-  Element e = ui_button("this is a line of text\nand here is another one\nthe end.\nno this is not the end just yet.");
-  e.onclick = on_click;
-  e.background = true;
-  e.scissor = true;
-  grid = ui_attach_element(NULL, &grid_element);
-  for (size_t i = 0; i < rows*cols; ++i) {
-    e.background_color = colors[i % LENGTH(colors)];
-    ui_attach_element(grid, &e);
-  }
-#endif
 
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);

@@ -5,7 +5,7 @@
 #define FREE_BLOCK_DIFF_DONT_CARE BLOCK_HEADER_ALIGNMENT*2
 
 #ifndef MEMORY_ALLOC_STATIC_SIZE
-  #define MEMORY_ALLOC_STATIC_SIZE ALIGN(MB(8), BLOCK_HEADER_ALIGNMENT)
+  #define MEMORY_ALLOC_STATIC_SIZE ALIGN(Mb(8), BLOCK_HEADER_ALIGNMENT)
 #endif
 
 #ifndef MEMORY_SWEEP_ON_FREE
@@ -203,9 +203,9 @@ void memory_print_info(i32 fd) {
     Block_header* header = (Block_header*)&m->data[i];
     size_t total_size = header->size + sizeof(Block_header);
 #ifdef MEMORY_ALLOC_STATIC_PRINT_OVERHEAD
-    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size + sizeof(Block_header), (void*)header, total_size, (f32)total_size / KB(1));
+    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size + sizeof(Block_header), (void*)header, total_size, (f32)total_size / Kb(1));
 #else
-    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size, (void*)header, header->size, (f32)header->size / KB(1));
+    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size, (void*)header, header->size, (f32)header->size / Kb(1));
 #endif
     i += total_size;
     break_if(i + sizeof(Block_header) >= m->size);

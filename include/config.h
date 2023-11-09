@@ -22,5 +22,6 @@ static i32 UI_LINE_SPACING    = 20;
 void config_init(void);
 Result config_store(const char* path);
 Result config_load(const char* path);
+void config_free(void);
 
 #endif // _CONFIG_H
