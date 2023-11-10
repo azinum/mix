@@ -34,6 +34,7 @@ Result mix_init(Mix* m);
 void mix_reset(Mix* m);
 void mix_update_and_render(Mix* m);
 void mix_free(Mix* m);
+void mix_ui_init(Mix* m);
 void assets_load(Assets* a);
 void assets_unload(Assets* a);
 
@@ -99,7 +100,7 @@ void mix_update_and_render(Mix* m) {
 
 {
   char text[512] = {0};
-  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency);
+  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms\nui element updates: %u\nui element render count: %u", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, ui_state.element_update_count, ui_state.element_render_count);
   DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 255));
 }
 }
@@ -149,7 +150,33 @@ Result mix_init(Mix* m) {
   config_load(CONFIG_PATH);
   mix_reset(m);
   ui_init();
+  mix_ui_init(m);
 
+  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
+  m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
+  if (audio_engine_start(&audio_engine) != Ok) {
+    log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
+  }
+  return Ok;
+}
+
+void mix_reset(Mix* m) {
+  m->mouse = (Vector2) {0, 0};
+  m->fps = 0;
+  m->dt = DT_MIN;
+}
+
+void mix_free(Mix* m) {
+  (void)m;
+  audio_engine_exit(&audio_engine);
+  waveshaper_free(&m->waveshaper);
+  ui_free();
+  assets_unload(&assets);
+}
+
+void mix_ui_init(Mix* m) {
+  (void)m;
+#if 0
   Color colors[9] = {
     COLOR_RGB(255, 153, 204),
     COLOR_RGB(255, 153, 102),
@@ -218,27 +245,23 @@ Result mix_init(Mix* m) {
     e.background_color = colors[1];
     ui_attach_element(grid2, &e);
   }
-
-  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
-  m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
-  if (audio_engine_start(&audio_engine) != Ok) {
-    log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
+#else
+  Element* container = NULL;
+  {
+    Element e = ui_container(true);
+    e.border = true;
+    e.placement = PLACEMENT_ROWS;
+    container = ui_attach_element(NULL, &e);
   }
-  return Ok;
-}
-
-void mix_reset(Mix* m) {
-  m->mouse = (Vector2) {0, 0};
-  m->fps = 0;
-  m->dt = DT_MIN;
-}
-
-void mix_free(Mix* m) {
-  (void)m;
-  audio_engine_exit(&audio_engine);
-  waveshaper_free(&m->waveshaper);
-  ui_free();
-  assets_unload(&assets);
+  for (size_t i = 0; i < 32; ++i) {
+    Element e = ui_button("test");
+    e.scissor = false;
+    e.box = BOX(0, 0, 86, 132);
+    e.background = true;
+    e.background_color = COLOR_RGB(132, 124, 255),
+    ui_attach_element(container, &e);
+  }
+#endif
 }
 
 void assets_load(Assets* a) {

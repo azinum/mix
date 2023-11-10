@@ -32,6 +32,14 @@ typedef union Element_data {
   } text;
 } Element_data;
 
+typedef enum Placement {
+  PLACEMENT_FILL = 0,
+  PLACEMENT_BLOCK,
+  PLACEMENT_ROWS,
+
+  MAX_PLACEMENT_TYPE,
+} Placement;
+
 typedef struct Element {
   struct Element* items;
   u32 count;
@@ -53,6 +61,9 @@ typedef struct Element {
   bool background;
   bool border;
   bool scissor;
+  bool hidden;
+
+  Placement placement;
 
   void (*onclick)(struct Element* e, void* userdata);
 } Element;
@@ -61,6 +72,9 @@ typedef struct UI_state {
   Element root;
   u32 id_counter;
   f32 latency;
+  u32 element_update_count;
+  u32 element_render_count;
+  Vector2 mouse;
   Element* hover;
   Element* active;
   Element* select;

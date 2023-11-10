@@ -2,6 +2,11 @@
 
 #include "lprefix.h"
 
+#ifdef __clang__
+  // NOTE(lucas): just to ignore warnings
+  #define LUA_USE_JUMPTABLE 0
+#endif
+
 /* setup for luaconf.h */
 #define LUA_CORE
 #define LUA_LIB
@@ -50,12 +55,11 @@
 #include "liolib.c"
 #include "lmathlib.c"
 #include "loadlib.c"
-// NOTE(lucas): not needed
+// NOTE(lucas): stuff not needed
 // #include "loslib.c"
-#include "lstrlib.c"
-#include "ltablib.c"
-#include "lutf8lib.c"
-// NOTE(lucas): not needed
+// #include "lstrlib.c"
+// #include "ltablib.c"
+// #include "lutf8lib.c"
 // #include "linit.c"
 #endif
 

@@ -20,6 +20,9 @@ void ui_state_init(UI_state* ui) {
 
   ui->id_counter = 1;
   ui->latency = 0;
+  ui->element_update_count = 0;
+  ui->element_render_count = 0;
+  ui->mouse = (Vector2) {0, 0},
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
@@ -29,18 +32,45 @@ void ui_update_elements(UI_state* ui, Element* e) {
   if (!e) {
     return;
   }
-  Vector2 mouse = GetMousePosition();
+  if (e->hidden) {
+    return;
+  }
+  ui->element_update_count += 1;
 
+  // placement offsets
+  i32 px = 0;
+  i32 py = 0;
+
+  bool hide = false;
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
+    item->hidden = hide;
     switch (e->type) {
       case ELEMENT_CONTAINER: {
-        item->box = BOX(
-          e->box.x + e->padding,
-          e->box.y + e->padding,
-          e->box.w - 2 * e->padding,
-          e->box.h - 2 * e->padding
-        );
+        if (e->placement == PLACEMENT_FILL) {
+          item->box = BOX(
+            e->box.x + e->padding,
+            e->box.y + e->padding,
+            e->box.w - 2 * e->padding,
+            e->box.h - 2 * e->padding
+          );
+        }
+        else if (e->placement == PLACEMENT_ROWS) {
+          if (py >= e->box.h) {
+            item->hidden = hide = true;
+            break;
+          }
+          item->box = BOX(
+            e->box.x + e->padding + px,
+            e->box.y + e->padding + py,
+            item->box.w,
+            item->box.h
+          );
+          py += item->box.h + 2 * e->padding;
+        }
+        else if (e->placement == PLACEMENT_BLOCK) {
+
+        }
         break;
       }
       case ELEMENT_GRID: {
@@ -69,20 +99,11 @@ void ui_update_elements(UI_state* ui, Element* e) {
     }
   }
 
-  if (ui_overlap((i32)mouse.x, (i32)mouse.y, e->box)) {
+  if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
   }
 
   switch (e->type) {
-    case ELEMENT_CONTAINER: {
-      break;
-    }
-    case ELEMENT_GRID: {
-      break;
-    }
-    case ELEMENT_TEXT: {
-      break;
-    }
     case ELEMENT_BUTTON: {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
         ui->active = e;
@@ -106,13 +127,14 @@ void ui_render_elements(UI_state* ui, Element* e) {
   if (!e) {
     return;
   }
-  if (!e->render) {
+  if (!e->render || e->hidden) {
     return;
   }
   if (e->scissor) {
     BeginScissorMode(e->box.x, e->box.y, e->box.w, e->box.h);
   }
 
+  ui->element_render_count += 1;
   Color background_color = e->background_color;
 
   if (e->type == ELEMENT_BUTTON && e == ui->hover) {
@@ -133,8 +155,9 @@ void ui_render_elements(UI_state* ui, Element* e) {
 
 #if DRAW_GUIDES
   Color guide_color = COLOR(255, 50, 255, 255);
-  DrawLine(e->box.x, e->box.y + e->box.h / 2, e->box.x + e->box.w, e->box.y + e->box.h / 2, guide_color);
-  DrawLine(e->box.x + e->box.w / 2, e->box.y, e->box.x + e->box.w / 2, e->box.y + e->box.h, guide_color);
+  i32 guide_overlap = 0;
+  DrawLine(e->box.x - guide_overlap, e->box.y + e->box.h / 2, e->box.x + e->box.w + guide_overlap, e->box.y + e->box.h / 2, guide_color);
+  DrawLine(e->box.x + e->box.w / 2, e->box.y - guide_overlap, e->box.x + e->box.w / 2, e->box.y + e->box.h + guide_overlap, guide_color);
 #endif
 
   switch (e->type) {
@@ -213,6 +236,9 @@ void ui_element_init(Element* e) {
   e->background = false;
   e->border = true;
   e->scissor = false;
+  e->hidden = false;
+
+  e->placement = PLACEMENT_FILL;
 
   e->onclick = ui_onclick;
 }
@@ -238,6 +264,9 @@ void ui_update(void) {
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
 
+  ui->element_update_count = 0;
+  ui->element_render_count = 0;
+  ui->mouse = GetMousePosition();
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
