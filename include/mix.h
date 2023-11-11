@@ -19,7 +19,7 @@ struct Mix;
 #include "entity.h"
 #include "module.h"
 #include "audio.h"
-#include "debug_ui.h"
+#include "ui.h"
 #include "wave_shaper.h"
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })

@@ -1,7 +1,7 @@
-// debug_ui.h
+// ui.h
 
-#ifndef _DEBUG_UI_H
-#define _DEBUG_UI_H
+#ifndef _UI_H
+#define _UI_H
 
 typedef struct {
   i32 x;
@@ -93,4 +93,4 @@ Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_button(char* text);
 
-#endif // _DEBUG_UI_H
+#endif // _UI_H

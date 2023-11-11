@@ -1,4 +1,4 @@
-// debug_ui.c
+// ui.c
 
 #define DRAW_GUIDES 0
 

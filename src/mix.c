@@ -20,7 +20,7 @@
 #include "entity.c"
 #include "module.c"
 #include "audio.c"
-#include "debug_ui.c"
+#include "ui.c"
 #include "wave_shaper.c"
 
 #define CONFIG_PATH "data/init.lua"
