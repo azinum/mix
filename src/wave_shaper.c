@@ -83,7 +83,7 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
   (void)m;
   TIMER_START();
 
-  i32 x = 40;
+  i32 x = 260;
   i32 y = 160;
   i32 width = w->size/2;
   i32 height = 80;
@@ -91,6 +91,7 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
     COLOR_RGB(100, 250, 100),
     COLOR_RGB(20, 100, 30),
   };
+  DrawRectangle(x, y-height, width, height*2, COLOR_RGB(70, 70, 75));
   for (i32 i = 0; i < width; ++i) {
     DrawLine(
       x + i,               // x1

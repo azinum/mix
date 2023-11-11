@@ -54,6 +54,7 @@ i32 mix_main(i32 argc, char** argv) {
     config_flags |= FLAG_MSAA_4X_HINT;
   }
   SetConfigFlags(config_flags);
+  SetTraceLogLevel(LOG_WARNING);
 
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "mix");
   SetTargetFPS(TARGET_FPS);
@@ -93,7 +94,7 @@ void mix_update_and_render(Mix* m) {
   ui_update();
   ui_render();
 
-#if 0
+#if 1
   waveshaper_update(m, &m->waveshaper);
   waveshaper_render(m, &m->waveshaper);
 #endif

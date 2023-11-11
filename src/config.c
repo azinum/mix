@@ -85,11 +85,14 @@ Result config_store(const char* path) {
 }
 
 Result config_load(const char* path) {
+  TIMER_START();
   dofile(config.l, path);
   for (size_t i = 0; i < LENGTH(variables); ++i) {
     Variable* v = &variables[i];
     read_variable(v->name, v->type, v->data);
   }
+  f32 dt = TIMER_END();
+  log_print(STDOUT_FILENO, LOG_TAG_INFO, "loaded config `%s` in %g ms\n", path, 1000 * dt);
   return Ok;
 }
 
