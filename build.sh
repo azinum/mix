@@ -13,8 +13,8 @@ PROG=mix
 set -xe
 
 function build_default() {
+	# ${CC} src/main.c -o ${PROG}_miniaudio ${FLAGS} ${LIBS} -DUSE_MINIAUDIO -DMEMORY_ALLOC_STATIC
 	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} -lportaudio -DUSE_PORTAUDIO -DMEMORY_ALLOC_STATIC
-	# ${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} -DUSE_MINIAUDIO -DMEMORY_ALLOC_STATIC
 }
 
 function build_shared() {
