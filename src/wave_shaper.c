@@ -45,34 +45,33 @@ void waveshaper_update(Mix* m, Waveshaper* w) {
   w->latency += TIMER_END();
 }
 
-f32 filter(f32 cutoff, f32 sample_rate) {
-  f32 rc = 1.0f / (cutoff * 2 * PI32);
-  f32 dt = 1.0f / sample_rate;
-  f32 alpha = dt / (rc + dt);
-  return alpha;
-}
-
 void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
   (void)m;
   TIMER_START();
   Audio_engine* e = &audio_engine;
   const i32 sample_rate = e->sample_rate;
-  const f32 amp = 0.2f;
+  const f32 amp = 0.15f;
+  const i32 channel_count = e->channel_count;
 
   if (w->reshape) {
     for (size_t i = 0; i < w->size; i += 2) {
       w->buffer[i] = amp * sinf(
-        (w->tick * PI32 * 2 * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       w->buffer[i + 1] = amp * sinf(
-        (w->tick * PI32 * 2 * (w->freq + cosf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
 
       w->tick += 2;
-      w->freq = lerpf32(w->freq, w->freq_target, dt * 0.5f);
-      w->lfo = lerpf32(w->lfo, w->lfo_target, dt * 0.5f);
+#if 1
+      w->freq = lerpf32(w->freq, w->freq_target, dt * 2.0f);
+      w->lfo = lerpf32(w->lfo, w->lfo_target, dt * 2.0f);
+#else
+      w->freq = w->freq_target;
+      w->lfo = w->lfo_target;
+#endif
     }
   }
 

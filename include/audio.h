@@ -9,6 +9,8 @@ typedef struct Audio_engine {
   i32 channel_count;
   f32* buffer;
   f32 dt;
+
+  Waveshaper waveshaper;
 } Audio_engine;
 
 extern Audio_engine audio_engine;

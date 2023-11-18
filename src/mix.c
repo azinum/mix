@@ -12,6 +12,7 @@
 
 #include "ext/lua/luaone.c"
 
+#include "hash.c"
 #include "buffer.c"
 #include "config.c"
 #include "misc.c"
@@ -19,9 +20,9 @@
 #include "memory.c"
 #include "entity.c"
 #include "module.c"
+#include "wave_shaper.c"
 #include "audio.c"
 #include "ui.c"
-#include "wave_shaper.c"
 
 #define CONFIG_PATH "data/init.lua"
 
@@ -82,6 +83,8 @@ i32 mix_main(i32 argc, char** argv) {
 }
 
 void mix_update_and_render(Mix* m) {
+  Audio_engine* e = &audio_engine;
+
   m->mouse = GetMousePosition();
 
   if (IsKeyPressed(KEY_R)) {
@@ -95,8 +98,8 @@ void mix_update_and_render(Mix* m) {
   ui_render();
 
 #if 1
-  waveshaper_update(m, &m->waveshaper);
-  waveshaper_render(m, &m->waveshaper);
+  waveshaper_update(m, &e->waveshaper);
+  waveshaper_render(m, &e->waveshaper);
 #endif
 
 {
@@ -152,9 +155,7 @@ Result mix_init(Mix* m) {
   mix_reset(m);
   ui_init();
   mix_ui_init(m);
-
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
-  m->waveshaper = waveshaper_new(audio_engine.frames_per_buffer * audio_engine.channel_count);
   if (audio_engine_start(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
@@ -170,7 +171,6 @@ void mix_reset(Mix* m) {
 void mix_free(Mix* m) {
   (void)m;
   audio_engine_exit(&audio_engine);
-  waveshaper_free(&m->waveshaper);
   ui_free();
   assets_unload(&assets);
 }

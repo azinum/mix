@@ -3,6 +3,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#define MAX_CONFIG_STRING_SIZE 64
+
 static i32 WINDOW_WIDTH       = 1600;
 static i32 WINDOW_HEIGHT      = 900;
 static i32 WINDOW_RESIZABLE   = true;
