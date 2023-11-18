@@ -5,7 +5,7 @@ CACHELINESIZE=`getconf LEVEL1_DCACHE_LINESIZE`
 
 CC="clang"
 INC=include
-FLAGS="-O0 -ggdb -ffast-math -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
+FLAGS="-O2 -ggdb -ffast-math -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
 LIBS="-lraylib -lm -lpthread -lglfw -ldl"
 PREFIX=/usr/local
 PROG=mix
@@ -26,6 +26,10 @@ function install() {
 	cp ${PROG} ${PREFIX}/bin/
 }
 
+function profile() {
+	perf record -e cycles -c 2000000 ./${PROG} && perf report -n -f > perf.txt && rm -f perf.data perf.data.old
+}
+
 function install_shared() {
 	chmod o+x lib${PROG}.so
 	cp lib${PROG}.so ${PREFIX}/lib
@@ -37,5 +41,6 @@ case "$1" in
 	shared) build_shared ;;
 	install) install ;;
 	install_shared) install_shared ;;
+	profile) profile ;;
 	*) build_default ;;
 esac >/dev/null

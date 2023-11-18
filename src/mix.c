@@ -105,12 +105,9 @@ void mix_update_and_render(Mix* m) {
   waveshaper_update(m, &e->waveshaper);
   waveshaper_render(m, &e->waveshaper);
 #endif
-
-{
-  char text[512] = {0};
-  stb_snprintf(text, sizeof(text), "mouse: %d, %d\nfps: %g\nallocations: %zu\ndeallocations: %zu\nusage: %zu/%zu bytes (%.2g %%)\nui latency: %g ms\nui element updates: %u\nui element render count: %u", (i32)m->mouse.x, (i32)m->mouse.y, m->fps, memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, ui_state.element_update_count, ui_state.element_render_count);
-  DrawText(text, 4, 4, FONT_SIZE_SMALLEST, COLOR(255, 255, 255, 255));
-}
+  static char title[512] = {0};
+  stb_snprintf(title, sizeof(title), "%zu/%zu allocs/deallocs | %zu/%zu bytes (%.2g %%) | %g ms ui latency | %d fps | %g dt", memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, (i32)m->fps, 1000 * m->dt);
+  SetWindowTitle(title);
 }
 
 static Element* grid = NULL;
