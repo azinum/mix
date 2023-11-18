@@ -40,6 +40,7 @@ static Result open_stream(void) {
 }
 
 Result audio_new(Audio_engine* e) {
+  (void)in_port; // unused
   PaError err = Pa_Initialize();
   if (err != paNoError) {
     Pa_Terminate();

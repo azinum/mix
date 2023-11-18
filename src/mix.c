@@ -13,6 +13,7 @@
 #include "ext/lua/luaone.c"
 
 #include "hash.c"
+#include "random.c"
 #include "buffer.c"
 #include "config.c"
 #include "misc.c"
@@ -150,6 +151,7 @@ void on_decrement_line_spacing(Element* e, void* userdata) {
 Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
+  random_init(time(0));
   config_init();
   config_load(CONFIG_PATH);
   mix_reset(m);
@@ -257,7 +259,7 @@ void mix_ui_init(Mix* m) {
   for (size_t i = 0; i < 32; ++i) {
     Element e = ui_button("test");
     e.scissor = false;
-    e.box = BOX(0, 0, 86, 132);
+    e.box = BOX(0, 0, 32 + random_number() % 128, 32 + random_number() % 128);
     e.background = true;
     e.background_color = COLOR_RGB(132, 124, 255),
     ui_attach_element(container, &e);

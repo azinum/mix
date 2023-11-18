@@ -11,6 +11,7 @@ struct Mix;
 #include <fcntl.h>
 
 #include "hash.h"
+#include "random.h"
 #include "buffer.h"
 #include "config.h"
 #include "misc.h"
