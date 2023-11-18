@@ -17,7 +17,7 @@ static i32 FRAMES_PER_BUFFER  = 512;
 static i32 SAMPLE_RATE        = 44100;
 static i32 CHANNEL_COUNT      = 2;
 static i32 UI_PADDING         = 8;
-static const char* UI_FONT    = "data/fonts/notomono-regular.ttf";
+static char UI_FONT[MAX_CONFIG_STRING_SIZE] = "data/fonts/notomono-regular.ttf";
 static i32 UI_FONT_BASE_SIZE  = 20;
 static i32 UI_LINE_SPACING    = 20;
 

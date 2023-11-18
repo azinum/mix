@@ -2,6 +2,9 @@
 //
 // flags:
 //  CONFIG_VERBOSE_OUTPUT
+//
+// TODO:
+//  - control when lua does GC sweeps
 
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
 
@@ -58,6 +61,7 @@ static Variable variables[] = {
   { "sample_rate", T_INT, &SAMPLE_RATE, hook_warn_restart },
   { "channel_count", T_INT, &CHANNEL_COUNT, hook_warn_restart },
   { "ui_padding", T_INT, &UI_PADDING, hook_default },
+  { "ui_font", T_STRING, &UI_FONT, hook_warn_restart },
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
   { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
 };
@@ -67,6 +71,7 @@ struct {
   u32 load_count; // number of times config has been loaded since startup
 } config = {
   .l = NULL,
+  .load_count = 0,
 };
 
 void config_init(void) {
@@ -168,7 +173,7 @@ void write_variable(i32 fd, const char* name, Type type, void* data) {
       break;
     }
     case T_STRING: {
-      NOT_IMPLEMENTED();
+      stb_dprintf(fd, "%s = \"%s\"\n", name, (char*)data);
       break;
     }
     default:
@@ -202,7 +207,13 @@ Result read_variable(const char* name, Type type, void* data) {
       return Error;
     }
     case T_STRING: {
-      NOT_IMPLEMENTED();
+      if (lua_isstring(l, -1)) {
+        const char* value = lua_tostring(l, -1);
+        strncpy((char*)data, value, MAX_CONFIG_STRING_SIZE);
+        lua_pop(l, 1);
+        return Ok;
+      }
+      lua_pop(l, 1);
       break;
     }
     default:
