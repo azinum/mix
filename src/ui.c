@@ -166,7 +166,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
         break;
       }
       const Font font = assets.font;
-      const i32 font_size = FONT_SIZE_SMALL;
+      const i32 font_size = FONT_SIZE;
       const i32 spacing = 2;
       const i32 x = e->box.x;
       const i32 y = e->box.y;
@@ -179,7 +179,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       char* text = e->data.text.string;
       const Font font = assets.font;
-      i32 font_size = FONT_SIZE_SMALL;
+      i32 font_size = FONT_SIZE;
       i32 spacing = 2;
       Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
       i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;

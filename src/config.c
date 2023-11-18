@@ -1,6 +1,15 @@
 // config.c
+//
+// flags:
+//  CONFIG_VERBOSE_OUTPUT
 
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
+
+#ifdef CONFIG_VERBOSE_OUTPUT
+  #define O(...) __VA_ARGS__
+#else
+  #define O(...)
+#endif
 
 typedef enum Type {
   T_INT,
@@ -28,7 +37,7 @@ static const luaL_Reg lualibs[] = {
   { NULL, NULL, },
 };
 
-static void hook_none(Variable* v);
+static void hook_default(Variable* v);
 static void hook_target_fps(Variable* v);
 static void hook_warn_restart(Variable* v);
 
@@ -37,25 +46,25 @@ static Result read_variable(const char* name, Type type, void* data);
 static void lua_open_libs(lua_State* l);
 
 static Variable variables[] = {
-  { "window_width", T_INT, &WINDOW_WIDTH, hook_none },
-  { "window_height", T_INT, &WINDOW_HEIGHT, hook_none },
+  { "window_width", T_INT, &WINDOW_WIDTH, hook_default },
+  { "window_height", T_INT, &WINDOW_HEIGHT, hook_default },
   { "window_resizable", T_INT, &WINDOW_RESIZABLE, hook_warn_restart },
   { "msaa_4x", T_INT, &MSAA_4X, hook_warn_restart },
-  { "font_size", T_INT, &FONT_SIZE, hook_none },
-  { "font_size_small", T_INT, &FONT_SIZE_SMALL, hook_none },
-  { "font_size_smallest", T_INT, &FONT_SIZE_SMALLEST, hook_none },
+  { "font_size", T_INT, &FONT_SIZE, hook_default },
+  { "font_size_small", T_INT, &FONT_SIZE_SMALL, hook_default },
+  { "font_size_smallest", T_INT, &FONT_SIZE_SMALLEST, hook_default },
   { "target_fps", T_INT, &TARGET_FPS, hook_target_fps },
   { "frames_per_buffer", T_INT, &FRAMES_PER_BUFFER, hook_warn_restart },
   { "sample_rate", T_INT, &SAMPLE_RATE, hook_warn_restart },
   { "channel_count", T_INT, &CHANNEL_COUNT, hook_warn_restart },
-  { "ui_padding", T_INT, &UI_PADDING, hook_none },
+  { "ui_padding", T_INT, &UI_PADDING, hook_default },
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
-  { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_none },
+  { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
 };
 
 struct {
   lua_State* l;
-  u32 load_count; // number of times config has been loaded
+  u32 load_count; // number of times config has been loaded since startup
 } config = {
   .l = NULL,
 };
@@ -102,7 +111,9 @@ Result config_store(const char* path) {
 
 Result config_load(const char* path) {
   TIMER_START();
-  dofile(config.l, path);
+  if (dofile(config.l, path) != LUA_OK) {
+    return Error;
+  }
   char diff_buff[MAX_DIFF_BUFF_SIZE] = {0};
   size_t num_hooks_called = 0;
 
@@ -116,6 +127,7 @@ Result config_load(const char* path) {
       if (config.load_count > 0 && hash_djb2((u8*)diff_buff, data_size) != hash_djb2((u8*)v->data, data_size)) {
         v->hook(v);
         num_hooks_called += 1;
+        O(log_print(STDOUT_FILENO, LOG_TAG_INFO, "setting `%s` was changed\n", v->name));
       }
     }
   }
@@ -132,7 +144,9 @@ void config_free(void) {
   }
 }
 
-void hook_none(Variable* v) { (void)v; }
+void hook_default(Variable* v) {
+  (void)v;
+}
 
 void hook_target_fps(Variable* v) {
   (void)v;
@@ -140,7 +154,7 @@ void hook_target_fps(Variable* v) {
 }
 
 void hook_warn_restart(Variable* v) {
-  log_print(STDOUT_FILENO, LOG_TAG_WARN, "variable `%s` was changed, requires a restart for it to take effect\n", v->name);
+  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, a restart is required for it to take effect\n", v->name);
 }
 
 void write_variable(i32 fd, const char* name, Type type, void* data) {

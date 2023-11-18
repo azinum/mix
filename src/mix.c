@@ -89,6 +89,9 @@ void mix_update_and_render(Mix* m) {
   m->mouse = GetMousePosition();
 
   if (IsKeyPressed(KEY_R)) {
+    ui_free();
+    ui_init();
+    mix_ui_init(m);
     mix_reset(m);
   }
   if (IsKeyPressed(KEY_L)) {
@@ -98,7 +101,7 @@ void mix_update_and_render(Mix* m) {
   ui_update();
   ui_render();
 
-#if 1
+#if 0
   waveshaper_update(m, &e->waveshaper);
   waveshaper_render(m, &e->waveshaper);
 #endif
@@ -153,7 +156,10 @@ Result mix_init(Mix* m) {
   memory_init();
   random_init(time(0));
   config_init();
-  config_load(CONFIG_PATH);
+  if (config_load(CONFIG_PATH) != Ok) {
+    log_print(STDERR_FILENO, LOG_TAG_WARN, "config file `%s` does not exist, creating new with default settings\n", CONFIG_PATH);
+    config_store(CONFIG_PATH);
+  }
   mix_reset(m);
   ui_init();
   mix_ui_init(m);
@@ -179,21 +185,20 @@ void mix_free(Mix* m) {
 
 void mix_ui_init(Mix* m) {
   (void)m;
-#if 0
   Color colors[9] = {
-    COLOR_RGB(255, 153, 204),
-    COLOR_RGB(255, 153, 102),
-    COLOR_RGB(153, 255, 102),
+    COLOR_RGB(233, 153, 204),
+    COLOR_RGB(225, 153, 102),
+    COLOR_RGB(133, 210, 96),
 
     COLOR_RGB(0, 102, 153),
     COLOR_RGB(0, 153, 255),
     COLOR_RGB(153, 102, 255),
 
-    COLOR_RGB(0, 204, 153),
+    COLOR_RGB(56, 184, 123),
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
-
+#if 0
   u32 cols = 4;
   {
     Element grid_element = ui_grid(cols, true);
@@ -261,7 +266,7 @@ void mix_ui_init(Mix* m) {
     e.scissor = false;
     e.box = BOX(0, 0, 32 + random_number() % 128, 32 + random_number() % 128);
     e.background = true;
-    e.background_color = COLOR_RGB(132, 124, 255),
+    e.background_color = colors[random_number() % LENGTH(colors)];
     ui_attach_element(container, &e);
   }
 #endif
