@@ -1,4 +1,6 @@
 // log.c
+// TODO:
+//  - log levels
 
 struct {
   u32 use_colors;

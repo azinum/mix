@@ -5,7 +5,7 @@ CACHELINESIZE=`getconf LEVEL1_DCACHE_LINESIZE`
 
 CC="clang"
 INC=include
-FLAGS="-O2 -ggdb -ffast-math -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
+FLAGS="-O0 -ggdb -ffast-math -I${INC} -Wall -Wextra -DNPROC=${NPROC} -DCACHELINESIZE=${CACHELINESIZE}"
 LIBS="-lraylib -lm -lpthread -lglfw -ldl"
 PREFIX=/usr/local
 PROG=mix
@@ -13,8 +13,9 @@ PROG=mix
 set -xe
 
 function build_default() {
-	# ${CC} src/main.c -o ${PROG}_miniaudio ${FLAGS} ${LIBS} -DUSE_MINIAUDIO -DMEMORY_ALLOC_STATIC
-	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} -lportaudio -DUSE_PORTAUDIO -DMEMORY_ALLOC_STATIC
+	# ${CC} src/main.c -o ${PROG}_miniaudio ${FLAGS} ${LIBS} -DMEMORY_ALLOC_STATIC -DUSE_MINIAUDIO
+	# ${CC} src/main.c -o ${PROG}_null ${FLAGS} ${LIBS} -DMEMORY_ALLOC_STATIC
+	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} -lportaudio -DMEMORY_ALLOC_STATIC -DUSE_PORTAUDIO
 }
 
 function build_shared() {

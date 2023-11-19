@@ -44,6 +44,8 @@ i32 mix_main(i32 argc, char** argv) {
   (void)argc;
   (void)argv;
 
+  TIMER_START();
+
   if (mix_init(&mix) != Ok) {
     return EXIT_FAILURE;
   }
@@ -63,6 +65,9 @@ i32 mix_main(i32 argc, char** argv) {
   SetExitKey(KEY_NULL);
 
   assets_load(&assets);
+
+  f32 dt = TIMER_END();
+  log_print(STDOUT_FILENO, LOG_TAG_INFO, "startup time was %g ms\n", 1000 * dt);
 
   while (!WindowShouldClose()) {
     TIMER_START();
@@ -105,6 +110,7 @@ void mix_update_and_render(Mix* m) {
   waveshaper_update(m, &e->waveshaper);
   waveshaper_render(m, &e->waveshaper);
 #endif
+
   static char title[512] = {0};
   stb_snprintf(title, sizeof(title), "%zu/%zu allocs/deallocs | %zu/%zu bytes (%.2g %%) | %g ms ui latency | %d fps | %g dt", memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, (i32)m->fps, 1000 * m->dt);
   SetWindowTitle(title);
