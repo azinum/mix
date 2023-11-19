@@ -72,6 +72,10 @@ void ui_update_elements(UI_state* ui, Element* e) {
           py += item->box.h + 2 * e->padding;
         }
         else if (e->placement == PLACEMENT_BLOCK) {
+          if (py >= e->box.h) {
+            item->hidden = hide = true;
+            break;
+          }
           num_elements_on_line += 1;
           if (px + item->box.w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
             px = 0;
