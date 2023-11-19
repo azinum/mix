@@ -20,6 +20,14 @@ typedef enum {
   MAX_ELEMENT_TYPE,
 } Element_type;
 
+const char* element_type_str[] = {
+  "none",
+  "container",
+  "grid",
+  "text",
+  "button",
+};
+
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
 
 typedef union Element_data {
@@ -33,12 +41,20 @@ typedef union Element_data {
 } Element_data;
 
 typedef enum Placement {
-  PLACEMENT_FILL = 0,
+  PLACEMENT_NONE = 0,
+  PLACEMENT_FILL,
   PLACEMENT_BLOCK,
   PLACEMENT_ROWS,
 
   MAX_PLACEMENT_TYPE,
 } Placement;
+
+const char* placement_str[] = {
+  "none",
+  "fill",
+  "block",
+  "rows",
+};
 
 typedef struct Element {
   struct Element* items;
@@ -78,12 +94,14 @@ typedef struct UI_state {
   Element* hover;
   Element* active;
   Element* select;
+  i32 fd;
 } UI_state;
 
 extern UI_state ui_state;
 
 Result ui_init(void);
 void ui_update(void);
+void ui_hierarchy_print(i32 fd);
 void ui_render(void);
 void ui_free(void);
 

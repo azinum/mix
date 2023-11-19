@@ -1,6 +1,8 @@
 // ui.c
 
 #define DRAW_GUIDES 0
+#define LOG_UI_HIERARCHY 1
+#define UI_PATH "ui.txt"
 
 UI_state ui_state = {0};
 
@@ -13,6 +15,9 @@ static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static void ui_onclick(struct Element* e, void* userdata);
+
+static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
+static void tabs(i32 fd, const u32 count);
 
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root);
@@ -28,6 +33,14 @@ void ui_state_init(UI_state* ui) {
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
+#if LOG_UI_HIERARCHY
+  ui->fd = open(UI_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
+  if (ui->fd < 0) {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to open file `%s` for writing\n", UI_PATH);
+  }
+#else
+  ui->fd = -1;
+#endif
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
@@ -268,7 +281,7 @@ void ui_element_init(Element* e) {
   e->scissor = false;
   e->hidden = false;
 
-  e->placement = PLACEMENT_FILL;
+  e->placement = PLACEMENT_NONE;
 
   e->onclick = ui_onclick;
 }
@@ -293,6 +306,7 @@ void ui_update(void) {
   ui->latency = 0;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
+  root->placement = PLACEMENT_FILL;
 
   ui->element_update_count = 0;
   ui->element_render_count = 0;
@@ -308,6 +322,11 @@ void ui_update(void) {
   ui->latency += TIMER_END();
 }
 
+void ui_hierarchy_print(i32 fd) {
+  UI_state* ui = &ui_state;
+  ui_print_elements(ui, ui->fd, &ui->root, 0);
+}
+
 void ui_render(void) {
   TIMER_START();
   UI_state* ui = &ui_state;
@@ -318,7 +337,10 @@ void ui_render(void) {
 
 void ui_free(void) {
   UI_state* ui = &ui_state;
+  ui_hierarchy_print(STDOUT_FILENO);
   ui_free_elements(ui, &ui->root);
+  close(ui->fd);
+  ui->fd = -1;
 }
 
 Element* ui_attach_element(Element* target, Element* e) {
@@ -366,4 +388,54 @@ Element ui_button(char* text) {
   e.data.text.string = text;
   e.render = true;
   return e;
+}
+
+void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
+  stb_dprintf(fd, "{\n");
+  level += 1;
+  tabs(fd, level); stb_dprintf(fd, "type: %s\n", element_type_str[e->type]);
+  tabs(fd, level); stb_dprintf(fd, "id: %u\n", e->id);
+  tabs(fd, level); stb_dprintf(fd, "box: { %d, %d, %d, %d }\n", e->box.x, e->box.y, e->box.w, e->box.h);
+  tabs(fd, level); stb_dprintf(fd, "data: ");
+  switch (e->type) {
+    case ELEMENT_GRID: {
+      stb_dprintf(fd, "{ cols: %u, rows: %u }\n", e->data.grid.cols, e->data.grid.cols);
+      break;
+    }
+    case ELEMENT_BUTTON:
+    case ELEMENT_TEXT: {
+      char* string = e->data.text.string;
+      if (string) {
+        stb_dprintf(fd, "\"%s\"\n", string);
+        break;
+      }
+      stb_dprintf(fd, "\"\"\n", string);
+      break;
+    }
+    default:
+      stb_dprintf(fd, "-\n");
+      break;
+  }
+  tabs(fd, level); stb_dprintf(fd, "padding: %d\n", e->padding);
+  tabs(fd, level); stb_dprintf(fd, "render: %s\n", bool_str[e->render == true]);
+  tabs(fd, level); stb_dprintf(fd, "background: %s\n", bool_str[e->background == true]);
+  tabs(fd, level); stb_dprintf(fd, "border: %s\n", bool_str[e->border == true]);
+  tabs(fd, level); stb_dprintf(fd, "scissor: %s\n", bool_str[e->scissor == true]);
+  tabs(fd, level); stb_dprintf(fd, "hidden: %s\n", bool_str[e->hidden == true]);
+  tabs(fd, level); stb_dprintf(fd, "placement: %s\n", placement_str[e->placement]);
+
+  for (size_t i = 0; i < e->count; ++i) {
+    tabs(fd, level);
+    ui_print_elements(ui, fd, &e->items[i], level);
+  }
+
+  tabs(fd, level - 1);
+  stb_dprintf(fd, "}\n");
+}
+
+void tabs(i32 fd, const u32 count) {
+  const char* tab = "   ";
+  for (u32 i = 0; i < count; ++i) {
+    stb_dprintf(fd, "%s", tab);
+  }
 }

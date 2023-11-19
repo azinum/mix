@@ -201,7 +201,7 @@ void mix_ui_init(Mix* m) {
       e.background_color = COLOR_RGB(75, 75, 95);
       container = ui_attach_element(grid, &e);
     }
-    for (size_t n = 0; n < 128; ++n) {
+    for (size_t n = 0; n < 8; ++n) {
       Element e = ui_button("button");
       e.scissor = false;
       e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
