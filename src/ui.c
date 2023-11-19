@@ -6,6 +6,8 @@ UI_state ui_state = {0};
 
 static void ui_state_init(UI_state* ui);
 static void ui_update_elements(UI_state* ui, Element* e);
+static void ui_update_container(UI_state* ui, Element* e);
+static void ui_update_grid(UI_state* ui, Element* e);
 static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
@@ -37,91 +39,6 @@ void ui_update_elements(UI_state* ui, Element* e) {
   }
   ui->element_update_count += 1;
 
-  // placement offsets
-  i32 px = 0;
-  i32 py = 0;
-  // block placement offsets
-  i32 py_offset = 0; // element with the greatest height
-  u32 num_elements_on_line = 0;
-
-  bool hide = false;
-  for (size_t i = 0; i < e->count; ++i) {
-    Element* item = &e->items[i];
-    item->hidden = hide;
-    switch (e->type) {
-      case ELEMENT_CONTAINER: {
-        if (e->placement == PLACEMENT_FILL) {
-          item->box = BOX(
-            e->box.x + e->padding,
-            e->box.y + e->padding,
-            e->box.w - 2 * e->padding,
-            e->box.h - 2 * e->padding
-          );
-        }
-        else if (e->placement == PLACEMENT_ROWS) {
-          if (py >= e->box.h) {
-            item->hidden = hide = true;
-            break;
-          }
-          item->box = BOX(
-            e->box.x + e->padding + px,
-            e->box.y + e->padding + py,
-            item->box.w,
-            item->box.h
-          );
-          py += item->box.h + 2 * e->padding;
-        }
-        else if (e->placement == PLACEMENT_BLOCK) {
-          if (py >= e->box.h) {
-            item->hidden = hide = true;
-            break;
-          }
-          num_elements_on_line += 1;
-          if (px + item->box.w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
-            px = 0;
-            py += py_offset + 2 * e->padding;
-            py_offset = 0;
-            num_elements_on_line = 0;
-          }
-          if (item->box.h > py_offset) {
-            py_offset = item->box.h;
-          }
-          item->box = BOX(
-            e->box.x + e->padding + px,
-            e->box.y + e->padding + py,
-            item->box.w,
-            item->box.h
-          );
-          px += item->box.w + 2 * e->padding;
-        }
-        break;
-      }
-      case ELEMENT_GRID: {
-        const u32 cols = e->data.grid.cols;
-        const u32 rows = (u32)ceilf((f32)e->count / cols);
-        const u32 w = ceilf((f32)e->box.w / cols);
-        const u32 h = ceilf((f32)e->box.h / rows);
-        const u32 x = i % cols;
-        const u32 y = (u32)floorf((f32)i / cols);
-        item->box = BOX(
-          e->box.x + x * w + e->padding,
-          e->box.y + y * h + e->padding,
-          w - 2 * e->padding,
-          h - 2 * e->padding
-        );
-        break;
-      }
-      case ELEMENT_TEXT: {
-        break;
-      }
-      case ELEMENT_BUTTON: {
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
   }
@@ -136,12 +53,103 @@ void ui_update_elements(UI_state* ui, Element* e) {
       }
       break;
     }
+    case ELEMENT_CONTAINER: {
+      ui_update_container(ui, e);
+      break;
+    }
+    case ELEMENT_GRID: {
+      ui_update_grid(ui, e);
+      break;
+    }
     default:
       break;
   }
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     ui_update_elements(ui, item);
+  }
+}
+
+void ui_update_container(UI_state* ui, Element* e) {
+  // placement offsets
+  i32 px = 0;
+  i32 py = 0;
+  // block placement offsets
+  i32 py_offset = 0; // element with the greatest height
+  u32 num_elements_on_line = 0;
+  bool hide = false;
+  for (size_t i = 0; i < e->count; ++i) {
+    Element* item = &e->items[i];
+    item->hidden = hide;
+    switch (e->placement) {
+      case PLACEMENT_FILL: {
+        item->box = BOX(
+          e->box.x + e->padding,
+          e->box.y + e->padding,
+          e->box.w - 2 * e->padding,
+          e->box.h - 2 * e->padding
+        );
+        return; // this fitment only allows one item
+      }
+      case PLACEMENT_ROWS: {
+        if (py >= e->box.h) {
+          item->hidden = hide = true;
+          break;
+        }
+        item->box = BOX(
+          e->box.x + e->padding + px,
+          e->box.y + e->padding + py,
+          item->box.w,
+          item->box.h
+        );
+        py += item->box.h + 2 * e->padding;
+        break;
+      }
+      case PLACEMENT_BLOCK: {
+        if (py >= e->box.h) {
+          item->hidden = hide = true;
+          break;
+        }
+        num_elements_on_line += 1;
+        if (px + item->box.w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
+          px = 0;
+          py += py_offset + 2 * e->padding;
+          py_offset = 0;
+          num_elements_on_line = 0;
+        }
+        if (item->box.h > py_offset) {
+          py_offset = item->box.h;
+        }
+        item->box = BOX(
+          e->box.x + e->padding + px,
+          e->box.y + e->padding + py,
+          item->box.w,
+          item->box.h
+        );
+        px += item->box.w + 2 * e->padding;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+}
+
+void ui_update_grid(UI_state* ui, Element* e) {
+  const u32 cols = e->data.grid.cols;
+  const u32 rows = (u32)ceilf((f32)e->count / cols);
+  for (size_t i = 0; i < e->count; ++i) {
+    Element* item = &e->items[i];
+    const u32 w = ceilf((f32)e->box.w / cols);
+    const u32 h = ceilf((f32)e->box.h / rows);
+    const u32 x = i % cols;
+    const u32 y = (u32)floorf((f32)i / cols);
+    item->box = BOX(
+      e->box.x + x * w + e->padding,
+      e->box.y + y * h + e->padding,
+      w - 2 * e->padding,
+      h - 2 * e->padding
+    );
   }
 }
 
