@@ -154,6 +154,21 @@ void on_decrement_line_spacing(Element* e, void* userdata) {
   SetTextLineSpacing(UI_LINE_SPACING);
 }
 
+void onclick_test(Element* e, void* userdata) {
+  stb_printf(
+    "Element {\n"
+    "  id: %u\n"
+    "  box: {%d, %d, %d, %d}\n"
+    "}\n"
+    ,
+    e->id,
+    e->box.x,
+    e->box.y,
+    e->box.w,
+    e->box.h
+  );
+}
+
 Result mix_init(Mix* m) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
@@ -261,15 +276,17 @@ void mix_ui_init(Mix* m) {
   {
     Element e = ui_container(true);
     e.border = true;
-    e.placement = PLACEMENT_ROWS;
+    e.placement = PLACEMENT_BLOCK;
     container = ui_attach_element(NULL, &e);
   }
   for (size_t i = 0; i < 32; ++i) {
-    Element e = ui_button("test");
+    Element e = ui_button("button");
     e.scissor = false;
-    e.box = BOX(0, 0, 32 + random_number() % 128, 32 + random_number() % 128);
+    e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
+    // e.box = BOX(0, 0, 128, 64);
     e.background = true;
     e.background_color = colors[random_number() % LENGTH(colors)];
+    e.onclick = onclick_test;
     ui_attach_element(container, &e);
   }
 #endif

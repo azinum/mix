@@ -40,6 +40,9 @@ void ui_update_elements(UI_state* ui, Element* e) {
   // placement offsets
   i32 px = 0;
   i32 py = 0;
+  // block placement offsets
+  i32 py_offset = 0; // element with the greatest height
+  u32 num_elements_on_line = 0;
 
   bool hide = false;
   for (size_t i = 0; i < e->count; ++i) {
@@ -69,7 +72,23 @@ void ui_update_elements(UI_state* ui, Element* e) {
           py += item->box.h + 2 * e->padding;
         }
         else if (e->placement == PLACEMENT_BLOCK) {
-
+          num_elements_on_line += 1;
+          if (px + item->box.w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
+            px = 0;
+            py += py_offset + 2 * e->padding;
+            py_offset = 0;
+            num_elements_on_line = 0;
+          }
+          if (item->box.h > py_offset) {
+            py_offset = item->box.h;
+          }
+          item->box = BOX(
+            e->box.x + e->padding + px,
+            e->box.y + e->padding + py,
+            item->box.w,
+            item->box.h
+          );
+          px += item->box.w + 2 * e->padding;
         }
         break;
       }
@@ -110,7 +129,6 @@ void ui_update_elements(UI_state* ui, Element* e) {
       }
       if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && e == ui->hover) {
         ui->select = e;
-        e->onclick(e, e->userdata);
       }
       break;
     }
@@ -272,6 +290,9 @@ void ui_update(void) {
   ui->select = NULL;
 
   ui_update_elements(ui, root);
+  if (ui->hover == ui->select && ui->hover != NULL) {
+    ui->select->onclick(ui->select, ui->select->userdata);
+  }
   ui->latency += TIMER_END();
 }
 
