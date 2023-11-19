@@ -112,46 +112,8 @@ void mix_update_and_render(Mix* m) {
 #endif
 
   static char title[512] = {0};
-  stb_snprintf(title, sizeof(title), "%zu/%zu allocs/deallocs | %zu/%zu bytes (%.2g %%) | %g ms ui latency | %d fps | %g dt", memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, (i32)m->fps, 1000 * m->dt);
+  stb_snprintf(title, sizeof(title), "%zu/%zu allocs/deallocs | %zu/%zu bytes (%.2g %%) | %g ms ui latency | %u ui element updates | %d fps | %g dt", memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, ui_state.element_update_count, (i32)m->fps, 1000 * m->dt);
   SetWindowTitle(title);
-}
-
-static Element* grid = NULL;
-
-void on_click(Element* e, void* userdata) {
-  (void)userdata;
-  Element button = ui_button("button");
-  button.onclick = on_click;
-  button.background = true;
-  button.scissor = true;
-  button.background_color = e->background_color;
-  ui_attach_element(grid, &button);
-}
-
-void on_increment_font_size(Element* e, void* userdata) {
-  (void)e;
-  (void)userdata;
-  FONT_SIZE_SMALL += 1;
-}
-
-void on_decrement_font_size(Element* e, void* userdata) {
-  (void)e;
-  (void)userdata;
-  FONT_SIZE_SMALL -= 1;
-}
-
-void on_increment_line_spacing(Element* e, void* userdata) {
-  (void)e;
-  (void)userdata;
-  UI_LINE_SPACING += 1;
-  SetTextLineSpacing(UI_LINE_SPACING);
-}
-
-void on_decrement_line_spacing(Element* e, void* userdata) {
-  (void)e;
-  (void)userdata;
-  UI_LINE_SPACING -= 1;
-  SetTextLineSpacing(UI_LINE_SPACING);
 }
 
 void onclick_test(Element* e, void* userdata) {
@@ -216,60 +178,39 @@ void mix_ui_init(Mix* m) {
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
-#if 0
-  u32 cols = 4;
+#if 1
+  // 2x2 grid
+  u32 cols = 2;
+  u32 rows = 2;
+  Element* grid = NULL;
   {
-    Element grid_element = ui_grid(cols, true);
-    grid = ui_attach_element(NULL, &grid_element);
+    Element e = ui_grid(cols, true);
+    grid = ui_attach_element(NULL, &e); // attach grid to root
+    ASSERT(grid != NULL);
   }
-  for (size_t i = 0; i < cols; ++i){
-    char* text = "spawn new button";
-    if (i+1 == cols) {
-      text = "here are\na\nfew\nlines.";
+  for (size_t i = 0; i < rows * cols; ++i) {
+    Element* container = NULL;
+    {
+      Element e = ui_container(true);
+      e.border = false;
+      e.scissor = true;
+      e.placement = PLACEMENT_BLOCK;
+      if (i == 0) {
+        e.placement = PLACEMENT_ROWS;
+      }
+      e.background = true;
+      e.background_color = COLOR_RGB(75, 75, 95);
+      container = ui_attach_element(grid, &e);
     }
-    Element e = ui_button(text);
-    e.onclick = on_click;
-    e.background = true;
-    e.scissor = true;
-    e.background_color = colors[5];
-    ui_attach_element(grid, &e);
-  }
-
-  Element grid_element = ui_grid(2, true);
-  grid_element.border = false;
-  Element* grid2 = ui_attach_element(grid, &grid_element);
-
-  {
-    Element e = ui_button("font+");
-    e.onclick = on_increment_font_size;
-    e.background = true;
-    e.scissor = true;
-    e.background_color = colors[0];
-    ui_attach_element(grid2, &e);
-  }
-  {
-    Element e = ui_button("font-");
-    e.onclick = on_decrement_font_size;
-    e.background = true;
-    e.scissor = true;
-    e.background_color = colors[0];
-    ui_attach_element(grid2, &e);
-  }
-  {
-    Element e = ui_button("line spacing+");
-    e.onclick = on_increment_line_spacing;
-    e.background = true;
-    e.scissor = true;
-    e.background_color = colors[1];
-    ui_attach_element(grid2, &e);
-  }
-  {
-    Element e = ui_button("line spacing-");
-    e.onclick = on_decrement_line_spacing;
-    e.background = true;
-    e.scissor = true;
-    e.background_color = colors[1];
-    ui_attach_element(grid2, &e);
+    for (size_t n = 0; n < 16; ++n) {
+      Element e = ui_button("button");
+      e.scissor = false;
+      e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
+      e.background = true;
+      e.background_color = colors[random_number() % LENGTH(colors)];
+      e.onclick = onclick_test;
+      ui_attach_element(container, &e);
+    }
   }
 #else
   Element* container = NULL;
