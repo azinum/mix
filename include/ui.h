@@ -101,7 +101,7 @@ extern UI_state ui_state;
 
 Result ui_init(void);
 void ui_update(void);
-void ui_hierarchy_print(i32 fd);
+void ui_hierarchy_print(void);
 void ui_render(void);
 void ui_free(void);
 

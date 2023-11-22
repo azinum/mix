@@ -1,5 +1,7 @@
 // audio_miniaudio.c
 
+#error "miniaudio is not supported yet"
+
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 

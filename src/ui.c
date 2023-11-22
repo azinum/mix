@@ -1,7 +1,7 @@
 // ui.c
 
 #define DRAW_GUIDES 0
-#define LOG_UI_HIERARCHY 1
+#define LOG_UI_HIERARCHY 0
 #define UI_PATH "ui.txt"
 
 UI_state ui_state = {0};
@@ -220,12 +220,15 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       i32 spacing = 0;
-      const i32 x = e->box.x + e->padding;
-      const i32 y = e->box.y + e->padding;
-      DrawRectangle(e->box.x, e->box.y, e->box.w, font_size + e->padding, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
+      i32 padding = 0.1f * e->padding;
+      const i32 w = e->box.w;
+      const i32 h = font_size + padding;
+      const i32 x = e->box.x + padding;
+      const i32 y = e->box.y + padding;
+      DrawRectangle(e->box.x, e->box.y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
       DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
       if (e->border) {
-        DrawRectangleLines(e->box.x, e->box.y, e->box.w, font_size + e->padding, e->border_color);
+        DrawRectangleLines(e->box.x, e->box.y, w, h, e->border_color);
       }
       break;
     }
@@ -344,10 +347,17 @@ void ui_update(void) {
   if (ui->hover == ui->select && ui->hover != NULL) {
     ui->select->onclick(ui->select, ui->select->userdata);
   }
+  i32 cursor = MOUSE_CURSOR_DEFAULT;
+  if (ui->hover) {
+    if (ui->hover->type == ELEMENT_BUTTON) {
+      cursor = MOUSE_CURSOR_POINTING_HAND;
+    }
+  }
+  SetMouseCursor(cursor);
   ui->latency += TIMER_END();
 }
 
-void ui_hierarchy_print(i32 fd) {
+void ui_hierarchy_print(void) {
   UI_state* ui = &ui_state;
   ui_print_elements(ui, ui->fd, &ui->root, 0);
 }
@@ -362,7 +372,7 @@ void ui_render(void) {
 
 void ui_free(void) {
   UI_state* ui = &ui_state;
-  ui_hierarchy_print(STDOUT_FILENO);
+  ui_hierarchy_print();
   ui_free_elements(ui, &ui->root);
   close(ui->fd);
   ui->fd = -1;

@@ -84,7 +84,6 @@ i32 mix_main(i32 argc, char** argv) {
   // config_store(CONFIG_PATH);
   config_free();
   mix_free(&mix);
-  CloseWindow();
   return EXIT_SUCCESS;
 }
 
@@ -161,6 +160,7 @@ void mix_free(Mix* m) {
   audio_engine_exit(&audio_engine);
   ui_free();
   assets_unload(&assets);
+  CloseWindow();
 }
 
 void mix_ui_init(Mix* m) {
@@ -184,7 +184,6 @@ void mix_ui_init(Mix* m) {
     "settings",
     NULL,
   };
-  stb_printf("sizeof(Element) = %zu\n", sizeof(Element));
   u32 cols = 2;
   u32 rows = 2;
   Element* grid = NULL;
