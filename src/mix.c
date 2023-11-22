@@ -178,7 +178,13 @@ void mix_ui_init(Mix* m) {
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
-#if 1
+  char* titles[] = {
+    "title",
+    "test",
+    "settings",
+    NULL,
+  };
+  stb_printf("sizeof(Element) = %zu\n", sizeof(Element));
   u32 cols = 2;
   u32 rows = 2;
   Element* grid = NULL;
@@ -190,8 +196,8 @@ void mix_ui_init(Mix* m) {
   for (size_t i = 0; i < rows * cols; ++i) {
     Element* container = NULL;
     {
-      Element e = ui_container(true);
-      e.border = false;
+      Element e = ui_container(titles[i]);
+      e.border = true;
       e.scissor = true;
       e.placement = PLACEMENT_BLOCK;
       if (i == 0) {
@@ -202,7 +208,7 @@ void mix_ui_init(Mix* m) {
       container = ui_attach_element(grid, &e);
     }
     for (size_t n = 0; n < 8; ++n) {
-      Element e = ui_button("button");
+      Element e = ui_button("test");
       e.scissor = false;
       e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
       e.background = true;
@@ -211,25 +217,6 @@ void mix_ui_init(Mix* m) {
       ui_attach_element(container, &e);
     }
   }
-#else
-  Element* container = NULL;
-  {
-    Element e = ui_container(true);
-    e.border = true;
-    e.placement = PLACEMENT_BLOCK;
-    container = ui_attach_element(NULL, &e);
-  }
-  for (size_t i = 0; i < 32; ++i) {
-    Element e = ui_button("button");
-    e.scissor = false;
-    e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
-    // e.box = BOX(0, 0, 128, 64);
-    e.background = true;
-    e.background_color = colors[random_number() % LENGTH(colors)];
-    e.onclick = onclick_test;
-    ui_attach_element(container, &e);
-  }
-#endif
 }
 
 void assets_load(Assets* a) {

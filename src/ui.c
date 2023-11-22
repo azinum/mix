@@ -84,12 +84,20 @@ void ui_update_elements(UI_state* ui, Element* e) {
 }
 
 void ui_update_container(UI_state* ui, Element* e) {
+  char* title = e->data.text.string;
+
   // placement offsets
   i32 px = 0;
   i32 py = 0;
   // block placement offsets
   i32 py_offset = 0; // element with the greatest height
   u32 num_elements_on_line = 0;
+
+  const i32 font_size = FONT_SIZE;
+  if (title) {
+    py += font_size + e->padding;
+  }
+
   bool hide = false;
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
@@ -204,13 +212,30 @@ void ui_render_elements(UI_state* ui, Element* e) {
 #endif
 
   switch (e->type) {
+    case ELEMENT_CONTAINER: {
+      char* title = e->data.text.string;
+      if (!title) {
+        break;
+      }
+      const Font font = assets.font;
+      const i32 font_size = FONT_SIZE;
+      i32 spacing = 0;
+      const i32 x = e->box.x + e->padding;
+      const i32 y = e->box.y + e->padding;
+      DrawRectangle(e->box.x, e->box.y, e->box.w, font_size + e->padding, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
+      DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      if (e->border) {
+        DrawRectangleLines(e->box.x, e->box.y, e->box.w, font_size + e->padding, e->border_color);
+      }
+      break;
+    }
     case ELEMENT_TEXT: {
       if (!e->data.text.string) {
         break;
       }
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
-      const i32 spacing = 2;
+      const i32 spacing = 0;
       const i32 x = e->box.x;
       const i32 y = e->box.y;
       DrawTextEx(font, e->data.text.string, (Vector2) { x, y }, font_size, spacing, e->text_color);
@@ -223,7 +248,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       char* text = e->data.text.string;
       const Font font = assets.font;
       i32 font_size = FONT_SIZE;
-      i32 spacing = 2;
+      i32 spacing = 0;
       Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
       i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;
       i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
@@ -354,11 +379,12 @@ Element* ui_attach_element(Element* target, Element* e) {
   return &target->items[index];
 }
 
-Element ui_container(bool render) {
+Element ui_container(char* title) {
   Element e;
   ui_element_init(&e);
   e.type = ELEMENT_CONTAINER;
-  e.render = render;
+  e.render = true;
+  e.data.text.string = title;
   return e;
 }
 

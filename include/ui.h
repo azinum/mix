@@ -82,7 +82,7 @@ typedef struct Element {
   Placement placement;
 
   void (*onclick)(struct Element* e, void* userdata);
-} Element;
+} __attribute__((aligned(CACHELINESIZE))) Element;
 
 typedef struct UI_state {
   Element root;
@@ -106,7 +106,7 @@ void ui_render(void);
 void ui_free(void);
 
 Element* ui_attach_element(Element* target, Element* e);
-Element ui_container(bool render);
+Element ui_container(char* title);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_button(char* text);
