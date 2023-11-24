@@ -2,6 +2,8 @@
 window_width = 1600
 window_height = 900
 window_resizable = 1
+window_fullscreen = 0
+vsync = 0
 msaa_4x = 0
 font_size = 20
 font_size_small = 16

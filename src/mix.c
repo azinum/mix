@@ -54,6 +54,12 @@ i32 mix_main(i32 argc, char** argv) {
   if (WINDOW_RESIZABLE) {
     config_flags |= FLAG_WINDOW_RESIZABLE;
   }
+  if (WINDOW_FULLSCREEN) {
+    config_flags |= FLAG_FULLSCREEN_MODE;
+  }
+  if (VSYNC) {
+    config_flags |= FLAG_VSYNC_HINT;
+  }
   if (MSAA_4X) {
     config_flags |= FLAG_MSAA_4X_HINT;
   }

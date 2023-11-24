@@ -52,6 +52,8 @@ static Variable variables[] = {
   { "window_width", T_INT, &WINDOW_WIDTH, hook_default },
   { "window_height", T_INT, &WINDOW_HEIGHT, hook_default },
   { "window_resizable", T_INT, &WINDOW_RESIZABLE, hook_warn_restart },
+  { "window_fullscreen", T_INT, &WINDOW_FULLSCREEN, hook_warn_restart },
+  { "vsync", T_INT, &VSYNC, hook_warn_restart },
   { "msaa_4x", T_INT, &MSAA_4X, hook_warn_restart },
   { "font_size", T_INT, &FONT_SIZE, hook_default },
   { "font_size_small", T_INT, &FONT_SIZE_SMALL, hook_default },

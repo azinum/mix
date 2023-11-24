@@ -65,7 +65,7 @@ struct Mix;
 
 #define list_free(list) memory_free((list)->items)
 
-#define DT_MIN 0.001f
+#define DT_MIN 0.0001f
 
 typedef struct Mix {
   Vector2 mouse;
