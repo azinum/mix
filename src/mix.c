@@ -116,12 +116,26 @@ void mix_update_and_render(Mix* m) {
   waveshaper_render(m, &e->waveshaper);
 #endif
 
-  static char title[512] = {0};
-  stb_snprintf(title, sizeof(title), "%zu/%zu allocs/deallocs | %zu/%zu bytes (%.2g %%) | %g ms ui latency | %u ui element updates | %d fps | %g dt", memory_state.num_allocs, memory_state.num_deallocs, memory_state.usage, memory_state.max_usage, 100 * ((f32)memory_state.usage / memory_state.max_usage), 1000 * ui_state.latency, ui_state.element_update_count, (i32)m->fps, 1000 * m->dt);
-  SetWindowTitle(title);
+  static char debug_text[512] = {0};
+  stb_snprintf(
+    debug_text,
+    sizeof(debug_text),
+    "%d fps\n"
+    "%zu/%zu bytes (%.2g %%)\n"
+    "%g ms ui latency\n"
+    "%u ui element updates"
+    ,
+    (i32)m->fps,
+    memory_state.usage, memory_state.max_usage,
+    100 * ((f32)memory_state.usage / memory_state.max_usage),
+    1000 * ui_state.latency,
+    ui_state.element_update_count
+  );
+
+  DrawText(debug_text, 4, GetScreenHeight() - (0.5*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 4, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 }
 
-void onclick_test(Element* e, void* userdata) {
+void onclick_test(Element* e) {
   stb_printf(
     "Element {\n"
     "  id: %u\n"

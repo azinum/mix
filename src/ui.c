@@ -14,7 +14,7 @@ static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
 static bool ui_overlap(i32 x, i32 y, Box box);
-static void ui_onclick(struct Element* e, void* userdata);
+static void ui_onclick(struct Element* e);
 
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
@@ -40,6 +40,7 @@ void ui_state_init(UI_state* ui) {
   }
 #else
   ui->fd = -1;
+  ui->active_id = 0;
 #endif
 }
 
@@ -305,7 +306,7 @@ void ui_element_init(Element* e) {
 
   e->render = true;
   e->background = false;
-  e->border = true;
+  e->border = false;
   e->scissor = false;
   e->hidden = false;
 
@@ -319,8 +320,8 @@ bool ui_overlap(i32 x, i32 y, Box box) {
     && (y >= box.y && y <= box.y + box.h);
 }
 
-void ui_onclick(struct Element* e, void* userdata) {
-  (void)e; (void)userdata;
+void ui_onclick(struct Element* e) {
+  (void)e;
 }
 
 Result ui_init(void) {
@@ -344,8 +345,17 @@ void ui_update(void) {
   ui->select = NULL;
 
   ui_update_elements(ui, root);
-  if (ui->hover == ui->select && ui->hover != NULL) {
-    ui->select->onclick(ui->select, ui->select->userdata);
+  if (ui->active) {
+    if (ui->active_id == 0) {
+      ui->active_id = ui->active->id;
+    }
+  }
+
+  if (ui->hover == ui->select && ui->hover) {
+    if (ui->hover->id == ui->active_id) {
+      ui->select->onclick(ui->select);
+    }
+    ui->active_id = 0;
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
@@ -423,6 +433,7 @@ Element ui_button(char* text) {
   e.type = ELEMENT_BUTTON;
   e.data.text.string = text;
   e.render = true;
+  e.border = true;
   return e;
 }
 

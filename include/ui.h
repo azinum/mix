@@ -81,7 +81,7 @@ typedef struct Element {
 
   Placement placement;
 
-  void (*onclick)(struct Element* e, void* userdata);
+  void (*onclick)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
 
 typedef struct UI_state {
@@ -95,6 +95,7 @@ typedef struct UI_state {
   Element* active;
   Element* select;
   i32 fd;
+  u32 active_id;
 } UI_state;
 
 extern UI_state ui_state;
