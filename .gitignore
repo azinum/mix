@@ -2,8 +2,10 @@
 *.swo
 *.exe
 *.so
+*.dSYM
 
 .DS_Store
 mix
 perf.txt
 ui.txt
+config.mk
