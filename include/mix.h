@@ -66,11 +66,13 @@ struct Mix;
 #define list_free(list) memory_free((list)->items)
 
 #define DT_MIN 0.0001f
+#define DT_MAX (1.0f / 10)
 
 typedef struct Mix {
   Vector2 mouse;
   f32 fps;
   f32 dt;
+  size_t tick;
 } Mix;
 
 typedef struct Assets {

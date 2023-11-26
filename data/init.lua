@@ -1,6 +1,6 @@
 -- data/init.lua
-window_width = 1600
-window_height = 900
+window_width = 1200
+window_height = 720
 window_resizable = 1
 window_fullscreen = 0
 vsync = 0

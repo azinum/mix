@@ -7,7 +7,7 @@
 //  NO_SIMD
 //  NO_ASSERT
 //  ASSERT
-//  NPROC = 1
+//  NPROC = 4
 //  CACHELINESIZE = 64
 //  BITS
 //  MAX_PATH_LENGTH = 512
@@ -64,7 +64,7 @@ typedef uint8_t u8;
 #endif
 
 #ifndef NPROC
-  #define NPROC 1
+  #define NPROC 4
 #endif
 
 #ifndef CACHELINESIZE

@@ -2,7 +2,7 @@
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define USE_STB_SPRINTF
-#include "src/ext/stb_sprintf.h"
+#include "src/ext/stb/stb_sprintf.h"
 
 #define COMMON_IMPLEMENTATION
 #include "common.h"

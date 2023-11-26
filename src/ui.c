@@ -25,7 +25,7 @@ void ui_state_init(UI_state* ui) {
   ui->root.padding = 0;
   ui->root.border = false;
 
-  ui->id_counter = 1;
+  ui->id_counter = 2;
   ui->latency = 0;
   ui->element_update_count = 0;
   ui->element_render_count = 0;
@@ -85,6 +85,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
 }
 
 void ui_update_container(UI_state* ui, Element* e) {
+  (void)ui;
   char* title = e->data.text.string;
 
   // placement offsets
@@ -158,6 +159,7 @@ void ui_update_container(UI_state* ui, Element* e) {
 }
 
 void ui_update_grid(UI_state* ui, Element* e) {
+  (void)ui;
   const u32 cols = e->data.grid.cols;
   const u32 rows = (u32)ceilf((f32)e->count / cols);
   for (size_t i = 0; i < e->count; ++i) {
@@ -292,7 +294,7 @@ void ui_element_init(Element* e) {
   e->items = NULL;
   e->count = 0;
   e->size = 0;
-  e->id = 0;
+  e->id = 1;
   e->box = BOX(0, 0, 0, 0);
   e->type = ELEMENT_NONE;
   memset(&e->data, 0, sizeof(e->data));

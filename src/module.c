@@ -1,6 +1,6 @@
 // module.c
 
-#if defined(TARGET_LINUX) || defined(TARGET_OSX)
+#if defined(TARGET_LINUX) || defined(TARGET_APPLE)
 
 #include <dlfcn.h>
 
@@ -25,7 +25,7 @@ void* module_open(const char* path) {
   return NULL;
 }
 
-void* module_symbol(const void* handle, const char* name) {
+void* module_symbol(void* handle, const char* name) {
   NOT_IMPLEMENTED();
   return NULL;
 }

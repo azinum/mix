@@ -27,6 +27,8 @@
 
 #define CONFIG_PATH "data/init.lua"
 
+static f32 delta_buffer[256] = {0};
+
 static Color COLOR_BG = (Color) { .r = 35, .g = 35, .b = 42, .a = 255, };
 
 Mix mix = {0};
@@ -35,6 +37,7 @@ Assets assets = {0};
 Result mix_init(Mix* m);
 void mix_reset(Mix* m);
 void mix_update_and_render(Mix* m);
+void mix_render_delta_buffer(Mix* m);
 void mix_free(Mix* m);
 void mix_ui_init(Mix* m);
 void assets_load(Assets* a);
@@ -85,7 +88,11 @@ i32 mix_main(i32 argc, char** argv) {
     if (mix.dt < DT_MIN) {
       mix.dt = DT_MIN;
     }
+    if (mix.dt > DT_MAX) {
+      mix.dt = DT_MAX;
+    }
     mix.fps = 1.0f / mix.dt;
+    mix.tick += 1;
   }
   // config_store(CONFIG_PATH);
   config_free();
@@ -133,6 +140,51 @@ void mix_update_and_render(Mix* m) {
   );
 
   DrawText(debug_text, 4, GetScreenHeight() - (0.5*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 4, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+
+  delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
+  mix_render_delta_buffer(m);
+}
+
+void mix_render_delta_buffer(Mix* m) {
+  i32 w = LENGTH(delta_buffer);
+  i32 h = 48;
+  i32 x = GetScreenWidth() - w - 8;
+  i32 y = GetScreenHeight() - h - 8;
+  f32 dt_avg = 0.0f;
+  i32 window_size = 0;
+  f32 sample = 0;
+  f32 prev_sample = 0;
+  for (size_t i = 0; i < LENGTH(delta_buffer); ++i) {
+    prev_sample = sample;
+    sample = delta_buffer[i];
+    if (sample <= 0) {
+      continue;
+    }
+    window_size += 1;
+    dt_avg += sample;
+
+    f32 f = sample / (DT_MAX * 1000);
+    Color color = lerpcolor(COLOR_RGB(50, 255, 50), COLOR_RGB(255, 50, 50), f);
+    if (sample > prev_sample) {
+      f32 delta = sample / prev_sample;
+      if (delta > 1.3f) { // 30% increase from the previous sample
+        color = COLOR_RGB(255, 50, 50);
+      }
+    }
+
+    if (i == (m->tick % LENGTH(delta_buffer))) {
+      color = COLOR_RGB(255, 255, 255);
+      DrawLine(x + i, y+h, x + i, y, color);
+      continue;
+    }
+    DrawLine(x + i, y+h, x + i, (y + h) - h*(sample / DT_MAX), color);
+  }
+  DrawRectangleLines(x, y, w, h, COLOR(255, 255, 255, 100));
+
+  dt_avg /= window_size;
+  static char text[32] = {0};
+  stb_snprintf(text, sizeof(text), "%g ms dt (average)", dt_avg * 1000);
+  DrawText(text, x, y - FONT_SIZE_SMALLEST, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 }
 
 void onclick_test(Element* e) {
@@ -173,6 +225,7 @@ void mix_reset(Mix* m) {
   m->mouse = (Vector2) {0, 0};
   m->fps = 0;
   m->dt = DT_MIN;
+  m->tick = 0;
 }
 
 void mix_free(Mix* m) {
