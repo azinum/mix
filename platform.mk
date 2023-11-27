@@ -1,7 +1,5 @@
 # platform.mk
 
-# platform.mk
-
 MACHINE=${strip ${shell ${CC} -dumpmachine}}
 ifndef PLATFORM
 	PLATFORM=UNKNOWN
@@ -29,9 +27,9 @@ endif
 
 ifeq (${USE_PORTAUDIO}, 1)
 	LIBS+=-lportaudio
-	FLAGS+=-D USE_PORTAUDIO
+	FLAGS+=-DUSE_PORTAUDIO
 else ifeq (${USE_MINIAUDIO}, 1)
-	FLAGS+=-D USE_MINIAUDIO
+	FLAGS+=-DUSE_MINIAUDIO
 endif
 
 ifeq (${PLATFORM}, LINUX)
@@ -40,7 +38,7 @@ ifeq (${PLATFORM}, LINUX)
 endif
 
 ifeq (${PLATFORM}, WINDOWS)
-	FLAGS+=-D NPROC=`echo ${NUMBER_OF_PROCESSORS}`
+	FLAGS+=-DNPROC=`echo ${NUMBER_OF_PROCESSORS}`
 endif
 
 ifeq (${PLATFORM}, DARWIN)

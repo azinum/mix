@@ -121,20 +121,17 @@ const char* bool_str[] = { "false", "true" };
   #include <string.h> // memset, memcpy
 #endif
 
-#ifdef NO_STDIO
-
-#ifdef USE_STB_SPRINTF
-  #define STB_WRAP(...) __VA_ARGS__
-#else // USE_STB_SPRINTF
-  #define STB_WRAP(...) stb_##__VA_ARGS__
-#endif
-
+#if defined(NO_STDIO) && defined(NO_STDLIB)
+  #ifdef USE_STB_SPRINTF
+    #define STB_WRAP(...) stb_##__VA_ARGS__
+  #else
+    #define STB_WRAP(...) ##__VA_ARGS__
+  #endif
 #else
   #include <stdio.h>
-#ifdef USE_STB_SPRINTF
-  #define STB_WRAP(...) stb_##__VA_ARGS__
-#endif
-
+  #ifdef USE_STB_SPRINTF
+    #define STB_WRAP(...) stb_##__VA_ARGS__
+  #endif
 #endif
 
 i32 STB_WRAP(printf(const char* fmt, ...));
@@ -238,6 +235,29 @@ i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
 
 #define NOT_IMPLEMENTED() ASSERT(!"not implemented")
 
+#define INIT_ITEMS_SIZE 16
+#define list_init(list, desired_size) \
+  if ((list)->size < desired_size) { \
+    (list)->size = desired_size; \
+    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
+    ASSERT((list)->items != NULL && "out of memory"); \
+  }
+
+#define list_push(list, item) \
+  if ((list)->count >= (list)->size) { \
+    if ((list)->size == 0) { \
+      (list)->size = INIT_ITEMS_SIZE; \
+    } \
+    else { \
+      (list)->size *= 2; \
+    } \
+    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
+    ASSERT((list)->items != NULL && "out of memory"); \
+  } \
+  (list)->items[(list)->count++] = (item)
+
+#define list_free(list) memory_free((list)->items)
+
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message);
 i32 is_terminal(i32 fd);
 #ifdef TARGET_WINDOWS
@@ -330,7 +350,7 @@ char sprintf_buffer[SPRINTF_BUFFER_SIZE] = {0};
 inline i32 STB_WRAP(printf(const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
-  size_t n = vprintf(fmt, argp);
+  size_t n = STB_WRAP(vprintf)(fmt, argp);
   va_end(argp);
   return n;
 }
@@ -338,7 +358,7 @@ inline i32 STB_WRAP(printf(const char* fmt, ...)) {
 inline i32 STB_WRAP(dprintf(i32 fd,  const char* fmt, ...)) {
   va_list argp;
   va_start(argp, fmt);
-  size_t n = vdprintf(fd, fmt, argp);
+  size_t n = STB_WRAP(vdprintf)(fd, fmt, argp);
   va_end(argp);
   return n;
 }
@@ -360,7 +380,7 @@ inline i32 STB_WRAP(snprintf(char* str, size_t size, const char* fmt, ...)) {
 }
 
 inline i32 STB_WRAP(vprintf(const char* fmt, va_list argp)) {
-  return vdprintf(STDOUT_FILENO, fmt, argp);
+  return STB_WRAP(vdprintf)(STDOUT_FILENO, fmt, argp);
 }
 
 inline i32 STB_WRAP(vdprintf(i32 fd, const char* fmt, va_list argp)) {
@@ -380,7 +400,7 @@ inline i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list a
 #endif // USE_STB_SPRINTF
 
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message) {
-  dprintf(fd, "[assert-failed]: %s:%zu %s(): %s\n", filename, line, function_name, message);
+  stb_dprintf(fd, "[assert-failed]: %s:%zu %s(): %s\n", filename, line, function_name, message);
 }
 
 i32 is_terminal(i32 fd) {

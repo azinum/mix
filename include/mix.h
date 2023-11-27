@@ -42,31 +42,10 @@ struct Mix;
 
 #define TIMER_END(...) (gettimeofday(&_end, NULL), ((((_end.tv_sec - _start.tv_sec) * 1000000.0f) + _end.tv_usec) - (_start.tv_usec)) / 1000000.0f)
 
-#define INIT_ITEMS_SIZE 16
-#define list_init(list, desired_size) \
-  if ((list)->size < desired_size) { \
-    (list)->size = desired_size; \
-    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
-    ASSERT((list)->items != NULL && "out of memory"); \
-  }
-
-#define list_push(list, item) \
-  if ((list)->count >= (list)->size) { \
-    if ((list)->size == 0) { \
-      (list)->size = INIT_ITEMS_SIZE; \
-    } \
-    else { \
-      (list)->size *= 2; \
-    } \
-    (list)->items = memory_realloc((list)->items, (list)->size * sizeof(*(list)->items)); \
-    ASSERT((list)->items != NULL && "out of memory"); \
-  } \
-  (list)->items[(list)->count++] = (item)
-
-#define list_free(list) memory_free((list)->items)
-
-#define DT_MIN 0.0001f
-#define DT_MAX (1.0f / 10)
+#define FPS_MIN 10
+#define FPS_MAX 10000
+#define DT_MIN (1.0f / FPS_MAX)
+#define DT_MAX (1.0f / FPS_MIN)
 
 typedef struct Mix {
   Vector2 mouse;

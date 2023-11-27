@@ -86,7 +86,7 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
   i32 y = 160;
   i32 width = w->size/2;
   i32 height = 80;
-  Color color_map[] = {
+  Color color_map[2] = {
     COLOR_RGB(100, 250, 100),
     COLOR_RGB(20, 100, 30),
   };
