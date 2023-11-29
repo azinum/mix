@@ -38,6 +38,9 @@ typedef union Element_data {
   struct {
     char* string;
   } text;
+  struct {
+    char* title;
+  } container;
 } Element_data;
 
 typedef enum Placement {

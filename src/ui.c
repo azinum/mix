@@ -86,7 +86,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
 
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui;
-  char* title = e->data.text.string;
+  char* title = e->data.container.title;
 
   // placement offsets
   i32 px = 0;
@@ -96,8 +96,10 @@ void ui_update_container(UI_state* ui, Element* e) {
   u32 num_elements_on_line = 0;
 
   const i32 font_size = FONT_SIZE;
+  const i32 title_height = font_size;
   if (title) {
-    py += font_size + e->padding;
+    e->box.y += title_height;
+    e->box.h -= title_height;
   }
 
   bool hide = false;
@@ -215,26 +217,6 @@ void ui_render_elements(UI_state* ui, Element* e) {
 #endif
 
   switch (e->type) {
-    case ELEMENT_CONTAINER: {
-      char* title = e->data.text.string;
-      if (!title) {
-        break;
-      }
-      const Font font = assets.font;
-      const i32 font_size = FONT_SIZE;
-      i32 spacing = 0;
-      i32 padding = 0.1f * e->padding;
-      const i32 w = e->box.w;
-      const i32 h = font_size + padding;
-      const i32 x = e->box.x + padding;
-      const i32 y = e->box.y + padding;
-      DrawRectangle(e->box.x, e->box.y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
-      DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
-      if (e->border) {
-        DrawRectangleLines(e->box.x, e->box.y, w, h, e->border_color);
-      }
-      break;
-    }
     case ELEMENT_TEXT: {
       if (!e->data.text.string) {
         break;
@@ -277,6 +259,25 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
   if (e->scissor) {
     EndScissorMode();
+  }
+  // draw title bar after ending scissor mode if the element is a container and has a title
+  if (e->type == ELEMENT_CONTAINER) {
+    char* title = e->data.container.title;
+    if (title) {
+      const Font font = assets.font;
+      const i32 font_size = FONT_SIZE;
+      const i32 title_height = font_size;
+      i32 spacing = 0;
+      const i32 w = e->box.w;
+      const i32 h = title_height + 1;
+      const i32 x = e->box.x;
+      const i32 y = e->box.y - title_height;
+      DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
+      DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      if (e->border) {
+        DrawRectangleLines(x, y, w, h, e->border_color);
+      }
+    }
   }
 }
 
@@ -406,7 +407,7 @@ Element ui_container(char* title) {
   ui_element_init(&e);
   e.type = ELEMENT_CONTAINER;
   e.render = true;
-  e.data.text.string = title;
+  e.data.container.title = title;
   return e;
 }
 
