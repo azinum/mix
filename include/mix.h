@@ -10,6 +10,7 @@ struct Mix;
 #include <math.h>
 #include <fcntl.h>
 
+#include "common.h"
 #include "hash.h"
 #include "random.h"
 #include "buffer.h"
@@ -18,11 +19,12 @@ struct Mix;
 #include "lut.h"
 #include "log.h"
 #include "memory.h"
+#include "arena.h"
 #include "entity.h"
 #include "module.h"
+#include "ui.h"
 #include "wave_shaper.h"
 #include "audio.h"
-#include "ui.h"
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })

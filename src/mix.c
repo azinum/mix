@@ -21,9 +21,9 @@
 #include "memory.c"
 #include "entity.c"
 #include "module.c"
+#include "ui.c"
 #include "wave_shaper.c"
 #include "audio.c"
-#include "ui.c"
 
 #define CONFIG_PATH "data/init.lua"
 
@@ -118,7 +118,7 @@ void mix_update_and_render(Mix* m) {
   ui_update();
   ui_render();
 
-#if 0
+#if 1
   waveshaper_update(m, &e->waveshaper);
   waveshaper_render(m, &e->waveshaper);
 #endif
@@ -215,11 +215,11 @@ Result mix_init(Mix* m) {
   }
   mix_reset(m);
   ui_init();
-  mix_ui_init(m);
   audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   if (audio_engine_start(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
+  mix_ui_init(m);
   return Ok;
 }
 
@@ -239,7 +239,6 @@ void mix_free(Mix* m) {
 }
 
 void mix_ui_init(Mix* m) {
-  (void)m;
   Color colors[9] = {
     COLOR_RGB(233, 153, 204),
     COLOR_RGB(225, 153, 102),
@@ -253,6 +252,8 @@ void mix_ui_init(Mix* m) {
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
+#if 0
+  (void)m;
   char* titles[] = {
     "title",
     "test",
@@ -298,6 +299,42 @@ void mix_ui_init(Mix* m) {
         e.onclick = onclick_test;
         ui_attach_element(container, &e);
       }
+    }
+  }
+#endif
+  Audio_engine* a = &audio_engine;
+  Element* grid = NULL;
+  u32 cols = 2;
+  u32 rows = 1;
+  {
+    Element e = ui_grid(cols, true);
+    grid = ui_attach_element(NULL, &e);
+    ASSERT(grid != NULL);
+  }
+  for (size_t i = 0; i < rows * cols; ++i) {
+    Element* container = NULL;
+    if (i == 0) {
+      Element e = waveshaper_ui_new(&a->waveshaper);
+      container = ui_attach_element(grid, &e);
+      continue;
+    }
+    {
+      Element e = ui_container(" settings");
+      e.border = true;
+      e.scissor = true;
+      e.placement = PLACEMENT_BLOCK;
+      e.background = true;
+      e.background_color = COLOR_RGB(75, 75, 95);
+      container = ui_attach_element(grid, &e);
+    }
+    for (size_t n = 0; n < 8; ++n) {
+      Element e = ui_button("test");
+      e.scissor = false;
+      e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
+      e.background = true;
+      e.background_color = colors[random_number() % LENGTH(colors)];
+      e.onclick = onclick_test;
+      ui_attach_element(container, &e);
     }
   }
 }

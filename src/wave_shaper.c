@@ -1,5 +1,8 @@
 // wave_shaper.c
 
+#define ARENA_SIZE 1024 * 2
+#define MAX_TEXT_SIZE 512
+
 Waveshaper waveshaper_new(size_t size) {
   Waveshaper w = (Waveshaper) {
     .buffer = memory_calloc(size, sizeof(f32)),
@@ -12,17 +15,38 @@ Waveshaper waveshaper_new(size_t size) {
     .lfo = 0.0f,
     .lfo_target = 0.0f,
     .reshape = true,
+    .arena = arena_new(ARENA_SIZE),
+    .text = NULL,
   };
+  w.text = arena_alloc(&w.arena, MAX_TEXT_SIZE);
   if (!w.buffer) {
     w.size = 0;
   }
   return w;
 }
 
+Element waveshaper_ui_new(Waveshaper* w) {
+  Element container = ui_container(" waveshaper");
+  container.border = true;
+  container.scissor = true;
+  container.placement = PLACEMENT_BLOCK;
+  container.background = true;
+  container.background_color = COLOR_RGB(75, 75, 95);
+  {
+    Element e = ui_text(w->text);
+    ui_attach_element(&container, &e);
+  }
+  return container;
+}
+
 void waveshaper_update(Mix* m, Waveshaper* w) {
   (void)m;
   TIMER_START();
   w->latency = 0;
+
+  arena_reset(&w->arena);
+  w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
+  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlatency: %g ms\naudio_latency: %g ms\nlfo: %g\nlfo_target: %g", w->freq, w->freq_target, bool_str[w->reshape == true], 1000 * w->latency, 1000 * w->audio_latency, w->lfo, w->lfo_target);
 
   if (IsKeyPressed(KEY_W)) {
     w->freq_target += 1;
@@ -82,10 +106,10 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
   (void)m;
   TIMER_START();
 
-  i32 x = 260;
-  i32 y = 160;
   i32 width = w->size/2;
   i32 height = 80;
+  i32 x = GetScreenWidth() / 2 - width/2;
+  i32 y = GetScreenHeight() / 2 - height/2;
   Color color_map[2] = {
     COLOR_RGB(100, 250, 100),
     COLOR_RGB(20, 100, 30),
@@ -101,16 +125,19 @@ void waveshaper_render(Mix* m, Waveshaper* const w) {
     );
   }
   DrawRectangleLines(x, y-height, width, height*2, COLOR_RGB(225, 225, 225));
+#if 0
   {
     static char text[256] = {0};
     stb_snprintf(text, sizeof(text), "freq: %g\nfreq_target: %g\nreshape: %s\nlatency: %g ms\naudio_latency: %g ms\nlfo: %g\nlfo_target: %g", w->freq, w->freq_target, bool_str[w->reshape == true], 1000 * w->latency, 1000 * w->audio_latency, w->lfo, w->lfo_target);
     DrawText(text, x, y+height + 20, FONT_SIZE_SMALLEST, COLOR_RGB(255, 255, 255));
   }
+#endif
   w->latency += TIMER_END();
 }
 
 void waveshaper_free(Waveshaper* w) {
   memory_free(w->buffer);
+  arena_free(&w->arena);
   w->buffer = NULL;
   w->size = 0;
 }

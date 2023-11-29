@@ -14,9 +14,12 @@ typedef struct Waveshaper {
   f32 lfo;
   f32 lfo_target;
   bool reshape;
+  Arena arena;
+  char* text;
 } Waveshaper;
 
 Waveshaper waveshaper_new(size_t size);
+Element waveshaper_ui_new(Waveshaper* w);
 void waveshaper_update(struct Mix* m, Waveshaper* w);
 void waveshaper_process(struct Mix* m, Waveshaper* w, f32 dt);
 void waveshaper_render(struct Mix* m, Waveshaper* const w);
