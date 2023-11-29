@@ -58,6 +58,14 @@ void ui_update_elements(UI_state* ui, Element* e) {
   }
 
   switch (e->type) {
+    case ELEMENT_CONTAINER: {
+      ui_update_container(ui, e);
+      break;
+    }
+    case ELEMENT_GRID: {
+      ui_update_grid(ui, e);
+      break;
+    }
     case ELEMENT_BUTTON: {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
         ui->active = e;
@@ -67,13 +75,17 @@ void ui_update_elements(UI_state* ui, Element* e) {
       }
       break;
     }
-    case ELEMENT_CONTAINER: {
-      ui_update_container(ui, e);
-      break;
-    }
-    case ELEMENT_GRID: {
-      ui_update_grid(ui, e);
-      break;
+    case ELEMENT_TEXT: {
+      char* text = e->data.text.string;
+      if (!text) {
+        break;
+      }
+      const Font font = assets.font;
+      i32 font_size = FONT_SIZE;
+      i32 spacing = 0;
+      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
+      e->box.w = text_size.x;
+      e->box.h = text_size.y;
     }
     default:
       break;
@@ -218,30 +230,40 @@ void ui_render_elements(UI_state* ui, Element* e) {
 
   switch (e->type) {
     case ELEMENT_TEXT: {
-      if (!e->data.text.string) {
+      // TODO(lucas): text wrapping
+      char* text = e->data.text.string;
+      if (!text) {
         break;
       }
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
+      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
       const i32 x = e->box.x;
       const i32 y = e->box.y;
-      DrawTextEx(font, e->data.text.string, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      const i32 w = (i32)text_size.x;
+      const i32 h = (i32)text_size.y;
+      DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      (void)w;
+      (void)h;
+#if DRAW_GUIDES
+      DrawRectangleLines(x, y, w, h, guide_color);
+#endif
       break;
     }
     case ELEMENT_BUTTON: {
-      if (!e->data.text.string) {
+      char* text = e->data.text.string;
+      if (!text) {
         break;
       }
-      char* text = e->data.text.string;
       const Font font = assets.font;
       i32 font_size = FONT_SIZE;
       i32 spacing = 0;
       Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
-      i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;
-      i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
-      i32 w = (i32)text_size.x;
-      i32 h = (i32)text_size.y;
+      const i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;
+      const i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
+      const i32 w = (i32)text_size.x;
+      const i32 h = (i32)text_size.y;
       DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
       (void)w; (void)h;
 #if DRAW_GUIDES
@@ -426,7 +448,9 @@ Element ui_text(char* text) {
   e.type = ELEMENT_TEXT;
   e.data.text.string = text;
   e.render = true;
-  e.scissor = true;
+  e.background = false;
+  e.border = false;
+  e.scissor = false;
   return e;
 }
 

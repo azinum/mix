@@ -281,14 +281,23 @@ void mix_ui_init(Mix* m) {
       e.background_color = COLOR_RGB(75, 75, 95);
       container = ui_attach_element(grid, &e);
     }
-    for (size_t n = 0; n < 8; ++n) {
-      Element e = ui_button("test");
-      e.scissor = false;
-      e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
-      e.background = true;
-      e.background_color = colors[random_number() % LENGTH(colors)];
-      e.onclick = onclick_test;
-      ui_attach_element(container, &e);
+    if (i == 0) {
+      for (size_t n = 0; n < 2; ++n) {
+        Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Suspendisse ultrices gravida dictum fusce ut placerat. Semper viverra nam libero justo laoreet sit amet cursus sit. Netus et malesuada fames ac turpis. Id consectetur purus ut faucibus pulvinar elementum integer enim neque. Quam pellentesque nec nam aliquam sem. Integer malesuada nunc vel risus. Iaculis urna id volutpat lacus laoreet non. Sollicitudin nibh sit amet commodo nulla facilisi. In metus vulputate eu scelerisque felis. Nunc sed augue lacus viverra vitae congue eu. Congue quisque egestas diam in arcu cursus euismod. Maecenas sed enim ut sem viverra aliquet. Purus in mollis nunc sed id semper risus. Diam in arcu cursus euismod. Senectus et netus et malesuada fames ac turpis egestas sed. Sollicitudin nibh sit amet commodo nulla facilisi nullam vehicula ipsum. Eget aliquet nibh praesent tristique magna sit amet.");
+        ui_attach_element(container, &e);
+      }
+
+    }
+    else {
+      for (size_t n = 0; n < 8; ++n) {
+        Element e = ui_button("test");
+        e.scissor = false;
+        e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
+        e.background = true;
+        e.background_color = colors[random_number() % LENGTH(colors)];
+        e.onclick = onclick_test;
+        ui_attach_element(container, &e);
+      }
     }
   }
 }
