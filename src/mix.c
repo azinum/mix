@@ -147,13 +147,16 @@ void mix_update_and_render(Mix* m) {
 
 void mix_render_delta_buffer(Mix* m) {
   i32 w = LENGTH(delta_buffer);
-  i32 h = 48;
+  i32 h = 38;
   i32 x = GetScreenWidth() - w - 8;
   i32 y = GetScreenHeight() - h - 8;
   f32 dt_avg = 0.0f;
   i32 window_size = 0;
   f32 sample = 0;
   f32 prev_sample = 0;
+  Color green = COLOR_RGB(50, 255, 50);
+  Color red = COLOR_RGB(255, 50, 50);
+  sample = delta_buffer[0];
   for (size_t i = 0; i < LENGTH(delta_buffer); ++i) {
     prev_sample = sample;
     sample = delta_buffer[i];
@@ -163,21 +166,20 @@ void mix_render_delta_buffer(Mix* m) {
     window_size += 1;
     dt_avg += sample;
 
-    f32 f = sample / (DT_MAX * 1000);
-    Color color = lerpcolor(COLOR_RGB(50, 255, 50), COLOR_RGB(255, 50, 50), f);
+    f32 f = sample / DT_MAX;
+    Color color = lerpcolor(green, red, f);
     if (sample > prev_sample) {
       f32 delta = sample / prev_sample;
-      if (delta > 1.3f) { // 30% increase from the previous sample
-        color = COLOR_RGB(255, 50, 50);
+      // 30% increase from the previous sample
+      if (delta > 1.3f) {
+        color = red;
       }
     }
-
+    DrawLine(x + i, (y + h) - h*(prev_sample / DT_MAX), x + i + 1, (y + h) - h*(sample / DT_MAX), color);
     if (i == (m->tick % LENGTH(delta_buffer))) {
-      color = COLOR_RGB(255, 255, 255);
+      color = COLOR(255, 255, 255, 150);
       DrawLine(x + i, y+h, x + i, y, color);
-      continue;
     }
-    DrawLine(x + i, y+h, x + i, (y + h) - h*(sample / DT_MAX), color);
   }
   DrawRectangleLines(x, y, w, h, COLOR(255, 255, 255, 100));
 
