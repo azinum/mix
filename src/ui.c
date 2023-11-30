@@ -1,10 +1,13 @@
 // ui.c
 
 #define DRAW_GUIDES 0
-#define LOG_UI_HIERARCHY 0
+#define LOG_UI_HIERARCHY 1
 #define UI_PATH "ui.txt"
 
 UI_state ui_state = {0};
+
+static Color COLOR_BORDER = COLOR_RGB(0, 0, 0);
+static Color COLOR_BUTTON_BACKGROUND = COLOR_RGB(153, 102, 255);
 
 static void ui_state_init(UI_state* ui);
 static void ui_update_elements(UI_state* ui, Element* e);
@@ -84,8 +87,19 @@ void ui_update_elements(UI_state* ui, Element* e) {
       i32 font_size = FONT_SIZE;
       i32 spacing = 0;
       Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
-      e->box.w = text_size.x;
-      e->box.h = text_size.y;
+      const Sizing sizing = e->sizing;
+      i32 w = text_size.x;
+      i32 h = text_size.y;
+      if (sizing.mode == SIZE_MODE_PERCENT) {
+        if (sizing.x != 0) {
+          w = e->box.w;
+        }
+        if (sizing.y != 0) {
+          h = e->box.h;
+        }
+      }
+      e->box.w = w;
+      e->box.h = h;
     }
     default:
       break;
@@ -133,16 +147,39 @@ void ui_update_container(UI_state* ui, Element* e) {
           item->hidden = hide = true;
           break;
         }
+        const Sizing sizing = item->sizing;
+        i32 w = item->box.w;
+        i32 h = item->box.h;
+        if (sizing.mode == SIZE_MODE_PERCENT) {
+          if (sizing.x != 0) {
+            w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+          }
+          if (sizing.y != 0) {
+            h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+          }
+        }
         item->box = BOX(
           e->box.x + e->padding + px,
           e->box.y + e->padding + py,
-          item->box.w,
-          item->box.h
+          w,
+          h
         );
         py += item->box.h + 2 * e->padding;
         break;
       }
       case PLACEMENT_BLOCK: {
+        const Sizing sizing = item->sizing;
+        i32 w = item->box.w;
+        i32 h = item->box.h;
+        if (sizing.mode == SIZE_MODE_PERCENT) {
+          if (sizing.x != 0) {
+            w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+          }
+          if (sizing.y != 0) {
+            h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+          }
+        }
+
         if (py >= e->box.h) {
           item->hidden = hide = true;
           break;
@@ -160,8 +197,8 @@ void ui_update_container(UI_state* ui, Element* e) {
         item->box = BOX(
           e->box.x + e->padding + px,
           e->box.y + e->padding + py,
-          item->box.w,
-          item->box.h
+          w,
+          h
         );
         px += item->box.w + 2 * e->padding;
         break;
@@ -336,6 +373,11 @@ void ui_element_init(Element* e) {
   e->hidden = false;
 
   e->placement = PLACEMENT_NONE;
+  e->sizing = (Sizing) {
+    .mode = SIZE_MODE_PIXELS,
+    .x = 0,
+    .y = 0,
+  };
 
   e->onclick = ui_onclick;
 }
@@ -460,7 +502,11 @@ Element ui_button(char* text) {
   e.type = ELEMENT_BUTTON;
   e.data.text.string = text;
   e.render = true;
+  e.background = true;
   e.border = true;
+  e.scissor = false;
+
+  e.background_color = COLOR_BUTTON_BACKGROUND;
   return e;
 }
 
@@ -497,6 +543,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
   tabs(fd, level); stb_dprintf(fd, "scissor: %s\n", bool_str[e->scissor == true]);
   tabs(fd, level); stb_dprintf(fd, "hidden: %s\n", bool_str[e->hidden == true]);
   tabs(fd, level); stb_dprintf(fd, "placement: %s\n", placement_str[e->placement]);
+  tabs(fd, level); stb_dprintf(fd, "sizing: { mode: %s, x: %d, y: %d }\n", size_mode_str[e->sizing.mode], e->sizing.x, e->sizing.y);
 
   for (size_t i = 0; i < e->count; ++i) {
     tabs(fd, level);

@@ -59,6 +59,24 @@ const char* placement_str[] = {
   "rows",
 };
 
+typedef enum Size_mode {
+  SIZE_MODE_PIXELS = 0,
+  SIZE_MODE_PERCENT,
+
+  MAX_SIZE_MODE,
+} Size_mode;
+
+const char* size_mode_str[] = {
+  "pixels",
+  "percent",
+};
+
+typedef struct Sizing {
+  Size_mode mode;
+  i32 x;
+  i32 y;
+} Sizing;
+
 typedef struct Element {
   struct Element* items;
   u32 count;
@@ -83,6 +101,7 @@ typedef struct Element {
   bool hidden;
 
   Placement placement;
+  Sizing sizing;
 
   void (*onclick)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;

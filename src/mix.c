@@ -110,6 +110,7 @@ void mix_update_and_render(Mix* m) {
     ui_init();
     mix_ui_init(m);
     mix_reset(m);
+    return;
   }
   if (IsKeyPressed(KEY_L)) {
     config_load(CONFIG_PATH);

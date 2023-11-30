@@ -34,6 +34,21 @@ Element waveshaper_ui_new(Waveshaper* w) {
   container.background_color = COLOR_RGB(75, 75, 95);
   {
     Element e = ui_text(w->text);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+      .x = 100,
+      .y = 0,
+    };
+    ui_attach_element(&container, &e);
+  }
+  for (size_t i = 0; i < 4; ++i) {
+    Element e = ui_button("test");
+    e.box = BOX(0, 0, 0, 40);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+      .x = 50,
+      .y = 0,
+    };
     ui_attach_element(&container, &e);
   }
   return container;
@@ -42,11 +57,12 @@ Element waveshaper_ui_new(Waveshaper* w) {
 void waveshaper_update(Mix* m, Waveshaper* w) {
   (void)m;
   TIMER_START();
-  w->latency = 0;
 
   arena_reset(&w->arena);
   w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
   stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlatency: %g ms\naudio_latency: %g ms\nlfo: %g\nlfo_target: %g", w->freq, w->freq_target, bool_str[w->reshape == true], 1000 * w->latency, 1000 * w->audio_latency, w->lfo, w->lfo_target);
+
+  w->latency = 0;
 
   if (IsKeyPressed(KEY_W)) {
     w->freq_target += 1;
