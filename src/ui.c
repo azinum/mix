@@ -12,12 +12,13 @@ Color UI_BORDER_COLOR = COLOR_RGB(0, 0, 0);
 Color UI_BUTTON_COLOR = COLOR_RGB(153, 102, 255);
 Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
 f32 UI_BORDER_THICKNESS = 1.0f;
+i32 UI_TITLE_BAR_PADDING = 2;
 
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
-  // main background     background           border      button               text              border thickness
-  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f },
+  // main background     background           border      button               text              border thickness  title bar padding
+  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
 };
 #undef C
 
@@ -71,6 +72,7 @@ void ui_theme_init(void) {
     UI_BUTTON_COLOR = theme->button;
     UI_TEXT_COLOR = theme->text;
     UI_BORDER_THICKNESS = theme->border_thickness;
+    UI_TITLE_BAR_PADDING = theme->title_bar_padding;
   }
 }
 
@@ -151,6 +153,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui;
   char* title = e->data.container.title;
+  i32 title_padding = e->data.container.title_padding;
 
   // placement offsets
   i32 px = 0;
@@ -160,7 +163,7 @@ void ui_update_container(UI_state* ui, Element* e) {
   u32 num_elements_on_line = 0;
 
   const i32 font_size = FONT_SIZE;
-  const i32 title_height = font_size;
+  const i32 title_height = font_size + title_padding * 2;
   if (title) {
     e->box.y += title_height;
     e->box.h -= title_height;
@@ -364,17 +367,18 @@ void ui_render_elements(UI_state* ui, Element* e) {
   // draw title bar after ending scissor mode if the element is a container and has a title
   if (e->type == ELEMENT_CONTAINER) {
     char* title = e->data.container.title;
+    i32 title_padding = e->data.container.title_padding;
     if (title) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
-      const i32 title_height = font_size;
+      const i32 title_height = font_size + title_padding * 2;
       i32 spacing = 0;
       const i32 w = e->box.w;
       const i32 h = title_height + (i32)e->border_thickness;
       const i32 x = e->box.x;
       const i32 y = e->box.y - title_height;
       DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
-      DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      DrawTextEx(font, title, (Vector2) { x + title_padding, y + title_padding }, font_size, spacing, e->text_color);
       if (e->border) {
         DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
       }
@@ -531,6 +535,7 @@ Element ui_container(char* title) {
   e.render = true;
   e.scissor = true;
   e.data.container.title = title;
+  e.data.container.title_padding = UI_TITLE_BAR_PADDING;
   return e;
 }
 

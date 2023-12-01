@@ -9,6 +9,7 @@ extern Color UI_BORDER_COLOR;
 extern Color UI_BUTTON_COLOR;
 extern Color UI_TEXT_COLOR;
 extern f32 UI_BORDER_THICKNESS;
+extern i32 UI_TITLE_BAR_PADDING;
 
 typedef struct Theme {
   Color main_background;
@@ -17,6 +18,7 @@ typedef struct Theme {
   Color button;
   Color text;
   f32 border_thickness;
+  i32 title_bar_padding;
 } Theme;
 
 typedef enum Theme_id {
@@ -65,6 +67,7 @@ typedef union Element_data {
   } text;
   struct {
     char* title;
+    i32 title_padding;
   } container;
   struct {
     i32 mouse_x;

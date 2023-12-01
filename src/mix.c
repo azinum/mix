@@ -252,7 +252,7 @@ void mix_ui_init(Mix* m) {
       continue;
     }
     {
-      Element e = ui_container(" settings");
+      Element e = ui_container("settings");
       e.border = true;
       e.scissor = true;
       e.placement = PLACEMENT_BLOCK;

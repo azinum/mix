@@ -60,7 +60,7 @@ Waveshaper waveshaper_new(size_t size) {
 }
 
 Element waveshaper_ui_new(Waveshaper* w) {
-  Element container = ui_container(" waveshaper");
+  Element container = ui_container("waveshaper");
   container.border = true;
   container.scissor = true;
   container.placement = PLACEMENT_BLOCK;
