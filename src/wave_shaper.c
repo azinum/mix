@@ -17,6 +17,7 @@ Waveshaper waveshaper_new(size_t size) {
     .reshape = true,
     .arena = arena_new(ARENA_SIZE),
     .text = NULL,
+    .render = true,
   };
   w.text = arena_alloc(&w.arena, MAX_TEXT_SIZE);
   if (!w.buffer) {
@@ -31,7 +32,6 @@ Element waveshaper_ui_new(Waveshaper* w) {
   container.scissor = true;
   container.placement = PLACEMENT_BLOCK;
   container.background = true;
-  container.background_color = COLOR_RGB(75, 75, 95);
   {
     Element e = ui_text(w->text);
     e.sizing = (Sizing) {
@@ -43,7 +43,7 @@ Element waveshaper_ui_new(Waveshaper* w) {
   }
   for (size_t i = 0; i < 4; ++i) {
     Element e = ui_button("test");
-    e.box = BOX(0, 0, 0, 40);
+    e.box = BOX(0, 0, 0, 54);
     e.sizing = (Sizing) {
       .mode = SIZE_MODE_PERCENT,
       .x = 50,
@@ -79,8 +79,11 @@ void waveshaper_update(Mix* m, Waveshaper* w) {
   if (IsKeyPressed(KEY_SPACE)) {
     w->reshape = !w->reshape;
   }
-  if (IsKeyDown(KEY_Q)) {
+  if (IsKeyPressed(KEY_Q)) {
     w->tick = 0;
+  }
+  if (IsKeyPressed(KEY_H)) {
+    w->render = !w->render;
   }
   w->latency += TIMER_END();
 }
@@ -120,34 +123,30 @@ void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
 
 void waveshaper_render(Mix* m, Waveshaper* const w) {
   (void)m;
+  if (!w->render) {
+    return;
+  }
   TIMER_START();
 
-  i32 width = w->size/2;
-  i32 height = 80;
+  i32 width = w->size/4;
+  i32 height = 68;
   i32 x = GetScreenWidth() / 2 - width/2;
   i32 y = GetScreenHeight() / 2 - height/2;
   Color color_map[2] = {
     COLOR_RGB(100, 250, 100),
     COLOR_RGB(20, 100, 30),
   };
-  DrawRectangle(x, y-height, width, height*2, COLOR_RGB(70, 70, 75));
+  // DrawRectangle(x, y-height, width, height*2, COLOR_RGB(70, 70, 75));
   for (i32 i = 0; i < width; ++i) {
     DrawLine(
       x + i,               // x1
       y,                   // y1
       x + i,               // x2
       y + (height*w->buffer[i]), // y2
-      color_map[(i%4)==0]
+      color_map[(i%2)==0]
     );
   }
   DrawRectangleLines(x, y-height, width, height*2, COLOR_RGB(225, 225, 225));
-#if 0
-  {
-    static char text[256] = {0};
-    stb_snprintf(text, sizeof(text), "freq: %g\nfreq_target: %g\nreshape: %s\nlatency: %g ms\naudio_latency: %g ms\nlfo: %g\nlfo_target: %g", w->freq, w->freq_target, bool_str[w->reshape == true], 1000 * w->latency, 1000 * w->audio_latency, w->lfo, w->lfo_target);
-    DrawText(text, x, y+height + 20, FONT_SIZE_SMALLEST, COLOR_RGB(255, 255, 255));
-  }
-#endif
   w->latency += TIMER_END();
 }
 

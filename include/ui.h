@@ -3,6 +3,29 @@
 #ifndef _UI_H
 #define _UI_H
 
+extern Color BACKGROUND_COLOR;
+extern Color UI_BACKGROUND_COLOR;
+extern Color UI_BORDER_COLOR;
+extern Color UI_BUTTON_COLOR;
+extern Color UI_TEXT_COLOR;
+extern f32 UI_BORDER_THICKNESS;
+
+typedef struct Theme {
+  Color main_background;
+  Color background;
+  Color border;
+  Color button;
+  Color text;
+  f32 border_thickness;
+} Theme;
+
+typedef enum Theme_id {
+  THEME_DEFAULT = 0,
+  THEME_NAVY,
+
+  MAX_THEME_ID,
+} Theme_id;
+
 typedef struct {
   i32 x;
   i32 y;
@@ -99,6 +122,8 @@ typedef struct Element {
   bool border;
   bool scissor;
   bool hidden;
+
+  f32 border_thickness;
 
   Placement placement;
   Sizing sizing;

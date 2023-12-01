@@ -16,6 +16,7 @@ typedef struct Waveshaper {
   bool reshape;
   Arena arena;
   char* text;
+  bool render;
 } Waveshaper;
 
 Waveshaper waveshaper_new(size_t size);

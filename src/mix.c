@@ -29,8 +29,6 @@
 
 static f32 delta_buffer[256] = {0};
 
-static Color COLOR_BG = (Color) { .r = 35, .g = 35, .b = 42, .a = 255, };
-
 Mix mix = {0};
 Assets assets = {0};
 
@@ -81,7 +79,7 @@ i32 mix_main(i32 argc, char** argv) {
   while (!WindowShouldClose()) {
     TIMER_START();
     BeginDrawing();
-    ClearBackground(COLOR_BG);
+    ClearBackground(BACKGROUND_COLOR);
     mix_update_and_render(&mix);
     EndDrawing();
     mix.dt = TIMER_END();
@@ -240,6 +238,7 @@ void mix_free(Mix* m) {
 }
 
 void mix_ui_init(Mix* m) {
+#if 0
   Color colors[9] = {
     COLOR_RGB(233, 153, 204),
     COLOR_RGB(225, 153, 102),
@@ -253,7 +252,6 @@ void mix_ui_init(Mix* m) {
     COLOR_RGB(204, 0, 0),
     COLOR_RGB(51, 153, 102),
   };
-#if 0
   (void)m;
   char* titles[] = {
     "title",
@@ -325,15 +323,12 @@ void mix_ui_init(Mix* m) {
       e.scissor = true;
       e.placement = PLACEMENT_BLOCK;
       e.background = true;
-      e.background_color = COLOR_RGB(75, 75, 95);
       container = ui_attach_element(grid, &e);
     }
-    for (size_t n = 0; n < 8; ++n) {
+    for (size_t n = 0; n < 48; ++n) {
       Element e = ui_button("test");
       e.scissor = false;
       e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
-      e.background = true;
-      e.background_color = colors[random_number() % LENGTH(colors)];
       e.onclick = onclick_test;
       ui_attach_element(container, &e);
     }

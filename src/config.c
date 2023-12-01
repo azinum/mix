@@ -66,6 +66,7 @@ static Variable variables[] = {
   { "ui_font", T_STRING, &UI_FONT, hook_warn_restart },
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
   { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
+  { "ui_theme", T_INT, &UI_THEME, hook_default },
 };
 
 struct {

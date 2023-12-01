@@ -6,10 +6,24 @@
 
 UI_state ui_state = {0};
 
-static Color COLOR_BORDER = COLOR_RGB(0, 0, 0);
-static Color COLOR_BUTTON_BACKGROUND = COLOR_RGB(153, 102, 255);
+Color BACKGROUND_COLOR = COLOR_RGB(35, 35, 42);
+Color UI_BACKGROUND_COLOR = COLOR_RGB(85, 85, 105);
+Color UI_BORDER_COLOR = COLOR_RGB(0, 0, 0);
+Color UI_BUTTON_COLOR = COLOR_RGB(153, 102, 255);
+Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
+f32 UI_BORDER_THICKNESS = 1.0f;
+
+
+#define C(R, G, B) COLOR_RGB(R, G, B)
+static Theme themes[MAX_THEME_ID] = {
+  // main background     background           border      button               text              border thickness
+  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 2.0f },
+};
+#undef C
 
 static void ui_state_init(UI_state* ui);
+static void ui_theme_init(void);
 static void ui_update_elements(UI_state* ui, Element* e);
 static void ui_update_container(UI_state* ui, Element* e);
 static void ui_update_grid(UI_state* ui, Element* e);
@@ -23,6 +37,7 @@ static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
 
 void ui_state_init(UI_state* ui) {
+  ui_theme_init();
   ui_element_init(&ui->root);
   ui->root.type = ELEMENT_CONTAINER;
   ui->root.padding = 0;
@@ -45,6 +60,18 @@ void ui_state_init(UI_state* ui) {
   ui->fd = -1;
   ui->active_id = 0;
 #endif
+}
+
+void ui_theme_init(void) {
+  if (UI_THEME >= 0 && UI_THEME < MAX_THEME_ID) {
+    const Theme* theme = &themes[UI_THEME];
+    BACKGROUND_COLOR = theme->main_background;
+    UI_BACKGROUND_COLOR = theme->background;
+    UI_BORDER_COLOR = theme->border;
+    UI_BUTTON_COLOR = theme->button;
+    UI_TEXT_COLOR = theme->text;
+    UI_BORDER_THICKNESS = theme->border_thickness;
+  }
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
@@ -255,7 +282,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
 
   if (e->border) {
-    DrawRectangleLines(e->box.x, e->box.y, e->box.w, e->box.h, e->border_color);
+    DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, e->border_color);
   }
 
 #if DRAW_GUIDES
@@ -328,13 +355,13 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 title_height = font_size;
       i32 spacing = 0;
       const i32 w = e->box.w;
-      const i32 h = title_height + 1;
+      const i32 h = title_height + (i32)e->border_thickness;
       const i32 x = e->box.x;
       const i32 y = e->box.y - title_height;
       DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
       DrawTextEx(font, title, (Vector2) { x, y }, font_size, spacing, e->text_color);
       if (e->border) {
-        DrawRectangleLines(x, y, w, h, e->border_color);
+        DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
       }
     }
   }
@@ -362,15 +389,17 @@ void ui_element_init(Element* e) {
 
   e->padding = UI_PADDING;
 
-  e->text_color = COLOR_RGB(255, 255, 255);
-  e->background_color = COLOR_RGB(255, 255, 255);
-  e->border_color = COLOR_RGB(0, 0, 0);
+  e->text_color = UI_TEXT_COLOR;
+  e->background_color = UI_BACKGROUND_COLOR;
+  e->border_color = UI_BORDER_COLOR;
 
   e->render = true;
   e->background = false;
   e->border = false;
   e->scissor = false;
   e->hidden = false;
+
+  e->border_thickness = UI_BORDER_THICKNESS;
 
   e->placement = PLACEMENT_NONE;
   e->sizing = (Sizing) {
@@ -506,7 +535,7 @@ Element ui_button(char* text) {
   e.border = true;
   e.scissor = false;
 
-  e.background_color = COLOR_BUTTON_BACKGROUND;
+  e.background_color = UI_BUTTON_COLOR;
   return e;
 }
 
