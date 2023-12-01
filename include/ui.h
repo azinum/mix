@@ -39,6 +39,7 @@ typedef enum {
   ELEMENT_GRID,
   ELEMENT_TEXT,
   ELEMENT_BUTTON,
+  ELEMENT_CANVAS,
 
   MAX_ELEMENT_TYPE,
 } Element_type;
@@ -49,6 +50,7 @@ const char* element_type_str[] = {
   "grid",
   "text",
   "button",
+  "canvas",
 };
 
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
@@ -64,6 +66,10 @@ typedef union Element_data {
   struct {
     char* title;
   } container;
+  struct {
+    i32 mouse_x;
+    i32 mouse_y;
+  } canvas;
 } Element_data;
 
 typedef enum Placement {
@@ -129,6 +135,7 @@ typedef struct Element {
   Sizing sizing;
 
   void (*onclick)(struct Element* e);
+  void (*onrender)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
 
 typedef struct UI_state {
@@ -158,5 +165,6 @@ Element ui_container(char* title);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_button(char* text);
+Element ui_canvas(bool border);
 
 #endif // _UI_H

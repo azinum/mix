@@ -3,6 +3,39 @@
 #define ARENA_SIZE 1024 * 2
 #define MAX_TEXT_SIZE 512
 
+static void waveshaper_onrender(Element* e);
+
+void waveshaper_onrender(Element* e) {
+  TIMER_START();
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  ASSERT(w != NULL);
+  if (!w->render) {
+    return;
+  }
+
+  i32 width = e->box.w;
+  i32 height = e->box.h;
+  i32 x = e->box.x;
+  i32 y = e->box.y + height / 2;
+
+  static Color color_map[2] = {
+    COLOR_RGB(100, 250, 100),
+    COLOR_RGB(20, 100, 30),
+  };
+
+  for (i32 i = 0; i < width; ++i) {
+    DrawLine(
+      x + i,               // x1
+      y,                   // y1
+      x + i,               // x2
+      y + (height*w->buffer[i]), // y2
+      color_map[(i%2)==0]
+    );
+  }
+
+  w->latency += TIMER_END();
+}
+
 Waveshaper waveshaper_new(size_t size) {
   Waveshaper w = (Waveshaper) {
     .buffer = memory_calloc(size, sizeof(f32)),
@@ -51,6 +84,18 @@ Element waveshaper_ui_new(Waveshaper* w) {
     };
     ui_attach_element(&container, &e);
   }
+  {
+    Element e = ui_canvas(true);
+    e.box = BOX(0, 0, w->size/2, 0);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+      .x = 0,
+      .y = 30,
+    };
+    e.userdata = w;
+    e.onrender = waveshaper_onrender;
+    ui_attach_element(&container, &e);
+  }
   return container;
 }
 
@@ -60,7 +105,7 @@ void waveshaper_update(Mix* m, Waveshaper* w) {
 
   arena_reset(&w->arena);
   w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
-  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlatency: %g ms\naudio_latency: %g ms\nlfo: %g\nlfo_target: %g", w->freq, w->freq_target, bool_str[w->reshape == true], 1000 * w->latency, 1000 * w->audio_latency, w->lfo, w->lfo_target);
+  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlfo: %g\nlfo_target: %g\nlatency: %g ms\naudio_latency: %g ms\nrender: %s", w->freq, w->freq_target, bool_str[w->reshape == true], w->lfo, w->lfo_target, 1000 * w->latency, 1000 * w->audio_latency, bool_str[w->render == true]);
 
   w->latency = 0;
 
@@ -119,35 +164,6 @@ void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
   }
 
   w->audio_latency = TIMER_END();
-}
-
-void waveshaper_render(Mix* m, Waveshaper* const w) {
-  (void)m;
-  if (!w->render) {
-    return;
-  }
-  TIMER_START();
-
-  i32 width = w->size/4;
-  i32 height = 68;
-  i32 x = GetScreenWidth() / 2 - width/2;
-  i32 y = GetScreenHeight() / 2 - height/2;
-  Color color_map[2] = {
-    COLOR_RGB(100, 250, 100),
-    COLOR_RGB(20, 100, 30),
-  };
-  // DrawRectangle(x, y-height, width, height*2, COLOR_RGB(70, 70, 75));
-  for (i32 i = 0; i < width; ++i) {
-    DrawLine(
-      x + i,               // x1
-      y,                   // y1
-      x + i,               // x2
-      y + (height*w->buffer[i]), // y2
-      color_map[(i%2)==0]
-    );
-  }
-  DrawRectangleLines(x, y-height, width, height*2, COLOR_RGB(225, 225, 225));
-  w->latency += TIMER_END();
 }
 
 void waveshaper_free(Waveshaper* w) {

@@ -2,7 +2,7 @@
 
 #define DRAW_GUIDES 0
 #define LOG_UI_HIERARCHY 1
-#define UI_PATH "ui.txt"
+#define UI_LOG_PATH "ui.txt"
 
 UI_state ui_state = {0};
 
@@ -13,12 +13,11 @@ Color UI_BUTTON_COLOR = COLOR_RGB(153, 102, 255);
 Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
 f32 UI_BORDER_THICKNESS = 1.0f;
 
-
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
   // main background     background           border      button               text              border thickness
   { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 2.0f },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f },
 };
 #undef C
 
@@ -32,6 +31,7 @@ static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static void ui_onclick(struct Element* e);
+static void ui_onrender(struct Element* e);
 
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
@@ -52,9 +52,9 @@ void ui_state_init(UI_state* ui) {
   ui->active = NULL;
   ui->select = NULL;
 #if LOG_UI_HIERARCHY
-  ui->fd = open(UI_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
+  ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
-    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to open file `%s` for writing\n", UI_PATH);
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to open file `%s` for writing\n", UI_LOG_PATH);
   }
 #else
   ui->fd = -1;
@@ -127,6 +127,17 @@ void ui_update_elements(UI_state* ui, Element* e) {
       }
       e->box.w = w;
       e->box.h = h;
+      break;
+    }
+    case ELEMENT_CANVAS: {
+      if (e == ui->hover) {
+        e->data.canvas.mouse_x = ui->mouse.x - e->box.x;
+        e->data.canvas.mouse_y = ui->mouse.y - e->box.y;
+        break;
+      }
+      e->data.canvas.mouse_x = 0;
+      e->data.canvas.mouse_y = 0;
+      break;
     }
     default:
       break;
@@ -335,6 +346,10 @@ void ui_render_elements(UI_state* ui, Element* e) {
 #endif
       break;
     }
+    case ELEMENT_CANVAS: {
+      e->onrender(e);
+      break;
+    }
     default:
       break;
   }
@@ -409,6 +424,7 @@ void ui_element_init(Element* e) {
   };
 
   e->onclick = ui_onclick;
+  e->onrender = ui_onrender;
 }
 
 bool ui_overlap(i32 x, i32 y, Box box) {
@@ -417,6 +433,10 @@ bool ui_overlap(i32 x, i32 y, Box box) {
 }
 
 void ui_onclick(struct Element* e) {
+  (void)e;
+}
+
+void ui_onrender(struct Element* e) {
   (void)e;
 }
 
@@ -455,8 +475,17 @@ void ui_update(void) {
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
-    if (ui->hover->type == ELEMENT_BUTTON) {
-      cursor = MOUSE_CURSOR_POINTING_HAND;
+    switch (ui->hover->type) {
+      case ELEMENT_BUTTON: {
+        cursor = MOUSE_CURSOR_POINTING_HAND;
+        break;
+      }
+      case ELEMENT_CANVAS: {
+        cursor = MOUSE_CURSOR_CROSSHAIR;
+        break;
+      }
+      default:
+        break;
     }
   }
   SetMouseCursor(cursor);
@@ -500,6 +529,7 @@ Element ui_container(char* title) {
   ui_element_init(&e);
   e.type = ELEMENT_CONTAINER;
   e.render = true;
+  e.scissor = true;
   e.data.container.title = title;
   return e;
 }
@@ -518,7 +548,6 @@ Element ui_text(char* text) {
   ui_element_init(&e);
   e.type = ELEMENT_TEXT;
   e.data.text.string = text;
-  e.render = true;
   e.background = false;
   e.border = false;
   e.scissor = false;
@@ -530,12 +559,20 @@ Element ui_button(char* text) {
   ui_element_init(&e);
   e.type = ELEMENT_BUTTON;
   e.data.text.string = text;
-  e.render = true;
   e.background = true;
   e.border = true;
   e.scissor = false;
 
   e.background_color = UI_BUTTON_COLOR;
+  return e;
+}
+
+Element ui_canvas(bool border) {
+  Element e;
+  ui_element_init(&e);
+  e.type = ELEMENT_CANVAS;
+  e.background = true;
+  e.border = border;
   return e;
 }
 

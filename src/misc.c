@@ -11,3 +11,9 @@ inline Color lerpcolor(Color a, Color b, f32 t) {
     (u8)lerpf32(a.b, b.b, t)
   );
 }
+
+void print_bits(u32 fd, char byte) {
+  for (i32 bit = 7; bit >= 0; --bit) {
+    stb_dprintf(fd, "%d", EXTRACTBIT(bit, byte) != 0);
+  }
+}

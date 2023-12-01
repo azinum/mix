@@ -87,6 +87,8 @@ typedef uint8_t u8;
 #ifndef MAX_PATH_LENGTH
   #define MAX_PATH_LENGTH 512
 #endif
+
+#define EXTRACTBIT(ith, byte) (byte & (1 << ith))
 #define ALIGN(N, ALIGNMENT) ((N % ALIGNMENT) ? (N + ALIGNMENT - (N % ALIGNMENT)) : N)
 #define LENGTH(ARR) (sizeof(ARR) / sizeof(ARR[0]))
 #define return_defer(value) do { result = (value); goto defer; } while (0)

@@ -64,6 +64,7 @@ i32 mix_main(i32 argc, char** argv) {
   if (MSAA_4X) {
     config_flags |= FLAG_MSAA_4X_HINT;
   }
+
   SetConfigFlags(config_flags);
   SetTraceLogLevel(LOG_WARNING);
 
@@ -108,19 +109,15 @@ void mix_update_and_render(Mix* m) {
     ui_init();
     mix_ui_init(m);
     mix_reset(m);
-    return;
   }
   if (IsKeyPressed(KEY_L)) {
     config_load(CONFIG_PATH);
   }
 
+  waveshaper_update(m, &e->waveshaper);
+
   ui_update();
   ui_render();
-
-#if 1
-  waveshaper_update(m, &e->waveshaper);
-  waveshaper_render(m, &e->waveshaper);
-#endif
 
   static char debug_text[512] = {0};
   stb_snprintf(
@@ -238,69 +235,6 @@ void mix_free(Mix* m) {
 }
 
 void mix_ui_init(Mix* m) {
-#if 0
-  Color colors[9] = {
-    COLOR_RGB(233, 153, 204),
-    COLOR_RGB(225, 153, 102),
-    COLOR_RGB(133, 210, 96),
-
-    COLOR_RGB(0, 102, 153),
-    COLOR_RGB(0, 153, 255),
-    COLOR_RGB(153, 102, 255),
-
-    COLOR_RGB(56, 184, 123),
-    COLOR_RGB(204, 0, 0),
-    COLOR_RGB(51, 153, 102),
-  };
-  (void)m;
-  char* titles[] = {
-    "title",
-    "test",
-    "settings",
-    NULL,
-  };
-  u32 cols = 2;
-  u32 rows = 2;
-  Element* grid = NULL;
-  {
-    Element e = ui_grid(cols, true);
-    grid = ui_attach_element(NULL, &e); // attach grid to root
-    ASSERT(grid != NULL);
-  }
-  for (size_t i = 0; i < rows * cols; ++i) {
-    Element* container = NULL;
-    {
-      Element e = ui_container(titles[i]);
-      e.border = true;
-      e.scissor = true;
-      e.placement = PLACEMENT_BLOCK;
-      if (i == 0) {
-        e.placement = PLACEMENT_ROWS;
-      }
-      e.background = true;
-      e.background_color = COLOR_RGB(75, 75, 95);
-      container = ui_attach_element(grid, &e);
-    }
-    if (i == 0) {
-      for (size_t n = 0; n < 2; ++n) {
-        Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Suspendisse ultrices gravida dictum fusce ut placerat. Semper viverra nam libero justo laoreet sit amet cursus sit. Netus et malesuada fames ac turpis. Id consectetur purus ut faucibus pulvinar elementum integer enim neque. Quam pellentesque nec nam aliquam sem. Integer malesuada nunc vel risus. Iaculis urna id volutpat lacus laoreet non. Sollicitudin nibh sit amet commodo nulla facilisi. In metus vulputate eu scelerisque felis. Nunc sed augue lacus viverra vitae congue eu. Congue quisque egestas diam in arcu cursus euismod. Maecenas sed enim ut sem viverra aliquet. Purus in mollis nunc sed id semper risus. Diam in arcu cursus euismod. Senectus et netus et malesuada fames ac turpis egestas sed. Sollicitudin nibh sit amet commodo nulla facilisi nullam vehicula ipsum. Eget aliquet nibh praesent tristique magna sit amet.");
-        ui_attach_element(container, &e);
-      }
-
-    }
-    else {
-      for (size_t n = 0; n < 8; ++n) {
-        Element e = ui_button("test");
-        e.scissor = false;
-        e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
-        e.background = true;
-        e.background_color = colors[random_number() % LENGTH(colors)];
-        e.onclick = onclick_test;
-        ui_attach_element(container, &e);
-      }
-    }
-  }
-#endif
   Audio_engine* a = &audio_engine;
   Element* grid = NULL;
   u32 cols = 2;
