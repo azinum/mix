@@ -13,9 +13,9 @@ void waveshaper_onrender(Element* e) {
     return;
   }
 
-  i32 width = e->box.w;
+  i32 width = e->box.w - 2 * e->border_thickness;
   i32 height = e->box.h;
-  i32 x = e->box.x;
+  i32 x = e->box.x + e->border_thickness;
   i32 y = e->box.y + height / 2;
 
   static Color color_map[2] = {
@@ -89,10 +89,11 @@ Element waveshaper_ui_new(Waveshaper* w) {
     e.box = BOX(0, 0, w->size/2, 0);
     e.sizing = (Sizing) {
       .mode = SIZE_MODE_PERCENT,
-      .x = 0,
+      .x = 100,
       .y = 30,
     };
     e.userdata = w;
+    e.background = false;
     e.onrender = waveshaper_onrender;
     ui_attach_element(&container, &e);
   }

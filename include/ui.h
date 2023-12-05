@@ -24,6 +24,7 @@ typedef struct Theme {
 typedef enum Theme_id {
   THEME_DEFAULT = 0,
   THEME_NAVY,
+  THEME_GRAY,
 
   MAX_THEME_ID,
 } Theme_id;

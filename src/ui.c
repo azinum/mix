@@ -1,8 +1,17 @@
 // ui.c
 
-#define DRAW_GUIDES 0
+#ifndef DRAW_GUIDES
+  #define DRAW_GUIDES 0
+#endif
+
 #define LOG_UI_HIERARCHY 1
 #define UI_LOG_PATH "ui.txt"
+
+#if DRAW_GUIDES
+static Color GUIDE_COLOR = COLOR_RGB(255, 0, 255);
+static Color GUIDE_COLOR2 = COLOR_RGB(255, 100, 255);
+static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
+#endif
 
 UI_state ui_state = {0};
 
@@ -19,6 +28,7 @@ static Theme themes[MAX_THEME_ID] = {
   // main background     background           border      button               text              border thickness  title bar padding
   { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
   { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
+  { C(55, 55, 55), C(75, 75, 75), C(35, 35, 35), C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8 },
 };
 #undef C
 
@@ -41,6 +51,7 @@ void ui_state_init(UI_state* ui) {
   ui_theme_init();
   ui_element_init(&ui->root);
   ui->root.type = ELEMENT_CONTAINER;
+  ui->root.placement = PLACEMENT_FILL;
   ui->root.padding = 0;
   ui->root.border = false;
 
@@ -300,10 +311,11 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
 
 #if DRAW_GUIDES
-  Color guide_color = COLOR(255, 50, 255, 255);
   i32 guide_overlap = 0;
-  DrawLine(e->box.x - guide_overlap, e->box.y + e->box.h / 2, e->box.x + e->box.w + guide_overlap, e->box.y + e->box.h / 2, guide_color);
-  DrawLine(e->box.x + e->box.w / 2, e->box.y - guide_overlap, e->box.x + e->box.w / 2, e->box.y + e->box.h + guide_overlap, guide_color);
+  if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
+    DrawLine(e->box.x - guide_overlap, e->box.y + e->box.h / 2, e->box.x + e->box.w + guide_overlap, e->box.y + e->box.h / 2, GUIDE_COLOR);
+    DrawLine(e->box.x + e->box.w / 2, e->box.y - guide_overlap, e->box.x + e->box.w / 2, e->box.y + e->box.h + guide_overlap, GUIDE_COLOR);
+  }
 #endif
 
   switch (e->type) {
@@ -325,7 +337,9 @@ void ui_render_elements(UI_state* ui, Element* e) {
       (void)w;
       (void)h;
 #if DRAW_GUIDES
-      DrawRectangleLines(x, y, w, h, guide_color);
+      if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
+        DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
+      }
 #endif
       break;
     }
@@ -345,7 +359,9 @@ void ui_render_elements(UI_state* ui, Element* e) {
       DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
       (void)w; (void)h;
 #if DRAW_GUIDES
-      DrawRectangleLines(x, y, w, h, guide_color);
+      if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
+        DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
+      }
 #endif
       break;
     }
@@ -377,7 +393,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 h = title_height + (i32)e->border_thickness;
       const i32 x = e->box.x;
       const i32 y = e->box.y - title_height;
-      DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.3f));
+      DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
       DrawTextEx(font, title, (Vector2) { x + title_padding, y + title_padding }, font_size, spacing, e->text_color);
       if (e->border) {
         DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
@@ -455,7 +471,13 @@ void ui_update(void) {
   ui->latency = 0;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
-  root->placement = PLACEMENT_FILL;
+
+#if DRAW_GUIDES
+  ONLY_DRAW_GUIDE_ON_HOVER = true;
+  if (IsKeyDown(KEY_LEFT_CONTROL)) {
+    ONLY_DRAW_GUIDE_ON_HOVER = false;
+  }
+#endif
 
   ui->element_update_count = 0;
   ui->element_render_count = 0;
@@ -506,6 +528,12 @@ void ui_render(void) {
   UI_state* ui = &ui_state;
   Element* root = &ui->root;
   ui_render_elements(ui, root);
+#if DRAW_GUIDES
+  if (ui->hover != NULL) {
+    Element* e = ui->hover;
+    DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, GUIDE_COLOR2);
+  }
+#endif
   ui->latency += TIMER_END();
 }
 
