@@ -4,6 +4,7 @@
 #define MAX_TEXT_SIZE 512
 
 static void waveshaper_onrender(Element* e);
+static void waveshaper_reset_onclick(Element* e);
 
 void waveshaper_onrender(Element* e) {
   TIMER_START();
@@ -23,17 +24,24 @@ void waveshaper_onrender(Element* e) {
     COLOR_RGB(20, 100, 30),
   };
 
-  for (i32 i = 0; i < width; ++i) {
+  for (i32 i = 0; i < (i32)w->size && i < width; ++i) {
     DrawLine(
       x + i,               // x1
       y,                   // y1
       x + i,               // x2
       y + (height*w->buffer[i]), // y2
-      color_map[(i%2)==0]
+      color_map[(i % 2) == 0]
     );
   }
 
   w->latency += TIMER_END();
+}
+
+void waveshaper_reset_onclick(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  w->tick = 0;
+  w->freq_target = 55;
+  w->lfo_target = 0;
 }
 
 Waveshaper waveshaper_new(size_t size) {
@@ -47,7 +55,9 @@ Waveshaper waveshaper_new(size_t size) {
     .audio_latency = 0,
     .lfo = 0.0f,
     .lfo_target = 0.0f,
+    .volume = 0.1f,
     .reshape = true,
+    .mute = false,
     .arena = arena_new(ARENA_SIZE),
     .text = NULL,
     .render = true,
@@ -74,8 +84,28 @@ Element waveshaper_ui_new(Waveshaper* w) {
     };
     ui_attach_element(&container, &e);
   }
-  for (size_t i = 0; i < 4; ++i) {
-    Element e = ui_button("test");
+  {
+    Element e = ui_toggle_ex(&w->mute, "mute");
+    e.box = BOX(0, 0, 0, 54);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+        .x = 50,
+        .y = 0,
+    };
+    ui_attach_element(&container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->reshape, "reshape");
+    e.box = BOX(0, 0, 0, 54);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+        .x = 50,
+        .y = 0,
+    };
+    ui_attach_element(&container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->render, "render");
     e.box = BOX(0, 0, 0, 54);
     e.sizing = (Sizing) {
       .mode = SIZE_MODE_PERCENT,
@@ -85,8 +115,20 @@ Element waveshaper_ui_new(Waveshaper* w) {
     ui_attach_element(&container, &e);
   }
   {
+    Element e = ui_button("reset");
+    e.box = BOX(0, 0, 0, 54);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+      .x = 50,
+      .y = 0,
+    };
+    e.onclick = waveshaper_reset_onclick;
+    e.userdata = w;
+    ui_attach_element(&container, &e);
+  }
+  {
     Element e = ui_canvas(true);
-    e.box = BOX(0, 0, w->size/2, 0);
+    e.box = BOX(0, 0, 0, 0);
     e.sizing = (Sizing) {
       .mode = SIZE_MODE_PERCENT,
       .x = 100,
@@ -106,7 +148,7 @@ void waveshaper_update(Mix* m, Waveshaper* w) {
 
   arena_reset(&w->arena);
   w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
-  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlfo: %g\nlfo_target: %g\nlatency: %g ms\naudio_latency: %g ms\nrender: %s", w->freq, w->freq_target, bool_str[w->reshape == true], w->lfo, w->lfo_target, 1000 * w->latency, 1000 * w->audio_latency, bool_str[w->render == true]);
+  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nfreq_target: %g\nreshape: %s\nlfo: %g\nlfo_target: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms\nrender: %s", w->freq, w->freq_target, bool_str[w->reshape == true], w->lfo, w->lfo_target, w->volume, 1000 * w->latency, 1000 * w->audio_latency, bool_str[w->render == true]);
 
   w->latency = 0;
 
@@ -139,16 +181,19 @@ void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
   TIMER_START();
   Audio_engine* e = &audio_engine;
   const i32 sample_rate = e->sample_rate;
-  const f32 amp = 0.15f;
   const i32 channel_count = e->channel_count;
+  f32 volume = w->volume;
+  if (w->mute) {
+    volume = 0;
+  }
 
   if (w->reshape) {
     for (size_t i = 0; i < w->size; i += 2) {
-      w->buffer[i] = amp * sinf(
+      w->buffer[i] = volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      w->buffer[i + 1] = amp * sinf(
+      w->buffer[i + 1] = volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
@@ -163,7 +208,6 @@ void waveshaper_process(Mix* m, Waveshaper* w, f32 dt) {
 #endif
     }
   }
-
   w->audio_latency = TIMER_END();
 }
 

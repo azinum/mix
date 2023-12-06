@@ -25,10 +25,10 @@ i32 UI_TITLE_BAR_PADDING = 2;
 
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
-  // main background     background           border      button               text              border thickness  title bar padding
-  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0), C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0), C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
-  { C(55, 55, 55), C(75, 75, 75), C(35, 35, 35), C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8 },
+  // main background     background           border      button                  text              border thickness  title bar padding
+  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0),    C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),    C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
+  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35), C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8 },
 };
 #undef C
 
@@ -42,6 +42,7 @@ static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static void ui_onclick(struct Element* e);
+static void ui_toggle_onclick(struct Element* e);
 static void ui_onrender(struct Element* e);
 
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
@@ -70,8 +71,10 @@ void ui_state_init(UI_state* ui) {
   }
 #else
   ui->fd = -1;
-  ui->active_id = 0;
 #endif
+  ui->active_id = 0;
+  ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
+
 }
 
 void ui_theme_init(void) {
@@ -109,7 +112,8 @@ void ui_update_elements(UI_state* ui, Element* e) {
       ui_update_grid(ui, e);
       break;
     }
-    case ELEMENT_BUTTON: {
+    case ELEMENT_BUTTON:
+    case ELEMENT_TOGGLE: {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
         ui->active = e;
       }
@@ -237,14 +241,14 @@ void ui_update_container(UI_state* ui, Element* e) {
           break;
         }
         num_elements_on_line += 1;
-        if (px + item->box.w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
+        if (px + w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
           px = 0;
           py += py_offset + 2 * e->padding;
           py_offset = 0;
           num_elements_on_line = 0;
         }
-        if (item->box.h > py_offset) {
-          py_offset = item->box.h;
+        if (h > py_offset) {
+          py_offset = h;
         }
         item->box = BOX(
           e->box.x + e->padding + px,
@@ -293,14 +297,19 @@ void ui_render_elements(UI_state* ui, Element* e) {
 
   ui->element_render_count += 1;
   Color background_color = e->background_color;
+  f32 factor = 0.0f;
 
-  if (e->type == ELEMENT_BUTTON && e == ui->hover) {
-    f32 factor = 0.1f;
-    if (e == ui->active) {
-      factor = 0.25f;
-    }
-    background_color = lerpcolor(background_color, COLOR_RGB(0, 0, 0), factor);
+  if (e->type == ELEMENT_TOGGLE) {
+    factor += 0.4f * (*e->data.toggle.value == false);
   }
+
+  if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE) && e == ui->hover) {
+    factor += 0.1f;
+    if (e == ui->active) {
+      factor += 0.15f;
+    }
+  }
+  background_color = lerpcolor(background_color, COLOR_RGB(0, 0, 0), factor);
 
   if (e->background) {
     DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, background_color);
@@ -348,6 +357,33 @@ void ui_render_elements(UI_state* ui, Element* e) {
       if (!text) {
         break;
       }
+      const Font font = assets.font;
+      i32 font_size = FONT_SIZE;
+      i32 spacing = 0;
+      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
+      const i32 x = e->box.x + e->box.w / 2 - text_size.x / 2;
+      const i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
+      const i32 w = (i32)text_size.x;
+      const i32 h = (i32)text_size.y;
+      DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
+      (void)w; (void)h;
+#if DRAW_GUIDES
+      if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
+        DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
+      }
+#endif
+      break;
+    }
+    case ELEMENT_TOGGLE: {
+      char* toggle_text = e->data.toggle.text;
+      if (!toggle_text) {
+        // TODO(lucas): implement toggle buttons with no text, only its' value
+        NOT_IMPLEMENTED();
+        break;
+      }
+      // NOTE: strlen call might be expensive here, this might be a point to come back to if latency becomes an issue
+      char* text = arena_alloc(&ui->frame_arena, strlen(toggle_text));
+      stb_snprintf(text, ui->frame_arena.size, "%s: %s", toggle_text, bool_str[*e->data.toggle.value == true]);
       const Font font = assets.font;
       i32 font_size = FONT_SIZE;
       i32 spacing = 0;
@@ -444,6 +480,7 @@ void ui_element_init(Element* e) {
   };
 
   e->onclick = ui_onclick;
+  e->_onclick = ui_onclick;
   e->onrender = ui_onrender;
 }
 
@@ -454,6 +491,10 @@ bool ui_overlap(i32 x, i32 y, Box box) {
 
 void ui_onclick(struct Element* e) {
   (void)e;
+}
+
+void ui_toggle_onclick(struct Element* e) {
+  *e->data.toggle.value = !*e->data.toggle.value;
 }
 
 void ui_onrender(struct Element* e) {
@@ -471,6 +512,7 @@ void ui_update(void) {
   ui->latency = 0;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
+  arena_reset(&ui->frame_arena);
 
 #if DRAW_GUIDES
   ONLY_DRAW_GUIDE_ON_HOVER = true;
@@ -496,13 +538,15 @@ void ui_update(void) {
   if (ui->hover == ui->select && ui->hover) {
     if (ui->hover->id == ui->active_id) {
       ui->select->onclick(ui->select);
+      ui->select->_onclick(ui->select);
     }
     ui->active_id = 0;
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
     switch (ui->hover->type) {
-      case ELEMENT_BUTTON: {
+      case ELEMENT_BUTTON:
+      case ELEMENT_TOGGLE: {
         cursor = MOUSE_CURSOR_POINTING_HAND;
         break;
       }
@@ -543,6 +587,7 @@ void ui_free(void) {
   ui_free_elements(ui, &ui->root);
   close(ui->fd);
   ui->fd = -1;
+  arena_free(&ui->frame_arena);
 }
 
 Element* ui_attach_element(Element* target, Element* e) {
@@ -609,6 +654,27 @@ Element ui_canvas(bool border) {
   return e;
 }
 
+Element ui_toggle(i32* value) {
+  ASSERT(value != NULL);
+  Element e;
+  ui_element_init(&e);
+  e.data.toggle.value = value;
+  e.data.toggle.text = NULL;
+  e.type = ELEMENT_TOGGLE;
+  e.background = true;
+  e.border = true;
+  e.scissor = false;
+  e.background_color = UI_BUTTON_COLOR;
+  e._onclick = ui_toggle_onclick;
+  return e;
+}
+
+Element ui_toggle_ex(i32* value, char* text) {
+  Element e = ui_toggle(value);
+  e.data.toggle.text = text;
+  return e;
+}
+
 void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
   stb_dprintf(fd, "{\n");
   level += 1;
@@ -629,6 +695,10 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
         break;
       }
       stb_dprintf(fd, "\"\"\n", string);
+      break;
+    }
+    case ELEMENT_TOGGLE: {
+      stb_dprintf(fd, "%s\n", bool_str[*e->data.toggle.value == true]);
       break;
     }
     default:

@@ -13,10 +13,12 @@ typedef struct Waveshaper {
   f32 audio_latency; // audio processing latency
   f32 lfo;
   f32 lfo_target;
-  bool reshape;
+  f32 volume;
+  i32 reshape;
+  i32 mute;
   Arena arena;
   char* text;
-  bool render;
+  i32 render;
 } Waveshaper;
 
 Waveshaper waveshaper_new(size_t size);

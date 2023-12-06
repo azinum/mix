@@ -3,6 +3,10 @@
 #ifndef _UI_H
 #define _UI_H
 
+#ifndef UI_FRAME_ARENA_SIZE
+  #define UI_FRAME_ARENA_SIZE Kb(8)
+#endif
+
 extern Color BACKGROUND_COLOR;
 extern Color UI_BACKGROUND_COLOR;
 extern Color UI_BORDER_COLOR;
@@ -43,6 +47,7 @@ typedef enum {
   ELEMENT_TEXT,
   ELEMENT_BUTTON,
   ELEMENT_CANVAS,
+  ELEMENT_TOGGLE,
 
   MAX_ELEMENT_TYPE,
 } Element_type;
@@ -54,6 +59,7 @@ const char* element_type_str[] = {
   "text",
   "button",
   "canvas",
+  "toggle",
 };
 
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
@@ -74,6 +80,10 @@ typedef union Element_data {
     i32 mouse_x;
     i32 mouse_y;
   } canvas;
+  struct {
+    i32* value;
+    char* text;
+  } toggle;
 } Element_data;
 
 typedef enum Placement {
@@ -139,6 +149,7 @@ typedef struct Element {
   Sizing sizing;
 
   void (*onclick)(struct Element* e);
+  void (*_onclick)(struct Element* e); // internal onclick
   void (*onrender)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
 
@@ -154,6 +165,7 @@ typedef struct UI_state {
   Element* select;
   i32 fd;
   u32 active_id;
+  Arena frame_arena;
 } UI_state;
 
 extern UI_state ui_state;
@@ -170,5 +182,7 @@ Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_button(char* text);
 Element ui_canvas(bool border);
+Element ui_toggle(i32* value);
+Element ui_toggle_ex(i32* value, char* text);
 
 #endif // _UI_H
