@@ -175,7 +175,6 @@ void ui_update_container(UI_state* ui, Element* e) {
   i32 py = 0;
   // block placement offsets
   i32 py_offset = 0; // element with the greatest height
-  u32 num_elements_on_line = 0;
 
   const i32 font_size = FONT_SIZE;
   const i32 title_height = font_size + title_padding * 2;
@@ -240,12 +239,10 @@ void ui_update_container(UI_state* ui, Element* e) {
           item->hidden = hide = true;
           break;
         }
-        num_elements_on_line += 1;
-        if (px + w + 2 * e->padding >= e->box.w && num_elements_on_line > 1) {
+        if (px + w + e->padding >= e->box.w) {
           px = 0;
           py += py_offset + 2 * e->padding;
           py_offset = 0;
-          num_elements_on_line = 0;
         }
         if (h > py_offset) {
           py_offset = h;

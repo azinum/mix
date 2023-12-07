@@ -85,6 +85,19 @@ Element waveshaper_ui_new(Waveshaper* w) {
     ui_attach_element(&container, &e);
   }
   {
+    Element e = ui_canvas(true);
+    e.box = BOX(0, 0, 0, 0);
+    e.sizing = (Sizing) {
+      .mode = SIZE_MODE_PERCENT,
+      .x = 100,
+      .y = 30,
+    };
+    e.userdata = w;
+    e.background = false;
+    e.onrender = waveshaper_onrender;
+    ui_attach_element(&container, &e);
+  }
+  {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, 54);
     e.sizing = (Sizing) {
@@ -126,19 +139,6 @@ Element waveshaper_ui_new(Waveshaper* w) {
     e.userdata = w;
     ui_attach_element(&container, &e);
   }
-  {
-    Element e = ui_canvas(true);
-    e.box = BOX(0, 0, 0, 0);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 100,
-      .y = 30,
-    };
-    e.userdata = w;
-    e.background = false;
-    e.onrender = waveshaper_onrender;
-    ui_attach_element(&container, &e);
-  }
   return container;
 }
 
@@ -165,7 +165,7 @@ void waveshaper_update(Mix* m, Waveshaper* w) {
     w->lfo_target -= 1;
   }
   if (IsKeyPressed(KEY_SPACE)) {
-    w->reshape = !w->reshape;
+    w->mute  = !w->mute;
   }
   if (IsKeyPressed(KEY_Q)) {
     w->tick = 0;
