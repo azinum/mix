@@ -20,6 +20,8 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
     .buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32)),
     .dt = DT_MIN,
     .waveshaper = waveshaper_new(frames_per_buffer * channel_count),
+    .quit = false,
+    .done = false,
   };
 }
 
@@ -28,6 +30,21 @@ Result audio_engine_start(Audio_engine* e) {
 }
 
 void audio_engine_exit(Audio_engine* e) {
+  e->quit = true;
+  u32 spin = 0;
+  const u32 max_spin = 1000000;
+  const u32 spin_warn = max_spin / 2;
+  TIMER_START();
+  while (!e->done && spin < max_spin) {
+    spin_wait();
+    spin += 1;
+  }
+  f32 dt = TIMER_END();
+  Log_tag log_tag = LOG_TAG_INFO;
+  if (spin > spin_warn) {
+    log_tag = LOG_TAG_WARN;
+  }
+  log_print(STDOUT_FILENO, log_tag, "%s: waited %g ms (%u iterations)\n", __FUNCTION_NAME__, 1000 * dt, spin);
   waveshaper_free(&e->waveshaper);
   audio_exit(e);
 }
@@ -40,6 +57,10 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
 
   Mix* m = &mix;
   Audio_engine* e = &audio_engine;
+  if (e->quit) {
+    e->done = true;
+    return Error;
+  }
 
   f32* buffer = (f32*)out;
   const i32 frames_per_buffer = e->frames_per_buffer;

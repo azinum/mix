@@ -9,6 +9,8 @@ typedef struct Audio_engine {
   i32 channel_count;
   f32* buffer;
   f32 dt;
+  bool quit; // set to true to stop processing audio
+  bool done; // done is set to true when audio processing has stopped
 
   Waveshaper waveshaper;
 } Audio_engine;

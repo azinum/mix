@@ -12,6 +12,7 @@
 
 #include "ext/lua/luaone.c"
 
+#include "thread.c"
 #include "hash.c"
 #include "random.c"
 #include "buffer.c"
@@ -35,9 +36,9 @@ Assets assets = {0};
 Result mix_init(Mix* m);
 void mix_reset(Mix* m);
 void mix_update_and_render(Mix* m);
-void mix_render_delta_buffer(Mix* m);
 void mix_free(Mix* m);
 void mix_ui_init(Mix* m);
+void render_delta_buffer(Mix* m);
 void assets_load(Assets* a);
 void assets_unload(Assets* a);
 
@@ -103,6 +104,7 @@ void mix_update_and_render(Mix* m) {
   Audio_engine* e = &audio_engine;
 
   m->mouse = GetMousePosition();
+  delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
 
   if (IsKeyPressed(KEY_R)) {
     ui_free();
@@ -137,52 +139,7 @@ void mix_update_and_render(Mix* m) {
 
   DrawText(debug_text, 4, GetScreenHeight() - (0.5*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 4, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 
-  delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
-  mix_render_delta_buffer(m);
-}
-
-void mix_render_delta_buffer(Mix* m) {
-  i32 w = LENGTH(delta_buffer);
-  i32 h = 38;
-  i32 x = GetScreenWidth() - w - 8;
-  i32 y = GetScreenHeight() - h - 8;
-  f32 dt_avg = 0.0f;
-  i32 window_size = 0;
-  f32 sample = 0;
-  f32 prev_sample = 0;
-  Color green = COLOR_RGB(50, 255, 50);
-  Color red = COLOR_RGB(255, 50, 50);
-  sample = delta_buffer[0];
-  for (size_t i = 0; i < LENGTH(delta_buffer); ++i) {
-    prev_sample = sample;
-    sample = delta_buffer[i];
-    if (sample <= 0) {
-      continue;
-    }
-    window_size += 1;
-    dt_avg += sample;
-
-    f32 f = sample / DT_MAX;
-    Color color = lerpcolor(green, red, f);
-    if (sample > prev_sample) {
-      f32 delta = sample / prev_sample;
-      // 30% increase from the previous sample
-      if (delta > 1.3f) {
-        color = red;
-      }
-    }
-    DrawLine(x + i, (y + h) - h*(prev_sample / DT_MAX), x + i + 1, (y + h) - h*(sample / DT_MAX), color);
-    if (i == (m->tick % LENGTH(delta_buffer))) {
-      color = COLOR(255, 255, 255, 150);
-      DrawLine(x + i, y+h, x + i, y, color);
-    }
-  }
-  DrawRectangleLines(x, y, w, h, COLOR(255, 255, 255, 100));
-
-  dt_avg /= window_size;
-  static char text[32] = {0};
-  stb_snprintf(text, sizeof(text), "%g ms dt (average)", dt_avg * 1000);
-  DrawText(text, x, y - FONT_SIZE_SMALLEST, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  render_delta_buffer(m);
 }
 
 void onclick_test(Element* e) {
@@ -267,6 +224,50 @@ void mix_ui_init(Mix* m) {
       ui_attach_element(container, &e);
     }
   }
+}
+
+void render_delta_buffer(Mix* m) {
+  i32 w = LENGTH(delta_buffer);
+  i32 h = 38;
+  i32 x = GetScreenWidth() - w - 8;
+  i32 y = GetScreenHeight() - h - 8;
+  f32 dt_avg = 0.0f;
+  i32 window_size = 0;
+  f32 sample = 0;
+  f32 prev_sample = 0;
+  Color green = COLOR_RGB(50, 255, 50);
+  Color red = COLOR_RGB(255, 50, 50);
+  sample = delta_buffer[0];
+  for (size_t i = 0; i < LENGTH(delta_buffer); ++i) {
+    prev_sample = sample;
+    sample = delta_buffer[i];
+    if (sample <= 0) {
+      continue;
+    }
+    window_size += 1;
+    dt_avg += sample;
+
+    f32 f = sample / DT_MAX;
+    Color color = lerpcolor(green, red, f);
+    if (sample > prev_sample) {
+      f32 delta = sample / prev_sample;
+      // 30% increase from the previous sample
+      if (delta > 1.3f) {
+        color = red;
+      }
+    }
+    DrawLine(x + i, (y + h) - h*(prev_sample / DT_MAX), x + i + 1, (y + h) - h*(sample / DT_MAX), color);
+    if (i == (m->tick % LENGTH(delta_buffer))) {
+      color = COLOR(255, 255, 255, 150);
+      DrawLine(x + i, y+h, x + i, y, color);
+    }
+  }
+  DrawRectangleLines(x, y, w, h, COLOR(255, 255, 255, 100));
+
+  dt_avg /= window_size;
+  static char text[32] = {0};
+  stb_snprintf(text, sizeof(text), "%g ms dt (average)", dt_avg * 1000);
+  DrawText(text, x, y - FONT_SIZE_SMALLEST, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 }
 
 void assets_load(Assets* a) {
