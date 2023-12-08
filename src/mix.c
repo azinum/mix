@@ -109,6 +109,13 @@ void mix_update_and_render(Mix* m) {
   if (IsKeyPressed(KEY_R)) {
     ui_free();
     ui_init();
+    if (IsKeyDown(KEY_LEFT_CONTROL)) {
+      audio_engine_exit(e);
+      if (audio_engine_start_new(e) != Ok) {
+        log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
+        return;
+      }
+    }
     mix_ui_init(m);
     mix_reset(m);
   }
@@ -168,8 +175,7 @@ Result mix_init(Mix* m) {
   }
   mix_reset(m);
   ui_init();
-  audio_engine = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
-  if (audio_engine_start(&audio_engine) != Ok) {
+  if (audio_engine_start_new(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
   mix_ui_init(m);

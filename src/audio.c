@@ -29,6 +29,11 @@ Result audio_engine_start(Audio_engine* e) {
   return audio_new(e);
 }
 
+Result audio_engine_start_new(Audio_engine* e) {
+  *e = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
+  return audio_new(e);
+}
+
 void audio_engine_exit(Audio_engine* e) {
   e->quit = true;
   u32 spin = 0;
@@ -46,6 +51,7 @@ void audio_engine_exit(Audio_engine* e) {
   }
   log_print(STDOUT_FILENO, log_tag, "%s: waited %g ms (%u iterations)\n", __FUNCTION_NAME__, 1000 * dt, spin);
   waveshaper_free(&e->waveshaper);
+  memory_free(e->buffer);
   audio_exit(e);
 }
 
