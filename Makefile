@@ -22,6 +22,9 @@ install_shared:
 	mkdir -p ${PREFIX}/include/${TARGET}
 	cp -r ${INC}/* ${PREFIX}/include/${TARGET}
 
+shared: ${SRC}
+	${CC} $< -o lib${TARGET}.so ${FLAGS} ${LIBS} -shared -rdynamic -fPIC
+
 profile:
 	perf record -e cycles -c 2000000 ./${TARGET} && perf report -n -f > perf.txt && rm -f perf.data perf.data.old
 

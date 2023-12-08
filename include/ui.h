@@ -14,6 +14,7 @@ extern Color UI_BUTTON_COLOR;
 extern Color UI_TEXT_COLOR;
 extern f32 UI_BORDER_THICKNESS;
 extern i32 UI_TITLE_BAR_PADDING;
+extern f32 UI_BUTTON_ROUNDNESS;
 
 typedef struct Theme {
   Color main_background;
@@ -23,6 +24,7 @@ typedef struct Theme {
   Color text;
   f32 border_thickness;
   i32 title_bar_padding;
+  f32 button_roundness;
 } Theme;
 
 typedef enum Theme_id {
@@ -145,6 +147,7 @@ typedef struct Element {
   bool hidden;
 
   f32 border_thickness;
+  f32 roundness;
 
   Placement placement;
   Sizing sizing;

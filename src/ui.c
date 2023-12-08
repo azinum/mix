@@ -22,14 +22,15 @@ Color UI_BUTTON_COLOR = COLOR_RGB(153, 102, 255);
 Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
 f32 UI_BORDER_THICKNESS = 1.0f;
 i32 UI_TITLE_BAR_PADDING = 2;
+f32 UI_BUTTON_ROUNDNESS = 0.2f;
 
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
-  // main background     background           border      button                  text              border thickness  title bar padding
-  { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0),    C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),    C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
-  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35), C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8 },
-  { C(35, 65, 100),       C(65, 95, 145),       C(240, 100, 240), C(0x84, 0x34, 0xbf), C(230, 230, 230), 1.0f,             12 },
+  // main background     background           border            button               text              border thickness  title bar padding   button roundness
+  { C(35, 35, 42),       C(85, 90, 115),      C(0, 0, 0),       C(153, 102, 255),    C(255, 255, 255), 0.0f,             8,                  0.4f },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),       C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4,                  0.2f },
+  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35),    C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8,                  0.3f },
+  { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240), C(0x84, 0x34, 0xbf), C(230, 230, 230), 1.0f,             12,                 0.1f },
 };
 #undef C
 
@@ -88,6 +89,7 @@ void ui_theme_init(void) {
     UI_TEXT_COLOR = theme->text;
     UI_BORDER_THICKNESS = theme->border_thickness;
     UI_TITLE_BAR_PADDING = theme->title_bar_padding;
+    UI_BUTTON_ROUNDNESS = theme->button_roundness;
   }
 }
 
@@ -309,12 +311,14 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
   background_color = lerpcolor(background_color, COLOR_RGB(0, 0, 0), factor);
 
+  const i32 segments = 8;
   if (e->background) {
-    DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, background_color);
-  }
-
-  if (e->border) {
-    DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, e->border_color);
+    if (e->roundness > 0) {
+      DrawRectangleRounded((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h }, e->roundness, segments, background_color);
+    }
+    else {
+      DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, background_color);
+    }
   }
 
 #if DRAW_GUIDES
@@ -411,9 +415,20 @@ void ui_render_elements(UI_state* ui, Element* e) {
     Element* item = &e->items[i];
     ui_render_elements(ui, item);
   }
+
   if (e->scissor) {
     EndScissorMode();
   }
+
+  if (e->border && e->border_thickness > 0) {
+    if (e->roundness > 0) {
+      DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, e->border_thickness, e->border_color);
+    }
+    else {
+      DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, e->border_color);
+    }
+  }
+
   // draw title bar after ending scissor mode if the element is a container and has a title
   if (e->type == ELEMENT_CONTAINER) {
     char* title = e->data.container.title;
@@ -469,6 +484,7 @@ void ui_element_init(Element* e) {
   e->hidden = false;
 
   e->border_thickness = UI_BORDER_THICKNESS;
+  e->roundness = 0.0f;
 
   e->placement = PLACEMENT_NONE;
   e->sizing = (Sizing) {
@@ -639,7 +655,7 @@ Element ui_button(char* text) {
   e.background = true;
   e.border = true;
   e.scissor = false;
-
+  e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = UI_BUTTON_COLOR;
   return e;
 }
@@ -663,6 +679,7 @@ Element ui_toggle(i32* value) {
   e.background = true;
   e.border = true;
   e.scissor = false;
+  e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = UI_BUTTON_COLOR;
   return e;
 }

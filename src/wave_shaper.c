@@ -93,7 +93,8 @@ Element waveshaper_ui_new(Waveshaper* w) {
       .y = 30,
     };
     e.userdata = w;
-    e.background = false;
+    e.border_thickness = 1.0f;
+    e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
     e.onrender = waveshaper_onrender;
     ui_attach_element(&container, &e);
   }

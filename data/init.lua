@@ -16,4 +16,4 @@ ui_padding = 8
 ui_font = "data/fonts/notomono-regular.ttf"
 ui_font_base_size = font_size
 ui_line_spacing = font_size
-ui_theme = 2
+ui_theme = 0
