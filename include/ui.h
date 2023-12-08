@@ -29,6 +29,7 @@ typedef enum Theme_id {
   THEME_DEFAULT = 0,
   THEME_NAVY,
   THEME_GRAY,
+  THEME_COLORFUL,
 
   MAX_THEME_ID,
 } Theme_id;
@@ -149,7 +150,6 @@ typedef struct Element {
   Sizing sizing;
 
   void (*onclick)(struct Element* e);
-  void (*_onclick)(struct Element* e); // internal onclick
   void (*onrender)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
 

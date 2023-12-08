@@ -29,6 +29,7 @@ static Theme themes[MAX_THEME_ID] = {
   { C(35, 35, 42),       C(85, 85, 105),      C(0, 0, 0),    C(153, 102, 255),    C(255, 255, 255), 1.0f,             2 },
   { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),    C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4 },
   { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35), C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8 },
+  { C(35, 65, 100),       C(65, 95, 145),       C(240, 100, 240), C(0x84, 0x34, 0xbf), C(230, 230, 230), 1.0f,             12 },
 };
 #undef C
 
@@ -477,7 +478,6 @@ void ui_element_init(Element* e) {
   };
 
   e->onclick = ui_onclick;
-  e->_onclick = ui_onclick;
   e->onrender = ui_onrender;
 }
 
@@ -534,8 +534,10 @@ void ui_update(void) {
 
   if (ui->hover == ui->select && ui->hover) {
     if (ui->hover->id == ui->active_id) {
+      if (ui->select->type == ELEMENT_TOGGLE) {
+        ui_toggle_onclick(ui->select);
+      }
       ui->select->onclick(ui->select);
-      ui->select->_onclick(ui->select);
     }
     ui->active_id = 0;
   }
@@ -572,7 +574,7 @@ void ui_render(void) {
 #if DRAW_GUIDES
   if (ui->hover != NULL) {
     Element* e = ui->hover;
-    DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, GUIDE_COLOR2);
+    DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.0f, GUIDE_COLOR2);
   }
 #endif
   ui->latency += TIMER_END();
@@ -662,7 +664,6 @@ Element ui_toggle(i32* value) {
   e.border = true;
   e.scissor = false;
   e.background_color = UI_BUTTON_COLOR;
-  e._onclick = ui_toggle_onclick;
   return e;
 }
 
