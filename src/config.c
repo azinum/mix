@@ -43,6 +43,7 @@ static const luaL_Reg lualibs[] = {
 static void hook_default(Variable* v);
 static void hook_target_fps(Variable* v);
 static void hook_warn_restart(Variable* v);
+static void hook_warn_audio_restart(Variable* v);
 
 static void write_variable(i32 fd, const char* name, Type type, void* data);
 static Result read_variable(const char* name, Type type, void* data);
@@ -67,6 +68,9 @@ static Variable variables[] = {
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
   { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
   { "ui_theme", T_INT, &UI_THEME, hook_default },
+  { "audio_input", T_INT, &AUDIO_INPUT, hook_warn_audio_restart },
+  { "audio_pa_in_port_id", T_INT, &AUDIO_PA_IN_PORT_ID, hook_warn_audio_restart },
+  { "audio_pa_out_port_id", T_INT, &AUDIO_PA_OUT_PORT_ID, hook_warn_audio_restart },
 };
 
 struct {
@@ -162,7 +166,11 @@ void hook_target_fps(Variable* v) {
 }
 
 void hook_warn_restart(Variable* v) {
-  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, a restart is required for it to take effect\n", v->name);
+  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, program needs to be restarted for it to take effect\n", v->name);
+}
+
+void hook_warn_audio_restart(Variable* v) {
+  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, audio engine needs to be restarted for it to take effect\n", v->name);
 }
 
 void write_variable(i32 fd, const char* name, Type type, void* data) {

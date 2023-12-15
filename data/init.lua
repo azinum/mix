@@ -17,3 +17,6 @@ ui_font = "data/fonts/notomono-regular.ttf"
 ui_font_base_size = font_size
 ui_line_spacing = font_size
 ui_theme = 0
+audio_input = 0
+audio_pa_in_port_id = -1
+audio_pa_out_port_id = -1

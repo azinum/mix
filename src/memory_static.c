@@ -197,15 +197,15 @@ void memory_free(void* p) {
 }
 
 void memory_print_info(i32 fd) {
-  dprintf(fd, "Static memory: %zu/%zu bytes\n", (size_t)memory_state.usage, (size_t)MEMORY_ALLOC_STATIC_SIZE);
+  stb_dprintf(fd, "Static memory: %zu/%zu bytes\n", (size_t)memory_state.usage, (size_t)MEMORY_ALLOC_STATIC_SIZE);
   const Memory* const m = &memory;
   for (size_t i = 0;;) {
     Block_header* header = (Block_header*)&m->data[i];
     size_t total_size = header->size + sizeof(Block_header);
 #ifdef MEMORY_ALLOC_STATIC_PRINT_OVERHEAD
-    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size + sizeof(Block_header), (void*)header, total_size, (f32)total_size / Kb(1));
+    stb_dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size + sizeof(Block_header), (void*)header, total_size, (f32)total_size / Kb(1));
 #else
-    dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size, (void*)header, header->size, (f32)header->size / Kb(1));
+    stb_dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size, (void*)header, header->size, (f32)header->size / Kb(1));
 #endif
     i += total_size;
     break_if(i + sizeof(Block_header) >= m->size);

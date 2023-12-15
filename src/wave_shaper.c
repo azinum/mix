@@ -2,6 +2,7 @@
 
 #define ARENA_SIZE 1024 * 2
 #define MAX_TEXT_SIZE 512
+#define EXPERIMENTAL 0
 
 static void waveshaper_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
@@ -146,19 +147,35 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   }
 
   if (w->reshape) {
+#if EXPERIMENTAL
+    for (size_t i = 0; i < ins->frames; ++i) {
+      ins->buffer[i] = lerpf32(ins->buffer[i], 0.0f, 30.0f * dt);
+    }
+#else
+    for (size_t i = 0; i < ins->frames; ++i) {
+      ins->buffer[i] = 0;
+    }
+#endif
+
     for (size_t i = 0; i < ins->frames; i += 2) {
-      ins->buffer[i] = volume * sinf(
+      ins->buffer[i] += volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      ins->buffer[i + 1] = volume * sinf(
+      ins->buffer[i + 1] += volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-
       w->tick += 2;
       w->freq = lerpf32(w->freq, w->freq_target, dt * 2.0f);
       w->lfo = lerpf32(w->lfo, w->lfo_target, dt * 2.0f);
+    }
+
+    if (AUDIO_INPUT) {
+      for (size_t i = 0; i < ins->frames; i += 2) {
+        ins->buffer[i] += audio->in_buffer[i];
+        ins->buffer[i + 1] += audio->in_buffer[i + 1];
+      }
     }
   }
 }
@@ -170,3 +187,4 @@ void waveshaper_free(struct Instrument* ins) {
 
 #undef ARENA_SIZE
 #undef MAX_TEXT_SIZE
+#undef EXPERIMENTAL

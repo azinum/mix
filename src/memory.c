@@ -7,7 +7,7 @@
 #endif
 
 void memory_print_stats(i32 fd) {
-  dprintf(
+  stb_dprintf(
     fd,
     "Memory statistics:\n"
     "  allocations: %zu, deallocations: %zu, total: %zu bytes (%.4f Kb)\n",

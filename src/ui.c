@@ -668,6 +668,7 @@ Element ui_canvas(bool border) {
   e.type = ELEMENT_CANVAS;
   e.background = true;
   e.border = border;
+  e.scissor = true;
   return e;
 }
 

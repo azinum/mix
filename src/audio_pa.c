@@ -15,10 +15,11 @@ static i32 stereo_callback(const void* in, void* out, unsigned long frames_per_b
 
 static Result open_stream(void) {
   Audio_engine* e = &audio_engine;
+  PaStreamParameters* input_port = AUDIO_INPUT ? &in_port : NULL;
 
   PaError err = Pa_OpenStream(
     &stream,
-    NULL,
+    input_port,
     &out_port,
     e->sample_rate,
     e->frames_per_buffer,
@@ -48,6 +49,16 @@ Result audio_new(Audio_engine* e) {
     return Error;
   }
   i32 device_count = Pa_GetDeviceCount();
+
+  if (AUDIO_INPUT) {
+    i32 input_device = Pa_GetDefaultInputDevice();
+    in_port.device = AUDIO_PA_IN_PORT_ID >= 0 && AUDIO_PA_IN_PORT_ID < device_count ? AUDIO_PA_IN_PORT_ID : input_device;
+    in_port.channelCount = CHANNEL_COUNT;
+    in_port.sampleFormat = paFloat32;
+    in_port.suggestedLatency = Pa_GetDeviceInfo(in_port.device)->defaultLowInputLatency;
+    in_port.hostApiSpecificStreamInfo = NULL;
+  }
+
   i32 output_device = Pa_GetDefaultOutputDevice();
   out_port.device = output_device;
   out_port.channelCount = CHANNEL_COUNT;
@@ -55,16 +66,16 @@ Result audio_new(Audio_engine* e) {
   out_port.suggestedLatency = Pa_GetDeviceInfo(out_port.device)->defaultLowOutputLatency;
   out_port.hostApiSpecificStreamInfo = NULL;
 
-  dprintf(STDOUT_FILENO, "ID | INPUTS | OUTPUTS | SAMPLE RATE | DEVICE NAME\n");
+  stb_dprintf(STDOUT_FILENO, "ID | INPUTS | OUTPUTS | SAMPLE RATE | DEVICE NAME\n");
   for (i32 device = 0; device < device_count; ++device) {
     const PaDeviceInfo* info = Pa_GetDeviceInfo(device);
-    dprintf(STDOUT_FILENO, "%-2i", device);
-    dprintf(STDOUT_FILENO, " | %6i | %7i | %11g", info->maxInputChannels, info->maxOutputChannels, info->defaultSampleRate);
-    dprintf(STDOUT_FILENO, " | %s", info->name);
+    stb_dprintf(STDOUT_FILENO, "%-2i", device);
+    stb_dprintf(STDOUT_FILENO, " | %6i | %7i | %11g", info->maxInputChannels, info->maxOutputChannels, info->defaultSampleRate);
+    stb_dprintf(STDOUT_FILENO, " | %s", info->name);
     if (output_device == device) {
-      dprintf(STDOUT_FILENO, " [SELECTED]");
+      stb_dprintf(STDOUT_FILENO, " [SELECTED]");
     }
-    dprintf(STDOUT_FILENO, "\n");
+    stb_dprintf(STDOUT_FILENO, "\n");
   }
 
   if ((err = Pa_IsFormatSupported(NULL, &out_port, e->sample_rate)) != paFormatIsSupported) {
