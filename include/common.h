@@ -37,6 +37,18 @@
   #endif
 #endif
 
+#ifdef MIN
+  #undef MIN
+#endif
+
+#ifdef MAX
+  #undef MAX
+#endif
+
+#define MIN(x, y) (x < y ? x : y)
+#define MAX(x, y) (x > y ? x : y)
+#define CLAMP(x, x_min, x_max) MIN(MAX(x_min, x), x_max)
+
 // common type definitions
 #if BITS == 64
   typedef double f64;

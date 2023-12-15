@@ -15,6 +15,8 @@ extern Color UI_TEXT_COLOR;
 extern f32 UI_BORDER_THICKNESS;
 extern i32 UI_TITLE_BAR_PADDING;
 extern f32 UI_BUTTON_ROUNDNESS;
+extern i32 UI_SLIDER_INNER_PADDING;
+extern i32 UI_SLIDER_KNOB_SIZE;
 
 typedef struct Theme {
   Color main_background;
@@ -51,6 +53,7 @@ typedef enum {
   ELEMENT_BUTTON,
   ELEMENT_CANVAS,
   ELEMENT_TOGGLE,
+  ELEMENT_SLIDER,
 
   MAX_ELEMENT_TYPE,
 } Element_type;
@@ -63,9 +66,29 @@ const char* element_type_str[] = {
   "button",
   "canvas",
   "toggle",
+  "slider",
 };
 
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
+
+typedef enum {
+  SLIDER_FLOAT,
+  SLIDER_INTEGER,
+} Slider_type;
+
+typedef union {
+  struct {
+    f32 f_min;
+    f32 f_max;
+  };
+  struct {
+    i32 i_min;
+    i32 i_max;
+  };
+} Range;
+
+#define RANGE_FLOAT(min, max) ((Range) { .f_min = min, .f_max = max, })
+#define RANGE(min, max) ((Range) { .i_min = min, .i_max = max, })
 
 typedef union Element_data {
   struct {
@@ -87,6 +110,16 @@ typedef union Element_data {
     i32* value;
     char* text;
   } toggle;
+  struct {
+    union {
+      f32* f;
+      i32* i;
+    } v;
+    Slider_type type;
+    Range range;
+    bool vertical;
+    f32 deadzone;
+  } slider;
 } Element_data;
 
 typedef enum Placement {
@@ -189,5 +222,6 @@ Element ui_button(char* text);
 Element ui_canvas(bool border);
 Element ui_toggle(i32* value);
 Element ui_toggle_ex(i32* value, char* text);
+Element ui_slider(void* value, Slider_type type, Range range);
 
 #endif // _UI_H

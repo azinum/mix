@@ -27,6 +27,9 @@ Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
 f32 UI_BORDER_THICKNESS = 1.0f;
 i32 UI_TITLE_BAR_PADDING = 2;
 f32 UI_BUTTON_ROUNDNESS = 0.2f;
+// TODO(lucas): slider rail size
+i32 UI_SLIDER_INNER_PADDING = 8;
+i32 UI_SLIDER_KNOB_SIZE = 8;
 
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
@@ -47,8 +50,11 @@ static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e);
 static bool ui_overlap(i32 x, i32 y, Box box);
+static Box  ui_pad_box(Box box, i32 padding);
+static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
+static void ui_slider_onclick(UI_state* ui, struct Element* e);
 static void ui_onrender(struct Element* e);
 
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
@@ -120,7 +126,8 @@ void ui_update_elements(UI_state* ui, Element* e) {
       break;
     }
     case ELEMENT_BUTTON:
-    case ELEMENT_TOGGLE: {
+    case ELEMENT_TOGGLE:
+    case ELEMENT_SLIDER: {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
         ui->active = e;
       }
@@ -409,6 +416,41 @@ void ui_render_elements(UI_state* ui, Element* e) {
       e->onrender(e);
       break;
     }
+    case ELEMENT_SLIDER: {
+      // TODO(lucas): vertical slider
+      Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
+      Color line_color = lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.2f);
+      if (e->roundness > 0) {
+        DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, e->roundness, segments, line_color);
+      }
+      else {
+        DrawRectangle(box.x, box.y, box.w, box.h, line_color);
+      }
+      Range range = e->data.slider.range;
+      i32 x = box.x;
+      i32 y = box.y;
+      i32 radius = UI_SLIDER_KNOB_SIZE;
+      i32 h = box.h;
+      f32 factor = 0.0f;
+      // TODO(lucas): handle negative ranges
+      switch (e->data.slider.type) {
+        case SLIDER_FLOAT: {
+          f32 range_length = -(range.f_min - range.f_max);
+          factor = (*e->data.slider.v.f - range.f_min) / range_length;
+          break;
+        }
+        case SLIDER_INTEGER: {
+          i32 range_length = -(range.i_min - range.i_max);
+          factor = (*e->data.slider.v.i - range.i_min) / (f32)range_length;
+          break;
+        }
+        default:
+            break;
+      }
+      factor = CLAMP(factor, 0.0f, 1.0f);
+      DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
+      break;
+    }
     default:
       break;
   }
@@ -504,12 +546,60 @@ bool ui_overlap(i32 x, i32 y, Box box) {
     && (y >= box.y && y <= box.y + box.h);
 }
 
+Box ui_pad_box(Box box, i32 padding) {
+  return BOX(
+    box.x + padding,
+    box.y + padding,
+    box.w - 2 * padding,
+    box.h - 2 * padding
+  );
+}
+
+Box ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding) {
+  return BOX(
+    box.x + x_padding,
+    box.y + y_padding,
+    box.w - 2 * x_padding,
+    box.h - 2 * y_padding
+  );
+}
+
 void ui_onclick(struct Element* e) {
   (void)e;
 }
 
 void ui_toggle_onclick(struct Element* e) {
   *e->data.toggle.value = !*e->data.toggle.value;
+}
+
+void ui_slider_onclick(UI_state* ui, struct Element* e) {
+  Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
+  if (ui_overlap(ui->mouse.x, ui->mouse.y, box) && box.w != 0) {
+    i32 x_delta = ui->mouse.x - box.x;
+    f32 factor = x_delta / (f32)box.w;
+    f32 deadzone = e->data.slider.deadzone;
+    Range range = e->data.slider.range;
+    switch (e->data.slider.type) {
+      case SLIDER_FLOAT: {
+        f32 value = lerpf32(range.f_min, range.f_max, factor);
+        if (value - deadzone <= range.f_min) {
+          value = range.f_min;
+        }
+        if (value + deadzone >= range.f_max) {
+          value = range.f_max;
+        }
+        *e->data.slider.v.f = value;
+        break;
+      }
+      case SLIDER_INTEGER: {
+        f32 value = lerpf32((f32)range.i_min, (f32)range.i_max, factor);
+        *e->data.slider.v.i = (i32)value;
+        break;
+      }
+      default:
+        break;
+    }
+  }
 }
 
 void ui_onrender(struct Element* e) {
@@ -551,7 +641,7 @@ void ui_update(void) {
   }
 
   if (ui->hover == ui->select && ui->hover) {
-    if (ui->hover->id == ui->active_id) {
+    if (ui->select->id == ui->active_id) {
       if (ui->select->type == ELEMENT_TOGGLE) {
         ui_toggle_onclick(ui->select);
       }
@@ -559,11 +649,17 @@ void ui_update(void) {
     }
     ui->active_id = 0;
   }
+  if (ui->hover == ui->active && ui->hover) {
+    if (ui->active->id == ui->active_id && ui->active->type == ELEMENT_SLIDER) {
+      ui_slider_onclick(ui, ui->active);
+    }
+  }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
     switch (ui->hover->type) {
       case ELEMENT_BUTTON:
-      case ELEMENT_TOGGLE: {
+      case ELEMENT_TOGGLE:
+      case ELEMENT_SLIDER: {
         cursor = MOUSE_CURSOR_POINTING_HAND;
         break;
       }
@@ -690,6 +786,35 @@ Element ui_toggle(i32* value) {
 Element ui_toggle_ex(i32* value, char* text) {
   Element e = ui_toggle(value);
   e.data.toggle.text = text;
+  return e;
+}
+
+Element ui_slider(void* value, Slider_type type, Range range) {
+  ASSERT(value != NULL);
+
+  Element e;
+  ui_element_init(&e);
+  switch (type) {
+    case SLIDER_FLOAT:
+      e.data.slider.v.f = (f32*)value;
+      break;
+    case SLIDER_INTEGER:
+      e.data.slider.v.i = (i32*)value;
+      break;
+    default:
+      ASSERT(!"invalid slider type");
+      break;
+  }
+  e.data.slider.type = type;
+  e.data.slider.range = range;
+  e.data.slider.vertical = false;
+  e.data.slider.deadzone = 0.0f;
+  e.type = ELEMENT_SLIDER;
+  e.scissor = false;
+  e.background = true;
+  e.border = true;
+  e.roundness = UI_BUTTON_ROUNDNESS;
+  e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.4f);
   return e;
 }
 

@@ -2,7 +2,6 @@
 
 #define ARENA_SIZE 1024 * 2
 #define MAX_TEXT_SIZE 512
-#define EXPERIMENTAL 0
 
 static void waveshaper_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
@@ -81,30 +80,71 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.onrender = waveshaper_onrender;
     ui_attach_element(container, &e);
   }
+  const i32 button_height = 44;
   {
     Element e = ui_toggle_ex(&w->mute, "mute");
-    e.box = BOX(0, 0, 0, 54);
+    e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_toggle_ex(&w->reshape, "reshape");
-    e.box = BOX(0, 0, 0, 54);
+    e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_toggle_ex(&w->render, "render");
-    e.box = BOX(0, 0, 0, 54);
+    e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_button("reset");
-    e.box = BOX(0, 0, 0, 54);
+    e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.onclick = waveshaper_reset_onclick;
     e.userdata = ins;
+    ui_attach_element(container, &e);
+  }
+
+  {
+    Element e = ui_text("volume");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&ins->volume, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    e.box = BOX(0, 0, 0, button_height);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.data.slider.deadzone = 0.01f;
+    e.roundness = 0.1f;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("lfo");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(0, 100.0f));
+    e.box = BOX(0, 0, 0, button_height);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.data.slider.deadzone = 0.01f;
+    e.roundness = 0.1f;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("frequency");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
+    e.box = BOX(0, 0, 0, button_height);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.data.slider.deadzone = 0.01f;
+    e.roundness = 0.1f;
     ui_attach_element(container, &e);
   }
 }
@@ -147,35 +187,18 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   }
 
   if (w->reshape) {
-#if EXPERIMENTAL
-    for (size_t i = 0; i < ins->frames; ++i) {
-      ins->buffer[i] = lerpf32(ins->buffer[i], 0.0f, 30.0f * dt);
-    }
-#else
-    for (size_t i = 0; i < ins->frames; ++i) {
-      ins->buffer[i] = 0;
-    }
-#endif
-
     for (size_t i = 0; i < ins->frames; i += 2) {
-      ins->buffer[i] += volume * sinf(
+      ins->buffer[i] = volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      ins->buffer[i + 1] += volume * sinf(
+      ins->buffer[i + 1] = volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       w->tick += 2;
       w->freq = lerpf32(w->freq, w->freq_target, dt * 2.0f);
       w->lfo = lerpf32(w->lfo, w->lfo_target, dt * 2.0f);
-    }
-
-    if (AUDIO_INPUT) {
-      for (size_t i = 0; i < ins->frames; i += 2) {
-        ins->buffer[i] += audio->in_buffer[i];
-        ins->buffer[i + 1] += audio->in_buffer[i + 1];
-      }
     }
   }
 }
@@ -187,4 +210,3 @@ void waveshaper_free(struct Instrument* ins) {
 
 #undef ARENA_SIZE
 #undef MAX_TEXT_SIZE
-#undef EXPERIMENTAL
