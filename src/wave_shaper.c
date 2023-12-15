@@ -68,20 +68,12 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   {
     Element e = ui_text(w->text);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 100,
-      .y = 0,
-    };
+    e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_canvas(true);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 100,
-      .y = 30,
-    };
+    e.sizing = SIZING_PERCENT(100, 30);
     e.userdata = ins;
     e.border_thickness = 1.0f;
     e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
@@ -91,41 +83,25 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, 54);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 50,
-      .y = 0,
-    };
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_toggle_ex(&w->reshape, "reshape");
     e.box = BOX(0, 0, 0, 54);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 50,
-      .y = 0,
-    };
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_toggle_ex(&w->render, "render");
     e.box = BOX(0, 0, 0, 54);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 50,
-      .y = 0,
-    };
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_button("reset");
     e.box = BOX(0, 0, 0, 54);
-    e.sizing = (Sizing) {
-      .mode = SIZE_MODE_PERCENT,
-      .x = 50,
-      .y = 0,
-    };
+    e.sizing = SIZING_PERCENT(50, 0);
     e.onclick = waveshaper_reset_onclick;
     e.userdata = ins;
     ui_attach_element(container, &e);

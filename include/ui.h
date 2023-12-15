@@ -123,6 +123,8 @@ typedef struct Sizing {
   i32 y;
 } Sizing;
 
+#define SIZING_PERCENT(X, Y) ((Sizing) { .mode = SIZE_MODE_PERCENT, .x = X, .y = Y, })
+
 typedef struct Element {
   struct Element* items;
   u32 count;
