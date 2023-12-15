@@ -8,7 +8,7 @@
   #define DRAW_GUIDES 0
 #endif
 
-#define LOG_UI_HIERARCHY 1
+#define LOG_UI_HIERARCHY 0
 #define UI_LOG_PATH "ui.txt"
 
 #if DRAW_GUIDES

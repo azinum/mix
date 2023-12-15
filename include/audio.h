@@ -7,7 +7,8 @@ typedef struct Audio_engine {
   i32 sample_rate;
   i32 frames_per_buffer;
   i32 channel_count;
-  f32* buffer;
+  f32* out_buffer;
+  f32* in_buffer;
   f32 dt;
   bool quit; // set to true to stop processing audio
   bool done; // done is set to true when audio processing has stopped
