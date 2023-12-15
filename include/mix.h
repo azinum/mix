@@ -21,9 +21,9 @@ struct Mix;
 #include "log.h"
 #include "memory.h"
 #include "arena.h"
-#include "entity.h"
 #include "module.h"
 #include "ui.h"
+#include "instrument.h"
 #include "wave_shaper.h"
 #include "audio.h"
 

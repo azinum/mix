@@ -26,11 +26,11 @@ f32 UI_BUTTON_ROUNDNESS = 0.2f;
 
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
-  // main background     background           border            button               text              border thickness  title bar padding   button roundness
-  { C(35, 35, 42),       C(85, 90, 115),      C(0, 0, 0),       C(153, 102, 255),    C(255, 255, 255), 0.0f,             8,                  0.4f },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),       C(0x45, 0x78, 0xa3), C(255, 255, 255), 1.0f,             4,                  0.2f },
-  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35),    C(0x55, 0x68, 0xa0), C(230, 230, 230), 2.0f,             8,                  0.3f },
-  { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240), C(0x84, 0x34, 0xbf), C(230, 230, 230), 1.0f,             12,                 0.1f },
+  // main background     background           border               button               text                 border thickness  title bar padding   button roundness
+  { C(35, 35, 42),       C(85, 90, 115),      C(0, 0, 0),          C(153, 102, 255),    C(255, 255, 255),    0.0f,             8,                  0.1f },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),          C(0x45, 0x78, 0xa3), C(255, 255, 255),    1.0f,             4,                  0.2f },
+  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35),       C(0x55, 0x68, 0xa0), C(230, 230, 230),    2.0f,             8,                  0.3f },
+  { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240),    C(0x84, 0x34, 0xbf), C(230, 230, 230),    1.0f,             12,                 0.1f },
 };
 #undef C
 
@@ -379,8 +379,6 @@ void ui_render_elements(UI_state* ui, Element* e) {
     case ELEMENT_TOGGLE: {
       char* toggle_text = e->data.toggle.text;
       if (!toggle_text) {
-        // TODO(lucas): implement toggle buttons with no text, only its' value
-        NOT_IMPLEMENTED();
         break;
       }
       // NOTE: strlen call might be expensive here, this might be a point to come back to if latency becomes an issue

@@ -12,7 +12,7 @@ typedef struct Audio_engine {
   bool quit; // set to true to stop processing audio
   bool done; // done is set to true when audio processing has stopped
 
-  Waveshaper waveshaper;
+  Instrument instrument;
 } Audio_engine;
 
 extern Audio_engine audio_engine;

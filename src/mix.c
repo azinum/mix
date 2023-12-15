@@ -20,15 +20,15 @@
 #include "misc.c"
 #include "log.c"
 #include "memory.c"
-#include "entity.c"
 #include "module.c"
 #include "ui.c"
+#include "instrument.c"
 #include "wave_shaper.c"
 #include "audio.c"
 
 #define CONFIG_PATH "data/init.lua"
 
-static f32 delta_buffer[256] = {0};
+static f32 delta_buffer[128] = {0};
 
 Mix mix = {0};
 Assets assets = {0};
@@ -123,7 +123,7 @@ void mix_update_and_render(Mix* m) {
     config_load(CONFIG_PATH);
   }
 
-  waveshaper_update(m, &e->waveshaper);
+  instrument_update(&e->instrument, m);
 
   ui_update();
   ui_render();
@@ -198,7 +198,7 @@ void mix_free(Mix* m) {
 }
 
 void mix_ui_init(Mix* m) {
-  Audio_engine* a = &audio_engine;
+  Audio_engine* audio = &audio_engine;
   Element* grid = NULL;
   u32 cols = 2;
   u32 rows = 1;
@@ -210,7 +210,7 @@ void mix_ui_init(Mix* m) {
   for (size_t i = 0; i < rows * cols; ++i) {
     Element* container = NULL;
     if (i == 0) {
-      Element e = waveshaper_ui_new(&a->waveshaper);
+      Element e = instrument_ui_new(&audio->instrument);
       container = ui_attach_element(grid, &e);
       continue;
     }
