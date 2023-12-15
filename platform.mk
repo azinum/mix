@@ -21,6 +21,12 @@ ifeq (${NO_SIMD}, 1)
 	FLAGS+=-DNO_SIMD
 endif
 
+ifeq (${INLINE_RAYLIB}, 1)
+	FLAGS+=-DINLINE_RAYLIB
+else
+	LIBS+=-lraylib
+endif
+
 ifeq (${USE_STATIC_MEMORY_ALLOCATOR}, 1)
 	FLAGS+=-DMEMORY_ALLOC_STATIC
 endif

@@ -5,7 +5,24 @@
 
 struct Mix;
 
-#include <raylib.h>
+#ifdef INLINE_RAYLIB
+  #define PLATFORM_DESKTOP
+  #include "../src/ext/raylib/raylib.h"
+  #include "../src/ext/raylib/utils.h"
+  #include "../src/ext/raylib/utils.c"
+  #undef MIN
+  #include "../src/ext/raylib/rtextures.c"
+  #undef COLOR_EQUAL
+  #include "../src/ext/raylib/rtext.c"
+  #include "../src/ext/raylib/rshapes.c"
+  #undef MIN
+  #include "../src/ext/raylib/rcore.c"
+  #undef MIN
+  #undef MAX
+#else
+  #include <raylib.h>
+#endif
+
 #include <sys/time.h>
 #include <math.h>
 #include <fcntl.h>

@@ -1,4 +1,8 @@
 // ui.c
+// TODO:
+//  - text input field
+//  - slider
+//  - icon/image
 
 #ifndef DRAW_GUIDES
   #define DRAW_GUIDES 0

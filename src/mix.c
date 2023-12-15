@@ -94,7 +94,6 @@ i32 mix_main(i32 argc, char** argv) {
     mix.fps = 1.0f / mix.dt;
     mix.tick += 1;
   }
-  // config_store(CONFIG_PATH);
   config_free();
   mix_free(&mix);
   return EXIT_SUCCESS;

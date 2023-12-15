@@ -5,11 +5,12 @@ USE_STATIC_MEMORY_ALLOCATOR=1
 
 USE_PORTAUDIO=1
 USE_MINIAUDIO=0
+INLINE_RAYLIB=0
 
 CC=gcc
-LIBS=-lraylib -lm
+LIBS=-lm
 SRC=src/main.c
 INC=include
-FLAGS=-I${INC} -Wall -Wextra -march=native -ffast-math -O0 -ggdb
+FLAGS=-I${INC} -Wall -Wextra -march=native -ffast-math -ggdb -O0
 TARGET=mix
 PREFIX=/usr/local
