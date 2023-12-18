@@ -23,6 +23,7 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
     .instrument        = instrument_new(INSTRUMENT_WAVE_SHAPER),
     .quit              = false,
     .done              = false,
+    .restart           = false,
   };
 }
 
@@ -34,6 +35,11 @@ Result audio_engine_start_new(Audio_engine* e) {
   *e = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
   instrument_init(&e->instrument, e);
   return audio_new(e);
+}
+
+void audio_engine_restart(void) {
+  Audio_engine* audio = &audio_engine;
+  audio->restart = true;
 }
 
 void audio_engine_exit(Audio_engine* audio) {
@@ -52,14 +58,16 @@ void audio_engine_exit(Audio_engine* audio) {
 
 // TODO(lucas): handle variable sample_count, number of ready samples may not be predictable
 Result audio_engine_process(const void* in, void* out, i32 sample_count) {
-  (void)in;
-  (void)sample_count;
   TIMER_START();
-
   Mix* m = &mix;
   Audio_engine* audio = &audio_engine;
   if (audio->quit) {
     audio->done = true;
+    return Error;
+  }
+  if (sample_count != audio->frames_per_buffer) {
+    FRAMES_PER_BUFFER = sample_count;
+    audio->restart = true;
     return Error;
   }
 

@@ -37,6 +37,7 @@ typedef struct Variable {
 
 static const luaL_Reg lualibs[] = {
   { "base", luaopen_base, },
+  { "table", luaopen_table, },
   { NULL, NULL, },
 };
 
@@ -44,6 +45,7 @@ static void hook_default(Variable* v);
 static void hook_target_fps(Variable* v);
 static void hook_warn_restart(Variable* v);
 static void hook_warn_audio_restart(Variable* v);
+static void hook_restart_audio_engine(Variable* v);
 
 static void write_variable(i32 fd, const char* name, Type type, void* data);
 static Result read_variable(const char* name, Type type, void* data);
@@ -60,17 +62,17 @@ static Variable variables[] = {
   { "font_size_small", T_INT, &FONT_SIZE_SMALL, hook_default },
   { "font_size_smallest", T_INT, &FONT_SIZE_SMALLEST, hook_default },
   { "target_fps", T_INT, &TARGET_FPS, hook_target_fps },
-  { "frames_per_buffer", T_INT, &FRAMES_PER_BUFFER, hook_warn_restart },
-  { "sample_rate", T_INT, &SAMPLE_RATE, hook_warn_restart },
-  { "channel_count", T_INT, &CHANNEL_COUNT, hook_warn_restart },
+  { "frames_per_buffer", T_INT, &FRAMES_PER_BUFFER, hook_restart_audio_engine },
+  { "sample_rate", T_INT, &SAMPLE_RATE, hook_restart_audio_engine },
+  { "channel_count", T_INT, &CHANNEL_COUNT, hook_restart_audio_engine },
   { "ui_padding", T_INT, &UI_PADDING, hook_default },
   { "ui_font", T_STRING, &UI_FONT, hook_warn_restart },
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
   { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
   { "ui_theme", T_INT, &UI_THEME, hook_default },
-  { "audio_input", T_INT, &AUDIO_INPUT, hook_warn_audio_restart },
-  { "audio_pa_in_port_id", T_INT, &AUDIO_PA_IN_PORT_ID, hook_warn_audio_restart },
-  { "audio_pa_out_port_id", T_INT, &AUDIO_PA_OUT_PORT_ID, hook_warn_audio_restart },
+  { "audio_input", T_INT, &AUDIO_INPUT, hook_restart_audio_engine },
+  { "audio_pa_in_port_id", T_INT, &AUDIO_PA_IN_PORT_ID, hook_restart_audio_engine },
+  { "audio_pa_out_port_id", T_INT, &AUDIO_PA_OUT_PORT_ID, hook_restart_audio_engine },
 };
 
 struct {
@@ -116,7 +118,6 @@ Result config_store(const char* path) {
     Variable* v = &variables[i];
     write_variable(fd, v->name, v->type, v->data);
   }
-
   close(fd);
   return Ok;
 }
@@ -171,6 +172,11 @@ void hook_warn_restart(Variable* v) {
 
 void hook_warn_audio_restart(Variable* v) {
   log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, audio engine needs to be restarted for it to take effect\n", v->name);
+}
+
+void hook_restart_audio_engine(Variable* v) {
+  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, restarting audio engine...\n", v->name);
+  audio_engine_restart();
 }
 
 void write_variable(i32 fd, const char* name, Type type, void* data) {
@@ -234,6 +240,7 @@ Result read_variable(const char* name, Type type, void* data) {
 }
 
 void lua_open_libs(lua_State* l) {
+  luaopen_package(l);
   for (const luaL_Reg* lib = lualibs; lib->func != NULL; lib++) {
     lib->func(l);
     lua_settop(l, 0);

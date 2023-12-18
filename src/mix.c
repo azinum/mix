@@ -99,21 +99,34 @@ i32 mix_main(i32 argc, char** argv) {
   return EXIT_SUCCESS;
 }
 
+Result mix_restart_audio_engine(void) {
+  Audio_engine* audio = &audio_engine;
+  audio_engine_exit(audio);
+  if (audio_engine_start_new(audio) != Ok) {
+    log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
+    return Error;
+  }
+  return Ok;
+}
+
 void mix_update_and_render(Mix* m) {
-  Audio_engine* e = &audio_engine;
+  Audio_engine* audio = &audio_engine;
 
   m->mouse = GetMousePosition();
   delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
+
+  if (audio->restart) {
+    ui_free();
+    ui_init();
+    mix_restart_audio_engine();
+    mix_ui_init(m);
+  }
 
   if (IsKeyPressed(KEY_R)) {
     ui_free();
     ui_init();
     if (IsKeyDown(KEY_LEFT_CONTROL)) {
-      audio_engine_exit(e);
-      if (audio_engine_start_new(e) != Ok) {
-        log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
-        return;
-      }
+      mix_restart_audio_engine();
     }
     mix_ui_init(m);
     mix_reset(m);
@@ -122,7 +135,7 @@ void mix_update_and_render(Mix* m) {
     config_load(CONFIG_PATH);
   }
 
-  instrument_update(&e->instrument, m);
+  instrument_update(&audio->instrument, m);
 
   ui_update();
   ui_render();

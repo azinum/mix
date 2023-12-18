@@ -82,5 +82,6 @@ extern Mix mix;
 extern Assets assets;
 
 i32 mix_main(i32 argc, char** argv);
+Result mix_restart_audio_engine(void);
 
 #endif // _MIX_H

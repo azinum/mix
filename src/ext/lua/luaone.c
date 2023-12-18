@@ -55,10 +55,10 @@
 #include "liolib.c"
 #include "lmathlib.c"
 #include "loadlib.c"
+#include "ltablib.c"
 // NOTE(lucas): stuff not needed
 // #include "loslib.c"
 // #include "lstrlib.c"
-// #include "ltablib.c"
 // #include "lutf8lib.c"
 // #include "linit.c"
 #endif

@@ -26,11 +26,12 @@ void waveshaper_onrender(Element* e) {
   };
 
   for (i32 i = 0; i < (i32)ins->frames && i < width; ++i) {
+    f32 frame = CLAMP(ins->buffer[i], -1.0f, 1.0f);
     DrawLine(
       x + i,               // x1
       y,                   // y1
       x + i,               // x2
-      y + (height * ins->buffer[i]), // y2
+      y + (height/2 * frame), // y2
       color_map[(i % 2) == 0]
     );
   }
@@ -113,12 +114,12 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
+  f32 deadzone = 0.01f;
   {
     Element e = ui_slider(&ins->volume, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(100, 0);
-    e.data.slider.deadzone = 0.01f;
-    e.roundness = 0.1f;
+    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
@@ -130,8 +131,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(0, 100.0f));
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(100, 0);
-    e.data.slider.deadzone = 0.01f;
-    e.roundness = 0.1f;
+    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
@@ -143,8 +143,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(100, 0);
-    e.data.slider.deadzone = 0.01f;
-    e.roundness = 0.1f;
+    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
 }
