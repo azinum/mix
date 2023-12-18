@@ -35,7 +35,7 @@ i32 UI_SLIDER_KNOB_SIZE = 8;
 static Theme themes[MAX_THEME_ID] = {
   // main background     background           border               button               text                 border thickness  title bar padding   button roundness
   { C(35, 35, 42),       C(85, 90, 115),      C(0, 0, 0),          C(153, 102, 255),    C(255, 255, 255),    0.0f,             8,                  0.1f },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),          C(0x45, 0x78, 0xa3), C(255, 255, 255),    1.0f,             4,                  0.2f },
+  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),          C(0x45, 0x78, 0xa3), C(255, 255, 255),    1.0f,             4,                  0.0f },
   { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35),       C(0x55, 0x68, 0xa0), C(230, 230, 230),    2.0f,             8,                  0.3f },
   { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240),    C(0x84, 0x34, 0xbf), C(230, 230, 230),    1.0f,             12,                 0.1f },
 };
@@ -582,18 +582,24 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
     switch (e->data.slider.type) {
       case SLIDER_FLOAT: {
         f32 value = lerpf32(range.f_min, range.f_max, factor);
-        if (value - deadzone <= range.f_min) {
+        if (factor - deadzone <= 0.0f) {
           value = range.f_min;
         }
-        if (value + deadzone >= range.f_max) {
+        if (factor + deadzone >= 1.0f) {
           value = range.f_max;
         }
         *e->data.slider.v.f = value;
         break;
       }
       case SLIDER_INTEGER: {
-        f32 value = lerpf32((f32)range.i_min, (f32)range.i_max, factor);
-        *e->data.slider.v.i = (i32)value;
+        i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
+        if (factor - deadzone <= 0.0f) {
+          value = range.i_min;
+        }
+        if (factor + deadzone >= 1.0f) {
+          value = range.i_max;
+        }
+        *e->data.slider.v.i = value;
         break;
       }
       default:
@@ -764,7 +770,7 @@ Element ui_canvas(bool border) {
   e.type = ELEMENT_CANVAS;
   e.background = true;
   e.border = border;
-  e.scissor = true;
+  e.scissor = false;
   return e;
 }
 
