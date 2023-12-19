@@ -10,3 +10,4 @@ mix
 perf.txt
 ui.txt
 config.mk
+test

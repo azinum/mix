@@ -28,10 +28,13 @@ shared: ${SRC}
 profile:
 	perf record -e cycles -c 2000000 ./${TARGET} && perf report -n -f > perf.txt && rm -f perf.data perf.data.old
 
+test:
+	${CC} src/test.c -o test ${FLAGS}
+
 run:
 	./${TARGET}
 
 clean:
 	rm -f ${TARGET}
 
-.PHONY: ${TARGET} clean
+.PHONY: ${TARGET} clean test
