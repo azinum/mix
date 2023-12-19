@@ -566,37 +566,35 @@ void ui_toggle_onclick(struct Element* e) {
 
 void ui_slider_onclick(UI_state* ui, struct Element* e) {
   Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
-  if (ui_overlap(ui->mouse.x, ui->mouse.y, box) && box.w != 0) {
-    i32 x_delta = ui->mouse.x - box.x;
-    f32 factor = x_delta / (f32)box.w;
-    f32 deadzone = e->data.slider.deadzone;
-    Range range = e->data.slider.range;
-    switch (e->data.slider.type) {
-      case SLIDER_FLOAT: {
-        f32 value = lerpf32(range.f_min, range.f_max, factor);
-        if (factor - deadzone <= 0.0f) {
-          value = range.f_min;
-        }
-        if (factor + deadzone >= 1.0f) {
-          value = range.f_max;
-        }
-        *e->data.slider.v.f = value;
-        break;
+  i32 x_delta = ui->mouse.x - box.x;
+  f32 factor = x_delta / (f32)box.w;
+  f32 deadzone = e->data.slider.deadzone;
+  Range range = e->data.slider.range;
+  switch (e->data.slider.type) {
+    case SLIDER_FLOAT: {
+      f32 value = lerpf32(range.f_min, range.f_max, factor);
+      if (factor - deadzone <= 0.0f) {
+        value = range.f_min;
       }
-      case SLIDER_INTEGER: {
-        i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
-        if (factor - deadzone <= 0.0f) {
-          value = range.i_min;
-        }
-        if (factor + deadzone >= 1.0f) {
-          value = range.i_max;
-        }
-        *e->data.slider.v.i = value;
-        break;
+      if (factor + deadzone >= 1.0f) {
+        value = range.f_max;
       }
-      default:
-        break;
+      *e->data.slider.v.f = value;
+      break;
     }
+    case SLIDER_INTEGER: {
+      i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
+      if (factor - deadzone <= 0.0f) {
+        value = range.i_min;
+      }
+      if (factor + deadzone >= 1.0f) {
+        value = range.i_max;
+      }
+      *e->data.slider.v.i = value;
+      break;
+    }
+    default:
+      break;
   }
 }
 
