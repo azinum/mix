@@ -5,7 +5,7 @@
 //  - icon/image
 
 #ifndef DRAW_GUIDES
-  #define DRAW_GUIDES 0
+  #define DRAW_GUIDES 1
 #endif
 
 #define LOG_UI_HIERARCHY 0
@@ -57,6 +57,7 @@ void ui_state_init(UI_state* ui) {
   ui->root.placement = PLACEMENT_FILL;
   ui->root.padding = 0;
   ui->root.border = false;
+  ui->root.background = false;
 
   ui->id_counter = 2;
   ui->latency = 0;
@@ -108,6 +109,13 @@ void ui_update_elements(UI_state* ui, Element* e) {
     ui->hover = e;
   }
 
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+    ui->active = e;
+  }
+  if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+    ui->select = e;
+  }
+
   switch (e->type) {
     case ELEMENT_CONTAINER: {
       ui_update_container(ui, e);
@@ -115,17 +123,6 @@ void ui_update_elements(UI_state* ui, Element* e) {
     }
     case ELEMENT_GRID: {
       ui_update_grid(ui, e);
-      break;
-    }
-    case ELEMENT_BUTTON:
-    case ELEMENT_TOGGLE:
-    case ELEMENT_SLIDER: {
-      if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
-        ui->active = e;
-      }
-      if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && e == ui->hover) {
-        ui->select = e;
-      }
       break;
     }
     case ELEMENT_TEXT: {
@@ -424,7 +421,6 @@ void ui_render_elements(UI_state* ui, Element* e) {
       i32 radius = UI_SLIDER_KNOB_SIZE;
       i32 h = box.h;
       f32 factor = 0.0f;
-      // TODO(lucas): handle negative ranges
       switch (e->data.slider.type) {
         case SLIDER_FLOAT: {
           f32 range_length = -(range.f_min - range.f_max);
@@ -441,6 +437,9 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
       DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
+      if (e->border_thickness > 0.0f) {
+        DrawCircleLines(x + box.w*factor, y + h/2, radius, e->border_color);
+      }
       break;
     }
     default:
@@ -566,37 +565,35 @@ void ui_toggle_onclick(struct Element* e) {
 
 void ui_slider_onclick(UI_state* ui, struct Element* e) {
   Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
-  if (ui_overlap(ui->mouse.x, ui->mouse.y, box) && box.w != 0) {
-    i32 x_delta = ui->mouse.x - box.x;
-    f32 factor = x_delta / (f32)box.w;
-    f32 deadzone = e->data.slider.deadzone;
-    Range range = e->data.slider.range;
-    switch (e->data.slider.type) {
-      case SLIDER_FLOAT: {
-        f32 value = lerpf32(range.f_min, range.f_max, factor);
-        if (factor - deadzone <= 0.0f) {
-          value = range.f_min;
-        }
-        if (factor + deadzone >= 1.0f) {
-          value = range.f_max;
-        }
-        *e->data.slider.v.f = value;
-        break;
+  i32 x_delta = ui->mouse.x - box.x;
+  f32 factor = x_delta / (f32)box.w;
+  f32 deadzone = e->data.slider.deadzone;
+  Range range = e->data.slider.range;
+  switch (e->data.slider.type) {
+    case SLIDER_FLOAT: {
+      f32 value = lerpf32(range.f_min, range.f_max, factor);
+      if (factor - deadzone <= 0.0f) {
+        value = range.f_min;
       }
-      case SLIDER_INTEGER: {
-        i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
-        if (factor - deadzone <= 0.0f) {
-          value = range.i_min;
-        }
-        if (factor + deadzone >= 1.0f) {
-          value = range.i_max;
-        }
-        *e->data.slider.v.i = value;
-        break;
+      if (factor + deadzone >= 1.0f) {
+        value = range.f_max;
       }
-      default:
-        break;
+      *e->data.slider.v.f = value;
+      break;
     }
+    case SLIDER_INTEGER: {
+      i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
+      if (factor - deadzone <= 0.0f) {
+        value = range.i_min;
+      }
+      if (factor + deadzone >= 1.0f) {
+        value = range.i_max;
+      }
+      *e->data.slider.v.i = value;
+      break;
+    }
+    default:
+      break;
   }
 }
 
@@ -812,7 +809,7 @@ Element ui_slider(void* value, Slider_type type, Range range) {
   e.background = true;
   e.border = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
-  e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.4f);
+  e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
   return e;
 }
 

@@ -212,6 +212,7 @@ void mix_free(Mix* m) {
 void mix_ui_init(Mix* m) {
   Audio_engine* audio = &audio_engine;
   Element* grid = NULL;
+  random_init(1234);
   u32 cols = 2;
   u32 rows = 1;
   {
@@ -237,7 +238,7 @@ void mix_ui_init(Mix* m) {
     for (size_t n = 0; n < 48; ++n) {
       Element e = ui_button("test");
       e.scissor = false;
-      e.box = BOX(0, 0, 64 + random_number() % 64, 32 + random_number() % 64);
+      e.box = BOX(0, 0, 64 + random_number() % 64, 42 + random_number() % 64);
       e.onclick = onclick_test;
       ui_attach_element(container, &e);
     }
