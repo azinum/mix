@@ -48,7 +48,6 @@ static const luaL_Reg lualibs[] = {
 static void hook_default(Variable* v);
 static void hook_target_fps(Variable* v);
 static void hook_warn_restart(Variable* v);
-static void hook_warn_audio_restart(Variable* v);
 static void hook_restart_audio_engine(Variable* v);
 
 static void write_variable(i32 fd, const char* name, Type type, void* data);
@@ -86,6 +85,7 @@ static Variable variables[] = {
   { "ui_button_roundness", T_FLOAT, &UI_BUTTON_ROUNDNESS, hook_default },
   { "ui_slider_inner_padding", T_INT, &UI_SLIDER_INNER_PADDING, hook_default },
   { "ui_slider_knob_size", T_INT, &UI_SLIDER_KNOB_SIZE, hook_default },
+  { "ui_theme", T_STRING, &UI_THEME, hook_default },
 };
 
 struct {
@@ -184,10 +184,6 @@ void hook_target_fps(Variable* v) {
 
 void hook_warn_restart(Variable* v) {
   log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, program needs to be restarted for it to take effect\n", v->name);
-}
-
-void hook_warn_audio_restart(Variable* v) {
-  log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, audio engine needs to be restarted for it to take effect\n", v->name);
 }
 
 void hook_restart_audio_engine(Variable* v) {
