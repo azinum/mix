@@ -10,7 +10,7 @@ Result memory_init(void) {
   return Ok;
 }
 
-void* memory_alloc(const size_t size) {
+void* memory_alloc(size_t size) {
 #ifdef NO_MEMORY_TRACKING
   return malloc(size);
 #endif
@@ -24,7 +24,7 @@ void* memory_alloc(const size_t size) {
   return (u8*)p + sizeof(Alloc_header);
 }
 
-void* memory_calloc(const size_t n, const size_t size) {
+void* memory_calloc(size_t n, size_t size) {
   void* p = memory_alloc(n * size);
   if (!p) {
     return NULL;

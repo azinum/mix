@@ -19,15 +19,23 @@ char to_lower(char ch) {
   return ch;
 }
 
-inline f32 lerpf32(f32 a, f32 b, f32 t) {
+inline f32 lerp_f32(f32 a, f32 b, f32 t) {
   return (1.0f - t) * a + t * b;
 }
 
-inline Color lerpcolor(Color a, Color b, f32 t) {
+inline Color lerp_color(Color a, Color b, f32 t) {
   return COLOR_RGB(
-    (u8)lerpf32(a.r, b.r, t),
-    (u8)lerpf32(a.g, b.g, t),
-    (u8)lerpf32(a.b, b.b, t)
+    (u8)lerp_f32(a.r, b.r, t),
+    (u8)lerp_f32(a.g, b.g, t),
+    (u8)lerp_f32(a.b, b.b, t)
+  );
+}
+
+inline Color warmer_color(Color a, u8 amount) {
+  return COLOR_RGB(
+    CLAMP(a.r - amount + amount, 0, 255),
+    a.g,
+    CLAMP(a.b - amount, 0, 255)
   );
 }
 

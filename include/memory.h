@@ -13,8 +13,8 @@ struct {
 void memory_print_stats(i32 fd);
 
 Result memory_init(void);
-void* memory_alloc(const size_t size);
-void* memory_calloc(const size_t n, const size_t size);
+void* memory_alloc(size_t size);
+void* memory_calloc(size_t n, size_t size);
 void* memory_realloc(void* p, size_t size);
 void memory_free(void* p);
 void memory_print_info(i32 fd);

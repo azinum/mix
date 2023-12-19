@@ -267,7 +267,7 @@ void render_delta_buffer(Mix* m) {
     dt_avg += sample;
 
     f32 f = sample / DT_MAX;
-    Color color = lerpcolor(green, red, f);
+    Color color = lerp_color(green, red, f);
     if (sample > prev_sample) {
       f32 delta = sample / prev_sample;
       // 30% increase from the previous sample

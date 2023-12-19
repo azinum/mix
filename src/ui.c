@@ -1,7 +1,6 @@
 // ui.c
 // TODO:
 //  - text input field
-//  - slider
 //  - icon/image
 
 #ifndef DRAW_GUIDES
@@ -309,7 +308,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       factor += 0.15f;
     }
   }
-  background_color = lerpcolor(background_color, COLOR_RGB(0, 0, 0), factor);
+  background_color = lerp_color(background_color, COLOR_RGB(0, 0, 0), factor);
 
   const i32 segments = 8;
   if (e->background) {
@@ -408,7 +407,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     case ELEMENT_SLIDER: {
       // TODO(lucas): vertical slider
       Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
-      Color line_color = lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.2f);
+      Color line_color = lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f);
       if (e->roundness > 0) {
         DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, e->roundness, segments, line_color);
       }
@@ -477,7 +476,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 h = title_height + (i32)e->border_thickness;
       const i32 x = e->box.x;
       const i32 y = e->box.y - title_height;
-      DrawRectangle(x, y, w, h, lerpcolor(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
+      DrawRectangle(x, y, w, h, lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
       DrawTextEx(font, title, (Vector2) { x + title_padding, y + title_padding }, font_size, spacing, e->text_color);
       if (e->border) {
         DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
@@ -571,7 +570,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
   Range range = e->data.slider.range;
   switch (e->data.slider.type) {
     case SLIDER_FLOAT: {
-      f32 value = lerpf32(range.f_min, range.f_max, factor);
+      f32 value = lerp_f32(range.f_min, range.f_max, factor);
       if (factor - deadzone <= 0.0f) {
         value = range.f_min;
       }
@@ -582,7 +581,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
       break;
     }
     case SLIDER_INTEGER: {
-      i32 value = (i32)lerpf32(range.i_min, range.i_max, factor);
+      i32 value = (i32)lerp_f32(range.i_min, range.i_max, factor);
       if (factor - deadzone <= 0.0f) {
         value = range.i_min;
       }
@@ -809,7 +808,7 @@ Element ui_slider(void* value, Slider_type type, Range range) {
   e.background = true;
   e.border = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
-  e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
   return e;
 }
 

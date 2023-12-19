@@ -130,7 +130,7 @@ Result memory_init(void) {
   return protected_write(&memory, 0, &header, sizeof(header));
 }
 
-void* memory_alloc(const size_t size) {
+void* memory_alloc(size_t size) {
 #ifdef NO_MEMORY_TRACKING
   return allocate_block(&memory, size, BLOCK_TAG_USED, NULL);
 #endif
@@ -144,7 +144,7 @@ void* memory_alloc(const size_t size) {
   return p;
 }
 
-void* memory_calloc(const size_t n, const size_t size) {
+void* memory_calloc(size_t n, size_t size) {
   void* p = memory_alloc(n * size);
   if (!p) {
     return NULL;

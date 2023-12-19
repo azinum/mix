@@ -22,3 +22,23 @@ inline u32 thread_get_id(void) {
   return thread_id;
 }
 
+u64 atomic_fetch_add(volatile u64* target, u64 value) {
+  u64 result = __atomic_fetch_add(target, value, __ATOMIC_SEQ_CST); // Fetch value and then add
+  return result;
+}
+
+u64 atomic_compare_exchange(volatile u64* target, u64 value, u64 expected) {
+  u64 result = __atomic_compare_exchange(target, &expected, &value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+  return result;
+}
+
+inline void ticket_mutex_begin(Ticket_mutex* mutex) {
+  u64 ticket = atomic_fetch_add(&mutex->ticket, 1);
+  while (ticket != mutex->serving) {
+    spin_wait();
+  };
+}
+
+inline void ticket_mutex_end(Ticket_mutex* mutex) {
+  atomic_fetch_add(&mutex->serving, 1);
+}

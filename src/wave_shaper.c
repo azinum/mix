@@ -20,12 +20,12 @@ void waveshaper_canvas_onrender(Element* e) {
   i32 x = e->box.x + e->border_thickness;
   i32 y = e->box.y + height / 2;
 
-  static Color color_map[2] = {
-    COLOR_RGB(100, 250, 100),
-    COLOR_RGB(20, 100, 30),
+  Color color_map[2] = {
+    lerp_color(COLOR_RGB(40, 255, 40), warmer_color(UI_BUTTON_COLOR, 40), 0.6f),
+    lerp_color(COLOR_RGB(40, 255, 40), warmer_color(UI_BUTTON_COLOR, 30), 0.5f),
   };
 
-  for (i32 i = 0; i < (i32)ins->frames && i < width; ++i) {
+  for (i32 i = 0; i < (i32)ins->frames && i < width; i += 1) {
     f32 frame = CLAMP(ins->buffer[i], -1.0f, 1.0f);
     DrawLine(
       x + i,               // x1
@@ -78,7 +78,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PERCENT(100, 30);
     e.userdata = ins;
     e.border_thickness = 1.0f;
-    e.background_color = lerpcolor(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
+    e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
     e.onrender = waveshaper_canvas_onrender;
     ui_attach_element(container, &e);
   }
@@ -197,8 +197,8 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         / (f32)sample_rate
       );
       w->tick += 2;
-      w->freq = lerpf32(w->freq, w->freq_target, dt * 2.0f);
-      w->lfo = lerpf32(w->lfo, w->lfo_target, dt * 2.0f);
+      w->freq = lerp_f32(w->freq, w->freq_target, dt * 2.0f);
+      w->lfo = lerp_f32(w->lfo, w->lfo_target, dt * 2.0f);
     }
   }
 }

@@ -110,7 +110,6 @@ void config_init(void) {
   (void)doREPL;
 
   config.l = luaL_newstate();
-  config.load_count = 0;
   if (!config.l) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to initialize lua state\n");
     return;
