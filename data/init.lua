@@ -1,6 +1,6 @@
 -- data/init.lua
-window_width = 800
-window_height = 600
+window_width = 1600
+window_height = 900
 window_resizable = 1
 window_fullscreen = 0
 vsync = 0
@@ -14,9 +14,20 @@ sample_rate = 44100
 channel_count = 2
 ui_padding = 8
 ui_font = "data/fonts/notomono-regular.ttf"
-ui_font_base_size = font_size
-ui_line_spacing = font_size
+ui_font_base_size = 20
+ui_line_spacing = 20
 ui_theme = 1
 audio_input = 0
 audio_pa_in_port_id = -1
 audio_pa_out_port_id = -1
+background_color = "23232a"
+ui_background_color = "555569"
+ui_border_color = "000000"
+ui_button_color = "9966ff"
+ui_text_color = "ffffff"
+ui_border_thickness = 1.000000
+ui_title_bar_padding = 2
+ui_button_roundness = 0.200000
+ui_slider_inner_padding = 8
+ui_slider_knob_size = 8
+require ('data/theme')

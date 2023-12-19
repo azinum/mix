@@ -7,17 +7,6 @@
   #define UI_FRAME_ARENA_SIZE Kb(8)
 #endif
 
-extern Color BACKGROUND_COLOR;
-extern Color UI_BACKGROUND_COLOR;
-extern Color UI_BORDER_COLOR;
-extern Color UI_BUTTON_COLOR;
-extern Color UI_TEXT_COLOR;
-extern f32 UI_BORDER_THICKNESS;
-extern i32 UI_TITLE_BAR_PADDING;
-extern f32 UI_BUTTON_ROUNDNESS;
-extern i32 UI_SLIDER_INNER_PADDING;
-extern i32 UI_SLIDER_KNOB_SIZE;
-
 typedef struct Theme {
   Color main_background;
   Color background;

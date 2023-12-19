@@ -19,18 +19,7 @@ static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
 
 UI_state ui_state = {0};
 
-Color BACKGROUND_COLOR = COLOR_RGB(35, 35, 42);
-Color UI_BACKGROUND_COLOR = COLOR_RGB(85, 85, 105);
-Color UI_BORDER_COLOR = COLOR_RGB(0, 0, 0);
-Color UI_BUTTON_COLOR = COLOR_RGB(153, 102, 255);
-Color UI_TEXT_COLOR = COLOR_RGB(255, 255, 255);
-f32 UI_BORDER_THICKNESS = 1.0f;
-i32 UI_TITLE_BAR_PADDING = 2;
-f32 UI_BUTTON_ROUNDNESS = 0.2f;
-// TODO(lucas): slider rail size
-i32 UI_SLIDER_INNER_PADDING = 8;
-i32 UI_SLIDER_KNOB_SIZE = 8;
-
+#if 0
 #define C(R, G, B) COLOR_RGB(R, G, B)
 static Theme themes[MAX_THEME_ID] = {
   // main background     background           border               button               text                 border thickness  title bar padding   button roundness
@@ -40,6 +29,7 @@ static Theme themes[MAX_THEME_ID] = {
   { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240),    C(0x84, 0x34, 0xbf), C(230, 230, 230),    1.0f,             12,                 0.1f },
 };
 #undef C
+#endif
 
 static void ui_state_init(UI_state* ui);
 static void ui_theme_init(void);
@@ -90,6 +80,7 @@ void ui_state_init(UI_state* ui) {
 }
 
 void ui_theme_init(void) {
+#if 0
   if (UI_THEME >= 0 && UI_THEME < MAX_THEME_ID) {
     const Theme* theme = &themes[UI_THEME];
     BACKGROUND_COLOR = theme->main_background;
@@ -101,6 +92,7 @@ void ui_theme_init(void) {
     UI_TITLE_BAR_PADDING = theme->title_bar_padding;
     UI_BUTTON_ROUNDNESS = theme->button_roundness;
   }
+#endif
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {

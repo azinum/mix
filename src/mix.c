@@ -81,7 +81,7 @@ i32 mix_main(i32 argc, char** argv) {
   while (!WindowShouldClose()) {
     TIMER_START();
     BeginDrawing();
-    ClearBackground(BACKGROUND_COLOR);
+    ClearBackground(MAIN_BACKGROUND_COLOR);
     mix_update_and_render(&mix);
     EndDrawing();
     mix.dt = TIMER_END();

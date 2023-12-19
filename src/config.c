@@ -8,6 +8,8 @@
 
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
 
+#define CONFIG_VERBOSE_OUTPUT
+
 #ifdef CONFIG_VERBOSE_OUTPUT
   #define O(...) __VA_ARGS__
 #else
@@ -18,6 +20,7 @@ typedef enum Type {
   T_INT,
   T_FLOAT,
   T_STRING,
+  T_COLOR,
 
   MAX_TYPE,
 } Type;
@@ -25,6 +28,7 @@ typedef enum Type {
 static size_t type_size[] = {
   sizeof(i32),
   sizeof(f32),
+  sizeof(Color),
   MAX_CONFIG_STRING_SIZE,
 };
 
@@ -69,10 +73,19 @@ static Variable variables[] = {
   { "ui_font", T_STRING, &UI_FONT, hook_warn_restart },
   { "ui_font_base_size", T_INT, &UI_FONT_BASE_SIZE, hook_warn_restart },
   { "ui_line_spacing", T_INT, &UI_LINE_SPACING, hook_default },
-  { "ui_theme", T_INT, &UI_THEME, hook_default },
   { "audio_input", T_INT, &AUDIO_INPUT, hook_restart_audio_engine },
   { "audio_pa_in_port_id", T_INT, &AUDIO_PA_IN_PORT_ID, hook_restart_audio_engine },
   { "audio_pa_out_port_id", T_INT, &AUDIO_PA_OUT_PORT_ID, hook_restart_audio_engine },
+  { "main_background_color", T_COLOR, &MAIN_BACKGROUND_COLOR, hook_default },
+  { "ui_background_color", T_COLOR, &UI_BACKGROUND_COLOR, hook_default },
+  { "ui_border_color", T_COLOR, &UI_BORDER_COLOR, hook_default },
+  { "ui_button_color", T_COLOR, &UI_BUTTON_COLOR, hook_default },
+  { "ui_text_color", T_COLOR, &UI_TEXT_COLOR, hook_default },
+  { "ui_border_thickness", T_FLOAT, &UI_BORDER_THICKNESS, hook_default },
+  { "ui_title_bar_padding", T_INT, &UI_TITLE_BAR_PADDING, hook_default },
+  { "ui_button_roundness", T_FLOAT, &UI_BUTTON_ROUNDNESS, hook_default },
+  { "ui_slider_inner_padding", T_INT, &UI_SLIDER_INNER_PADDING, hook_default },
+  { "ui_slider_knob_size", T_INT, &UI_SLIDER_KNOB_SIZE, hook_default },
 };
 
 struct {
@@ -118,12 +131,14 @@ Result config_store(const char* path) {
     Variable* v = &variables[i];
     write_variable(fd, v->name, v->type, v->data);
   }
+  stb_dprintf(fd, "require ('data/theme')\n");
   close(fd);
   return Ok;
 }
 
 Result config_load(const char* path) {
   TIMER_START();
+  config_init();
   if (dofile(config.l, path) != LUA_OK) {
     return Error;
   }
@@ -147,6 +162,7 @@ Result config_load(const char* path) {
   f32 dt = TIMER_END();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "loaded config `%s` in %g ms (%zu hooks)\n", path, 1000 * dt, num_hooks_called);
   config.load_count += 1;
+  config_free();
   return Ok;
 }
 
@@ -193,6 +209,11 @@ void write_variable(i32 fd, const char* name, Type type, void* data) {
       stb_dprintf(fd, "%s = \"%s\"\n", name, (char*)data);
       break;
     }
+    case T_COLOR: {
+      Color* c = (Color*)data;
+      stb_dprintf(fd, "%s = \"%02x%02x%02x\"\n", name, c->r, c->g, c->b);
+      break;
+    }
     default:
       break;
   }
@@ -228,6 +249,16 @@ Result read_variable(const char* name, Type type, void* data) {
         const char* value = lua_tostring(l, -1);
         strncpy((char*)data, value, MAX_CONFIG_STRING_SIZE);
         lua_pop(l, 1);
+        return Ok;
+      }
+      lua_pop(l, 1);
+      break;
+    }
+    case T_COLOR: {
+      if (lua_isstring(l, -1)) {
+        const char* value = lua_tostring(l, -1);
+        Color color = hex_string_to_color((char*)value);
+        *(Color*)data = color;
         return Ok;
       }
       lua_pop(l, 1);
