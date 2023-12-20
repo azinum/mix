@@ -12,7 +12,7 @@ target_fps = 60
 frames_per_buffer = 512
 sample_rate = 44100
 channel_count = 2
-ui_padding = 8
+ui_padding = 4
 ui_font = "data/fonts/notomono-regular.ttf"
 ui_font_base_size = 20
 ui_line_spacing = 20
@@ -30,4 +30,5 @@ ui_button_roundness = 0.200000
 ui_slider_inner_padding = 8
 ui_slider_knob_size = 8
 ui_theme = "dark"
+ui_roundness = 0.05
 require ('data/theme')

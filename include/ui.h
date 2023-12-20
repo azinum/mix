@@ -9,6 +9,8 @@
 #ifndef _UI_H
 #define _UI_H
 
+// #define UI_DRAW_GUIDES
+
 #ifndef UI_FRAME_ARENA_SIZE
   #define UI_FRAME_ARENA_SIZE Kb(8)
 #endif
@@ -173,6 +175,8 @@ typedef struct Element {
   u32 count;
   u32 size;
 
+  const char* name;
+
   u32 id;
   Box box;
   Element_type type;
@@ -203,12 +207,14 @@ typedef struct Element {
 
   void (*onclick)(struct Element* e);
   void (*onrender)(struct Element* e);
+  void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
 } __attribute__((aligned(CACHELINESIZE))) Element;
 
 typedef struct UI_state {
   Element root;
   u32 id_counter;
   f32 latency;
+  f32 render_latency;
   u32 element_update_count;
   u32 element_render_count;
   Vector2 mouse;
@@ -216,10 +222,14 @@ typedef struct UI_state {
   Element* hover;
   Element* active;
   Element* select;
+  Element* marker; // a marker element is used to connect two elements together via a callback function
   i32 fd;
   u32 active_id;
   Arena frame_arena;
   f32 dt;
+  f32 timer;
+  f32 slider_deadzone;
+  bool (*connection_filter)(struct Element* e, struct Element* target);
 } UI_state;
 
 extern UI_state ui_state;
@@ -230,7 +240,14 @@ void ui_hierarchy_print(void);
 void ui_render(void);
 void ui_free(void);
 
+// set default slider deadzone so that when new sliders are created, they use this deadzone value from now on
+void ui_set_slider_deadzone(f32 deadzone);
+// set a filter for which elements that can be connected together
+void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*));
+void ui_reset_connection_filter(void);
+
 Element* ui_attach_element(Element* target, Element* e);
+Element ui_none(void);
 Element ui_container(char* title);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
@@ -240,5 +257,6 @@ Element ui_toggle(i32* value);
 Element ui_toggle_ex(i32* value, char* text);
 Element ui_toggle_ex2(i32* value, char* false_text, char* true_text);
 Element ui_slider(void* value, Slider_type type, Range range);
+Element ui_line_break(i32 height);
 
 #endif // _UI_H

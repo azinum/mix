@@ -140,24 +140,24 @@ void mix_update_and_render(Mix* m) {
   ui_update(m->dt);
   ui_render();
 
-  static char debug_text[512] = {0};
+#if 1
+  static char debug_text[256] = {0};
   stb_snprintf(
     debug_text,
     sizeof(debug_text),
-    "%d fps\n"
     "%zu/%zu bytes (%.2g %%)\n"
-    "%g ms ui latency\n"
+    "%.4f/%.4f/%.4f ms ui latency (update/render/total)\n"
     "%u ui element updates"
     ,
-    (i32)m->fps,
     memory_state.usage, memory_state.max_usage,
     100 * ((f32)memory_state.usage / memory_state.max_usage),
-    1000 * ui_state.latency,
+    1000 * (ui_state.latency - ui_state.render_latency), 1000 * ui_state.render_latency, 1000 * ui_state.latency,
     ui_state.element_update_count
   );
 
-  DrawText(debug_text, 4, GetScreenHeight() - (0.5*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 4, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  DrawText(debug_text, 4, GetScreenHeight() - (0.5 * UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 3, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 
+#endif
   render_delta_buffer(m);
 }
 
@@ -278,8 +278,8 @@ void render_delta_buffer(Mix* m) {
 
   dt_avg /= window_size;
   static char text[32] = {0};
-  stb_snprintf(text, sizeof(text), "%g ms dt (average)", dt_avg * 1000);
-  DrawText(text, x, y - FONT_SIZE_SMALLEST, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  stb_snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)m->fps);
+  DrawText(text, x, y - (0.5f*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 }
 
 void assets_load(Assets* a) {

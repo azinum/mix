@@ -2,6 +2,7 @@
 // TODO:
 //  - text input field
 //  - icon/image
+//  - string formatting of text elements
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
@@ -44,12 +45,15 @@ static void ui_element_init(Element* e, Element_type type);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static Box  ui_pad_box(Box box, i32 padding);
 static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
+static Box  ui_expand_box(Box box, i32 padding);
+static void ui_center_of(const Box* box, i32* x, i32* y);
 static void ui_render_tooltip(UI_state* ui, char* tooltip);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
 static void ui_onrender(struct Element* e);
-
+static void ui_onconnect(struct Element* e, struct Element* target);
+static bool ui_connection_filter(struct Element* e, struct Element* target);
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
 
@@ -63,6 +67,7 @@ void ui_state_init(UI_state* ui) {
 
   ui->id_counter = 2;
   ui->latency = 0;
+  ui->render_latency = 0;
   ui->element_update_count = 0;
   ui->element_render_count = 0;
   ui->mouse = (Vector2) {0, 0},
@@ -70,6 +75,7 @@ void ui_state_init(UI_state* ui) {
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
+  ui->marker = NULL;
 #ifdef UI_LOG_HIERARCHY
   ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
@@ -81,6 +87,9 @@ void ui_state_init(UI_state* ui) {
   ui->active_id = 0;
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
   ui->dt = 0.0f;
+  ui->timer = 0.0f;
+  ui->slider_deadzone = 0.0f;
+  ui->connection_filter = ui_connection_filter;
 }
 
 void ui_theme_init(void) {
@@ -513,6 +522,9 @@ void ui_element_init(Element* e, Element_type type) {
   e->items = NULL;
   e->count = 0;
   e->size = 0;
+
+  e->name = element_type_str[type];
+
   e->id = 1;
   e->box = BOX(0, 0, 0, 0);
   e->type = type;
@@ -536,7 +548,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->hidden = false;
 
   e->border_thickness = UI_BORDER_THICKNESS;
-  e->roundness = 0.0f;
+  e->roundness = UI_ROUNDNESS;
 
   e->placement = PLACEMENT_NONE;
   e->sizing = (Sizing) {
@@ -549,6 +561,7 @@ void ui_element_init(Element* e, Element_type type) {
 
   e->onclick = ui_onclick;
   e->onrender = ui_onrender;
+  e->onconnect = ui_onconnect;
 }
 
 bool ui_overlap(i32 x, i32 y, Box box) {
@@ -574,16 +587,23 @@ Box ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding) {
   );
 }
 
+Box ui_expand_box(Box box, i32 padding) {
+  return ui_pad_box(box, -padding);
+}
+
+void ui_center_of(const Box* box, i32* x, i32* y) {
+  *x = box->x + box->w / 2;
+  *y = box->y + box->h / 2;
+}
+
 void ui_render_tooltip(UI_state* ui, char* tooltip) {
   if (!tooltip) {
     return;
   }
   const Box box = ui->root.box;
-  Vector2 center = (Vector2) {
-    .x = box.x + box.w / 2,
-    .y = box.y + box.h / 2,
-  };
-  if ((center.x == 0) || (center.y == 0)) {
+  i32 x_center = 0, y_center = 0;
+  ui_center_of(&box, &x_center, &y_center);
+  if (x_center == 0 || y_center == 0) {
     return;
   }
 
@@ -598,15 +618,15 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   i32 y_offset = 0;
 
   Vector2 offset_from_center_factor = (Vector2) {
-    .x = -((x / center.x) - 1.0f),
-    .y = -((y / center.y) - 1.0f),
+    .x = -((x / (f32)x_center) - 1.0f),
+    .y = -((y / (f32)y_center) - 1.0f),
   };
 
   offset_from_center_factor.x = offset_from_center_factor.x / fabs(offset_from_center_factor.x);
   offset_from_center_factor.y = offset_from_center_factor.y / fabs(offset_from_center_factor.y);
 
-  const i32 base_x_offset = 10;
-  const i32 base_y_offset = 10;
+  const i32 base_x_offset = 10 + UI_PADDING;
+  const i32 base_y_offset = 10 + UI_PADDING;
 
   x_offset += offset_from_center_factor.x * text_size.x * 0.5f + (offset_from_center_factor.x * base_x_offset);
   y_offset += offset_from_center_factor.y * text_size.y * 0.5f + (offset_from_center_factor.y * base_y_offset);
@@ -619,16 +639,18 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   const f32 roundness = UI_BUTTON_ROUNDNESS;
   const f32 border_thickness = UI_BORDER_THICKNESS;
   const Color border_color = UI_BORDER_COLOR;
-
-  if (roundness > 0) {
-    DrawRectangleRounded((Rectangle) { x, y, text_size.x, text_size.y }, roundness, segments, background_color);
-    DrawRectangleRoundedLines((Rectangle) { x, y, text_size.x, text_size.y}, roundness, segments, border_thickness, border_color);
+  {
+    Box box = ui_expand_box(BOX(x, y, text_size.x, text_size.y), UI_PADDING);
+    if (roundness > 0) {
+      DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, background_color);
+      DrawRectangleRoundedLines((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, border_thickness, border_color);
+    }
+    else {
+      DrawRectangle(box.x, box.y, box.w, box.h, background_color);
+      DrawRectangleLinesEx((Rectangle) {box.x, box.y, box.w, box.h }, border_thickness, border_color);
+    }
+    DrawTextEx(font, tooltip, (Vector2) { x, y }, font_size, spacing, COLOR_RGB(255, 255, 255));
   }
-  else {
-    DrawRectangle(x, y, text_size.x, text_size.y, background_color);
-    DrawRectangleLinesEx((Rectangle) { x, y, text_size.x, text_size.y}, border_thickness, border_color);
-  }
-  DrawTextEx(font, tooltip, (Vector2) { x, y}, font_size, spacing, COLOR_RGB(255, 255, 255));
 }
 
 void ui_onclick(struct Element* e) {
@@ -677,6 +699,21 @@ void ui_onrender(struct Element* e) {
   (void)e;
 }
 
+void ui_onconnect(struct Element* e, struct Element* target) {
+  (void)e;
+  (void)target;
+#if 0
+  // hehehe liitl swapparoo
+  Element copy = *e;
+  *e = *target;
+  *target = copy;
+#endif
+}
+
+bool ui_connection_filter(struct Element* e, struct Element* target) {
+  return (e != NULL) && (target != NULL);
+}
+
 Result ui_init(void) {
   ui_state_init(&ui_state);
   return Ok;
@@ -687,6 +724,8 @@ void ui_update(f32 dt) {
   UI_state* ui = &ui_state;
   ui->latency = 0;
   ui->dt = dt;
+  ui->timer += dt;
+
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
   arena_reset(&ui->frame_arena);
@@ -713,17 +752,34 @@ void ui_update(f32 dt) {
     }
   }
 
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
+
+  if (ui->marker && !mod_key) {
+    ui->marker = NULL;
+  }
+
   if (ui->hover == ui->select && ui->hover) {
     if (ui->select->id == ui->active_id) {
-      if (ui->select->type == ELEMENT_TOGGLE) {
-        ui_toggle_onclick(ui->select);
+      if (mod_key) {
+        if (ui->marker && ui->marker != ui->select) {
+          ui->marker->onconnect(ui->marker, ui->select);
+          ui->marker = NULL;
+        }
+        else {
+          ui->marker = ui->select;
+        }
       }
-      ui->select->onclick(ui->select);
+      else {
+        if (ui->select->type == ELEMENT_TOGGLE) {
+          ui_toggle_onclick(ui->select);
+        }
+        ui->select->onclick(ui->select);
+      }
     }
     ui->active_id = 0;
   }
   if (ui->hover == ui->active && ui->hover) {
-    if (ui->active->id == ui->active_id && ui->active->type == ELEMENT_SLIDER) {
+    if (ui->active->id == ui->active_id && ui->active->type == ELEMENT_SLIDER && !mod_key) {
       ui_slider_onclick(ui, ui->active);
     }
   }
@@ -768,13 +824,47 @@ void ui_render(void) {
     DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "timer: %g", e->tooltip_timer);
   }
 #endif
+  static const Color marker_color_bright = COLOR_RGB(80, 200, 80);
+  static const Color marker_color_dim    = COLOR_RGB(60, 140, 60);
+
+  if (ui->marker != NULL) {
+    const Color color = lerp_color(marker_color_dim, marker_color_bright, (1 + sinf(12*ui->timer)) * 0.5f);
+    Element* e = ui->marker;
+    if (e->roundness > 0) {
+      const i32 segments = 8;
+      DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, 1.1f, color);
+    }
+    else {
+      DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.1f, color);
+    }
+  }
   if (ui->hover != NULL) {
     Element* e = ui->hover;
+    if (ui->marker) {
+
+      // TODO(lucas): improve filtering
+      if (ui->connection_filter(ui->marker, ui->hover)) {
+        const Color color = lerp_color(marker_color_dim, marker_color_bright, (1 + sinf(12*ui->timer)) * 0.5f);
+        Element* e = ui->hover;
+        if (e->roundness > 0) {
+          const i32 segments = 8;
+          DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, 1.1f, color);
+        }
+        else {
+          DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.1f, color);
+        }
+        i32 x1, y1, x2, y2;
+        ui_center_of(&ui->marker->box, &x1, &y1);
+        ui_center_of(&e->box, &x2, &y2);
+        DrawLine(x1, y1, x2, y2, color);
+      }
+    }
     if (e->tooltip_timer >= UI_TOOLTIP_DELAY) {
       ui_render_tooltip(ui, e->tooltip);
     }
   }
   ui->latency += TIMER_END();
+  ui->render_latency = TIMER_END();
 }
 
 void ui_free(void) {
@@ -786,6 +876,21 @@ void ui_free(void) {
   arena_free(&ui->frame_arena);
 }
 
+void ui_set_slider_deadzone(f32 deadzone) {
+  UI_state* ui = &ui_state;
+  ui->slider_deadzone = CLAMP(deadzone, 0.0f, 1.0f);
+}
+
+void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*)) {
+  UI_state* ui = &ui_state;
+  ui->connection_filter = filter;
+}
+
+void ui_reset_connection_filter(void) {
+  UI_state* ui = &ui_state;
+  ui->connection_filter = ui_connection_filter;
+}
+
 Element* ui_attach_element(Element* target, Element* e) {
   UI_state* ui = &ui_state;
   if (!target) {
@@ -795,6 +900,13 @@ Element* ui_attach_element(Element* target, Element* e) {
   e->id = ui->id_counter++;
   list_push(target, *e);
   return &target->items[index];
+}
+
+Element ui_none(void) {
+  Element e;
+  ui_element_init(&e, ELEMENT_NONE);
+  e.render = false;
+  return e;
 }
 
 Element ui_container(char* title) {
@@ -809,6 +921,9 @@ Element ui_container(char* title) {
   };
   e.data.container.title = title;
   e.data.container.title_padding = UI_TITLE_BAR_PADDING;
+  if (title) {
+    e.roundness = 0;
+  }
   return e;
 }
 
@@ -817,6 +932,7 @@ Element ui_grid(u32 cols, bool render) {
   ui_element_init(&e, ELEMENT_GRID);
   e.data.grid.cols = cols;
   e.render = render;
+  e.roundness = 0;
   return e;
 }
 
@@ -884,6 +1000,7 @@ Element ui_toggle_ex2(i32* value, char* false_text, char* true_text) {
 
 Element ui_slider(void* value, Slider_type type, Range range) {
   ASSERT(value != NULL);
+  UI_state* ui = &ui_state;
 
   Element e;
   ui_element_init(&e, ELEMENT_SLIDER);
@@ -901,13 +1018,20 @@ Element ui_slider(void* value, Slider_type type, Range range) {
   e.data.slider.type = type;
   e.data.slider.range = range;
   e.data.slider.vertical = false;
-  e.data.slider.deadzone = 0.0f;
+  e.data.slider.deadzone = ui->slider_deadzone;
   e.type = ELEMENT_SLIDER;
   e.scissor = false;
   e.background = true;
   e.border = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  return e;
+}
+
+Element ui_line_break(i32 height) {
+  Element e = ui_none();
+  e.box.h = height;
+  e.sizing = SIZING_PERCENT(100, 0);
   return e;
 }
 

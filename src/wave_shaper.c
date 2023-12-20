@@ -1,14 +1,19 @@
 // wave_shaper.c
-// TODO(lucas): make lfo `bindable` to instrument parameters
 
-#define ARENA_SIZE 1024 * 2
-#define MAX_TEXT_SIZE 512
+#define ARENA_SIZE 1024
+#define INFO_TEXT_SIZE 256
+#define LFO_CONNECTION_STR_SIZE 64
 
 #define EXPERIMENTAL
+
+static Color color_connected = COLOR_RGB(40, 140, 40);
+static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
 static void waveshaper_canvas_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
+static void waveshaper_bind_lfo(Element* e, Element* target);
+static bool waveshaper_connection_filter(Element* e, Element* target);
 
 void waveshaper_canvas_onrender(Element* e) {
   TIMER_START();
@@ -50,19 +55,65 @@ void waveshaper_reset_onclick(Element* e) {
 }
 
 void waveshaper_default(Waveshaper* w) {
-  w->tick           = 0;
-  w->volume_target  = 0.1f;
-  w->freq           = 55;
-  w->freq_target    = 55;
-  w->lfo            = 0;
-  w->lfo_target     = 0;
-  w->interp_speed   = 2.0f;
-  w->freeze         = false;
-  w->mute           = false;
-  w->speed          = 2;
-  w->flipflop       = false;
-  w->distortion     = false;
-  w->render         = true;
+  w->tick             = 0;
+  w->volume_target    = 0.1f;
+  w->freq             = 55;
+  w->freq_target      = 55;
+  w->freq_mod         = 0;
+  w->freq_mod_target  = 0;
+  w->interp_speed     = 4.0f;
+  w->freeze           = false;
+  w->mute             = false;
+  w->speed            = 2;
+  w->flipflop         = false;
+  w->distortion       = false;
+  w->render           = true;
+  w->lfo = (Lfo) {
+    .lfo_target = NULL,
+    .lfo = 0,
+    .amplitude = 1.0f,
+    .hz = 0.0f,
+    .tick = 0,
+    .additive = false,
+    .connection_name = LFO_NO_CONNECTION,
+  };
+}
+
+void waveshaper_bind_lfo(Element* e, Element* target) {
+  Instrument* ins = (Instrument*)e->userdata;
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  if (target->type == ELEMENT_SLIDER) {
+    if (target->name != NULL) {
+      w->lfo.connection_name = target->name;
+    }
+    e->background_color = color_connected;
+    switch (target->data.slider.type) {
+      case SLIDER_FLOAT: {
+        f32* binding = target->data.slider.v.f;
+        w->lfo.lfo_target = binding;
+        break;
+      }
+      case SLIDER_INTEGER: {
+        i32* binding = target->data.slider.v.i;
+        // cursed...
+        w->lfo.lfo_target = (f32*)binding;
+        break;
+      }
+      default:
+        break;
+    }
+    return;
+  }
+  w->lfo.lfo_target = NULL;
+  w->lfo.connection_name = LFO_NO_CONNECTION;
+  e->background_color = color_disconnected;
+}
+
+bool waveshaper_connection_filter(Element* e, Element* target) {
+  if (target->type == ELEMENT_SLIDER) {
+    return target->data.slider.v.f != NULL;
+  }
+  return false;
 }
 
 void waveshaper_init(Instrument* ins) {
@@ -74,11 +125,14 @@ void waveshaper_init(Instrument* ins) {
     .arena = arena_new(ARENA_SIZE),
     .text = NULL,
   };
-  w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
+  w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
+  w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   waveshaper_default(w);
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
+  ui_set_slider_deadzone(0.01f);
+  ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
   {
     Element e = ui_text(w->text);
@@ -94,6 +148,8 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.onrender = waveshaper_canvas_onrender;
     ui_attach_element(container, &e);
   }
+  Element line_break = ui_line_break(FONT_SIZE);
+
   const i32 button_height = 48;
   const i32 slider_height = 38;
   {
@@ -114,7 +170,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_toggle_ex(&w->flipflop, "flipflop");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.tooltip = "flip the counting direction of the internal clock\nthat generates the audio";
+    e.tooltip = "flip the counting direction of the internal clock";
     ui_attach_element(container, &e);
   }
   {
@@ -135,29 +191,31 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
 
-  f32 deadzone = 0.01f;
+  ui_attach_element(container, &line_break);
+
   {
     Element e = ui_text("volume");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_text("lfo");
+    Element e = ui_text("frequency modulation");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->volume_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    e.name = "volume";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(0, 25.0f));
+    Element e = ui_slider(&w->freq_mod_target, SLIDER_FLOAT, RANGE_FLOAT(0, 25.0f));
+    e.name = "frequency modulation";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.data.slider.deadzone = deadzone;
+    e.userdata = ins;
     ui_attach_element(container, &e);
   }
   {
@@ -172,16 +230,16 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
+    e.name = "frequency";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->interp_speed, SLIDER_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
     e.box = BOX(0, 0, 0, slider_height);
+    e.name = "interpolation speed";
     e.sizing = SIZING_PERCENT(50, 0);
-    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
 
@@ -191,18 +249,103 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->speed, SLIDER_INTEGER, RANGE(0, 10));
+    Element e = ui_slider(&w->speed, SLIDER_INTEGER, RANGE(1, 12));
+    e.name = "speed";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
+  }
+
+  ui_attach_element(container, &line_break);
+
+  {
+    Element e = ui_text("LFO");
+    ui_attach_element(container, &e);
+  }
+
+  Element* lfo_container = NULL;
+  {
+    Element e = ui_container(NULL);
+    e.scissor = false;
+    e.background = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.border = true;
+    e.background = true;
+    e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.05f);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.box.h = 4 * button_height;
+    lfo_container = ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("amplitude");
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_text("hz");
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_slider(&w->lfo.amplitude, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    e.name = "LFO amplitude";
+    e.box.h = slider_height;
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_slider(&w->lfo.hz, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 25.0f));
+    e.name = "LFO hz";
+    e.box.h = slider_height;
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_text("offset");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_slider(&w->lfo.offset, SLIDER_FLOAT, RANGE_FLOAT(-1.0f, 1.0f));
+    e.name = "LFO offset";
+    e.box.h = slider_height;
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->lfo.additive, "additive");
+    e.box.h = slider_height;
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_none();
+    e.render = true;
+    e.background = true;
+    e.background_color = color_disconnected;
+    e.border = true;
+    e.border_color = UI_BORDER_COLOR;
+    e.roundness = UI_BUTTON_ROUNDNESS;
+    e.box.w = e.box.h = FONT_SIZE;
+    e.userdata = ins;
+    e.onconnect = waveshaper_bind_lfo;
+    e.tooltip = "hold ctrl+left mouse click to connect the LFO\nto one of the range sliders";
+    ui_attach_element(lfo_container, &e);
+  }
+  {
+    Element e = ui_text(w->lfo_connection);
+    ui_attach_element(lfo_container, &e);
   }
 }
 
 void waveshaper_update(Instrument* ins, struct Mix* mix) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_reset(&w->arena);
-  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nlfo: %g\ninterp_speed: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms", w->freq, w->lfo, w->interp_speed, ins->volume, 1000 * ins->latency, 1000 * ins->audio_latency);
+  w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
+  stb_snprintf(w->text, INFO_TEXT_SIZE, "freq: %g\nfreq_mod: %g\ninterp_speed: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms", w->freq, w->freq_mod, w->interp_speed, ins->volume, 1000 * ins->latency, 1000 * ins->audio_latency);
+
+  w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
+  stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);
 
   if (IsKeyPressed(KEY_W)) {
     w->freq_target += 1;
@@ -211,10 +354,10 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     w->freq_target -= 1;
   }
   if (IsKeyPressed(KEY_E)) {
-    w->lfo_target += 1;
+    w->freq_mod_target += 1;
   }
   if (IsKeyPressed(KEY_D)) {
-    w->lfo_target -= 1;
+    w->freq_mod_target -= 1;
   }
   if (IsKeyPressed(KEY_F)) {
     w->freeze = !w->freeze;
@@ -241,17 +384,28 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
   if (!w->freeze) {
     for (size_t i = 0; i < ins->frames; i += 2) {
+      w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
+      w->lfo.tick += 1;
+      if (w->lfo.lfo_target != NULL) {
+        if (w->lfo.additive) {
+          *w->lfo.lfo_target += w->lfo.lfo;
+        }
+        else {
+          *w->lfo.lfo_target = w->lfo.lfo;
+        }
+      }
+
       ins->buffer[i] = volume * sinf(
-        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       ins->buffer[i + 1] = volume * cosf(
-        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       w->tick += w->speed;
       w->freq = lerp_f32(w->freq, w->freq_target, dt * w->interp_speed);
-      w->lfo = lerp_f32(w->lfo, w->lfo_target, dt * w->interp_speed);
+      w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, dt * w->interp_speed);
       ins->volume = lerp_f32(ins->volume, w->volume_target, dt * w->interp_speed);
     }
     if (w->distortion) {
@@ -284,4 +438,4 @@ void waveshaper_free(struct Instrument* ins) {
 }
 
 #undef ARENA_SIZE
-#undef MAX_TEXT_SIZE
+#undef INFO_TEXT_SIZE

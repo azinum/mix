@@ -3,13 +3,26 @@
 #ifndef _WAVE_SHAPER_H
 #define _WAVE_SHAPER_H
 
+typedef struct Lfo {
+  f32* lfo_target;
+  f32 lfo;
+  f32 amplitude;
+  f32 hz;
+  f32 offset;
+  size_t tick;
+  i32 additive; // multiplicative is default
+  const char* connection_name;
+} Lfo;
+
+#define LFO_NO_CONNECTION "none"
+
 typedef struct Waveshaper {
   ssize_t tick;
   f32 volume_target;
   f32 freq;
   f32 freq_target;
-  f32 lfo;
-  f32 lfo_target;
+  f32 freq_mod;
+  f32 freq_mod_target;
   f32 interp_speed;
   i32 freeze;
   i32 mute;
@@ -19,6 +32,8 @@ typedef struct Waveshaper {
   Arena arena;
   char* text;
   i32 render;
+  Lfo lfo;
+  char* lfo_connection;
 } Waveshaper;
 
 void waveshaper_init(Instrument* ins);

@@ -86,6 +86,7 @@ static Variable variables[] = {
   { "ui_slider_inner_padding", T_INT, &UI_SLIDER_INNER_PADDING, hook_default },
   { "ui_slider_knob_size", T_INT, &UI_SLIDER_KNOB_SIZE, hook_default },
   { "ui_theme", T_STRING, &UI_THEME, hook_default },
+  { "ui_roundness", T_FLOAT, &UI_ROUNDNESS, hook_default },
 };
 
 struct {
