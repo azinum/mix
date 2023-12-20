@@ -10,7 +10,7 @@ typedef struct Lfo {
   f32 hz;
   f32 offset;
   size_t tick;
-  i32 additive; // multiplicative is default
+  i32 additive;
   const char* connection_name;
 } Lfo;
 
@@ -29,6 +29,7 @@ typedef struct Waveshaper {
   i32 speed;
   i32 flipflop;
   i32 distortion;
+  f32 gain;
   Arena arena;
   char* text;
   i32 render;

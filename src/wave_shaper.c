@@ -68,6 +68,7 @@ void waveshaper_default(Waveshaper* w) {
   w->flipflop         = false;
   w->distortion       = false;
   w->render           = true;
+  w->gain             = 1.0f;
   w->lfo = (Lfo) {
     .lfo_target = NULL,
     .lfo = 0,
@@ -245,12 +246,24 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 
   {
     Element e = ui_text("speed");
-    e.sizing = SIZING_PERCENT(100, 0);
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("gain");
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->speed, SLIDER_INTEGER, RANGE(1, 12));
     e.name = "speed";
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&w->gain, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
+    e.name = "gain";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
@@ -424,6 +437,11 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         ins->buffer[i] *= 8.0f;
         ins->buffer[i] = CLAMP(ins->buffer[i], -1.0f, 1.0f);
         ins->buffer[i] *= 1/4.0f;
+      }
+    }
+    if (w->gain > 0) {
+      for (size_t i = 0; i < ins->frames; ++i) {
+        ins->buffer[i] *= w->gain;
       }
     }
   }

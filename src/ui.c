@@ -48,6 +48,7 @@ static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
 static Box  ui_expand_box(Box box, i32 padding);
 static void ui_center_of(const Box* box, i32* x, i32* y);
 static void ui_render_tooltip(UI_state* ui, char* tooltip);
+static void ui_render_tooltip_of_element(UI_state* ui, Element* e);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
@@ -653,6 +654,26 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   }
 }
 
+void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
+  static char tooltip[256] = {0};
+  switch (e->type) {
+    case ELEMENT_SLIDER: {
+      if (e->data.slider.type == SLIDER_FLOAT) {
+        stb_snprintf(tooltip, sizeof(tooltip), "range: %g, %g\nvalue: %g", e->data.slider.range.f_min, e->data.slider.range.f_max, *e->data.slider.v.f);
+        break;
+      }
+      stb_snprintf(tooltip, sizeof(tooltip), "range: %d, %d\nvalue: %d", e->data.slider.range.i_min, e->data.slider.range.i_max, *e->data.slider.v.i);
+      break;
+    }
+    default:
+      break;
+  }
+  if (*tooltip != 0) {
+    ui_render_tooltip(ui, tooltip);
+  }
+  memset(tooltip, 0, sizeof(tooltip));
+}
+
 void ui_onclick(struct Element* e) {
   (void)e;
 }
@@ -860,7 +881,12 @@ void ui_render(void) {
       }
     }
     if (e->tooltip_timer >= UI_TOOLTIP_DELAY) {
-      ui_render_tooltip(ui, e->tooltip);
+      if (e->tooltip) {
+        ui_render_tooltip(ui, e->tooltip);
+      }
+      else {
+        ui_render_tooltip_of_element(ui, e);
+      }
     }
   }
   ui->latency += TIMER_END();
