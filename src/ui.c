@@ -4,7 +4,7 @@
 //  - icon/image
 
 #ifndef DRAW_GUIDES
-  #define DRAW_GUIDES 1
+  #define DRAW_GUIDES 0
 #endif
 
 #define LOG_UI_HIERARCHY 0
@@ -76,7 +76,6 @@ void ui_state_init(UI_state* ui) {
 #endif
   ui->active_id = 0;
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
-
 }
 
 void ui_theme_init(void) {
@@ -103,6 +102,20 @@ void ui_update_elements(UI_state* ui, Element* e) {
     return;
   }
   ui->element_update_count += 1;
+
+  const Title_bar title_bar = e->title_bar;
+  // NOTE(lucas): title bars will only work proper when applied to elements that are scaled by percent or scaled by container and grid elements, with their placement and scaling methods
+  if (title_bar.title) {
+    const i32 font_size = FONT_SIZE;
+    const i32 title_height = font_size + title_bar.padding * 2;
+    if (title_bar.top) {
+      e->box.y += title_height;
+      e->box.h -= title_height;
+    }
+    else {
+      e->box.h -= title_height;
+    }
+  }
 
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
@@ -169,21 +182,13 @@ void ui_update_elements(UI_state* ui, Element* e) {
 
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui;
-  char* title = e->data.container.title;
-  i32 title_padding = e->data.container.title_padding;
+  const Title_bar title_bar = e->title_bar;
 
   // placement offsets
   i32 px = 0;
   i32 py = 0;
   // block placement offsets
   i32 py_offset = 0; // element with the greatest height
-
-  const i32 font_size = FONT_SIZE;
-  const i32 title_height = font_size + title_padding * 2;
-  if (title) {
-    e->box.y += title_height;
-    e->box.h -= title_height;
-  }
 
   bool hide = false;
   for (size_t i = 0; i < e->count; ++i) {
@@ -463,24 +468,24 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
   }
 
-  // draw title bar after ending scissor mode if the element is a container and has a title
-  if (e->type == ELEMENT_CONTAINER) {
-    char* title = e->data.container.title;
-    i32 title_padding = e->data.container.title_padding;
-    if (title) {
-      const Font font = assets.font;
-      const i32 font_size = FONT_SIZE;
-      const i32 title_height = font_size + title_padding * 2;
-      i32 spacing = 0;
-      const i32 w = e->box.w;
-      const i32 h = title_height + (i32)e->border_thickness;
-      const i32 x = e->box.x;
-      const i32 y = e->box.y - title_height;
-      DrawRectangle(x, y, w, h, lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
-      DrawTextEx(font, title, (Vector2) { x + title_padding, y + title_padding }, font_size, spacing, e->text_color);
-      if (e->border) {
-        DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
-      }
+  // draw title bar after ending scissor mode
+  const Title_bar title_bar = e->title_bar;
+  if (title_bar.title) {
+    const Font font = assets.font;
+    const i32 font_size = FONT_SIZE;
+    const i32 title_height = font_size + title_bar.padding * 2;
+    i32 spacing = 0;
+    const i32 w = e->box.w;
+    const i32 h = title_height + (i32)e->border_thickness;
+    const i32 x = e->box.x;
+    i32 y = e->box.y - title_height;
+    if (!title_bar.top) {
+      y = e->box.y + e->box.h;
+    }
+    DrawRectangle(x, y, w, h, lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
+    DrawTextEx(font, title_bar.title, (Vector2) { x + title_bar.padding, y + title_bar.padding }, font_size, spacing, e->text_color);
+    if (e->border) {
+      DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
     }
   }
 }
@@ -504,7 +509,11 @@ void ui_element_init(Element* e) {
   e->type = ELEMENT_NONE;
   memset(&e->data, 0, sizeof(e->data));
   e->userdata = NULL;
-
+  e->title_bar = (Title_bar) {
+    .title = NULL,
+    .padding = UI_TITLE_BAR_PADDING,
+    .top = true,
+  };
   e->padding = UI_PADDING;
 
   e->text_color = UI_TEXT_COLOR;
@@ -714,6 +723,11 @@ Element ui_container(char* title) {
   e.type = ELEMENT_CONTAINER;
   e.render = true;
   e.scissor = true;
+  e.title_bar = (Title_bar) {
+    .title = title,
+    .padding = UI_TITLE_BAR_PADDING,
+    .top = true,
+  };
   e.data.container.title = title;
   e.data.container.title_padding = UI_TITLE_BAR_PADDING;
   return e;

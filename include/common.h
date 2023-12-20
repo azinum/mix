@@ -270,7 +270,10 @@ i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
   } \
   (list)->items[(list)->count++] = (item)
 
-#define list_free(list) memory_free((list)->items)
+#define list_free(list) do { \
+  memory_free((list)->items); \
+  (list)->count = (list)->size = 0; \
+} while (0)
 
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message);
 i32 is_terminal(i32 fd);

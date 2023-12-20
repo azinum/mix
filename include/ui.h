@@ -88,8 +88,8 @@ typedef union Element_data {
     char* string;
   } text;
   struct {
-    char* title;
-    i32 title_padding;
+    char* title; // unused
+    i32 title_padding; // unused
   } container;
   struct {
     i32 mouse_x;
@@ -110,6 +110,12 @@ typedef union Element_data {
     f32 deadzone;
   } slider;
 } Element_data;
+
+typedef struct Title_bar {
+  char* title;
+  i32 padding;
+  bool top;
+} Title_bar;
 
 typedef enum Placement {
   PLACEMENT_NONE = 0,
@@ -159,6 +165,7 @@ typedef struct Element {
   void* userdata;
 
   i32 padding;
+  Title_bar title_bar;
 
   Color text_color;
   Color background_color;

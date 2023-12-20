@@ -82,7 +82,8 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.onrender = waveshaper_canvas_onrender;
     ui_attach_element(container, &e);
   }
-  const i32 button_height = 44;
+  const i32 button_height = 48;
+  const i32 slider_height = 38;
   {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, button_height);
@@ -123,27 +124,27 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_slider(&ins->volume, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
-    e.box = BOX(0, 0, 0, button_height);
+    e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(-50.f, 50.0f));
-    e.box = BOX(0, 0, 0, button_height);
+    e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_text("frequency");
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
-    e.box = BOX(0, 0, 0, button_height);
-    e.sizing = SIZING_PERCENT(100, 0);
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
@@ -193,7 +194,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         / (f32)sample_rate
       );
       ins->buffer[i + 1] = volume * sinf(
-        (w->tick * PI32 * channel_count * (w->freq + sinf(w->tick * w->lfo / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       w->tick += 2;
