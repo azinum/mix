@@ -4,13 +4,18 @@
 #define _WAVE_SHAPER_H
 
 typedef struct Waveshaper {
-  size_t tick;
+  ssize_t tick;
+  f32 volume_target;
   f32 freq;
   f32 freq_target;
   f32 lfo;
   f32 lfo_target;
+  f32 interp_speed;
   i32 freeze;
   i32 mute;
+  i32 speed;
+  i32 flipflop;
+  i32 distortion;
   Arena arena;
   char* text;
   i32 render;

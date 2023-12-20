@@ -37,7 +37,7 @@ static f32 UI_BUTTON_ROUNDNESS = 0.2f;
 // TODO(lucas): slider rail size
 static i32 UI_SLIDER_INNER_PADDING = 8;
 static i32 UI_SLIDER_KNOB_SIZE = 8;
-static char UI_THEME[MAX_CONFIG_STRING_SIZE] = "default";
+static char UI_THEME[MAX_CONFIG_STRING_SIZE] = "dark";
 
 void config_init(void);
 Result config_store(const char* path);

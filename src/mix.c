@@ -211,37 +211,30 @@ void mix_free(Mix* m) {
 
 void mix_ui_init(Mix* m) {
   Audio_engine* audio = &audio_engine;
-  Element* grid = NULL;
-  random_init(1234);
-  u32 cols = 2;
-  u32 rows = 1;
+  Element* container = NULL;
+
   {
-    Element e = ui_grid(cols, true);
-    grid = ui_attach_element(NULL, &e);
-    ASSERT(grid != NULL);
+    Element e = ui_container(NULL);
+    e.scissor = false;
+    e.border = false;
+    e.background = false;
+    e.placement = PLACEMENT_BLOCK;
+    e.padding = 2;
+    container = ui_attach_element(NULL, &e);
   }
-  for (size_t i = 0; i < rows * cols; ++i) {
-    Element* container = NULL;
-    if (i == 0) {
-      Element e = instrument_ui_new(&audio->instrument);
-      container = ui_attach_element(grid, &e);
-      continue;
-    }
-    {
-      Element e = ui_container("settings");
-      e.border = true;
-      e.scissor = true;
-      e.placement = PLACEMENT_BLOCK;
-      e.background = true;
-      container = ui_attach_element(grid, &e);
-    }
-    for (size_t n = 0; n < 48; ++n) {
-      Element e = ui_button("test");
-      e.scissor = false;
-      e.box = BOX(0, 0, 64 + random_number() % 64, 42 + random_number() % 64);
-      e.onclick = onclick_test;
-      ui_attach_element(container, &e);
-    }
+  {
+    Element e = instrument_ui_new(&audio->instrument);
+    e.sizing = SIZING_PERCENT(70, 100);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_container("settings");
+    e.sizing = SIZING_PERCENT(30, 100);
+    e.border = true;
+    e.scissor = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.background = true;
+    ui_attach_element(container, &e);
   }
 }
 

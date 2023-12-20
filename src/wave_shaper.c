@@ -1,10 +1,14 @@
 // wave_shaper.c
+// TODO(lucas): make lfo `bindable` to instrument parameters
 
 #define ARENA_SIZE 1024 * 2
 #define MAX_TEXT_SIZE 512
 
+#define EXPERIMENTAL
+
 static void waveshaper_canvas_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
+static void waveshaper_default(Waveshaper* w);
 
 void waveshaper_canvas_onrender(Element* e) {
   TIMER_START();
@@ -42,28 +46,36 @@ void waveshaper_canvas_onrender(Element* e) {
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  w->tick = 0;
-  w->freq_target = 55;
-  w->lfo_target = 0;
-  ins->volume = 0.1f;
+  waveshaper_default(w);
+}
+
+void waveshaper_default(Waveshaper* w) {
+  w->tick           = 0;
+  w->volume_target  = 0.1f;
+  w->freq           = 55;
+  w->freq_target    = 55;
+  w->lfo            = 0;
+  w->lfo_target     = 0;
+  w->interp_speed   = 2.0f;
+  w->freeze         = false;
+  w->mute           = false;
+  w->speed          = 2;
+  w->flipflop       = false;
+  w->distortion     = false;
+  w->render         = true;
 }
 
 void waveshaper_init(Instrument* ins) {
   Waveshaper* w = memory_alloc(sizeof(Waveshaper));
+  ASSERT(w != NULL);
+
   ins->userdata = w;
   *w = (Waveshaper) {
-    .tick = 0,
-    .freq = 55,
-    .freq_target = 55,
-    .lfo = 0.0f,
-    .lfo_target = 0.0f,
-    .freeze = false,
-    .mute = false,
     .arena = arena_new(ARENA_SIZE),
     .text = NULL,
-    .render = true,
   };
   w->text = arena_alloc(&w->arena, MAX_TEXT_SIZE);
+  waveshaper_default(w);
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
@@ -75,9 +87,9 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_canvas(true);
-    e.sizing = SIZING_PERCENT(100, 30);
+    e.box.h = 84;
+    e.sizing = SIZING_PERCENT(100, 0);
     e.userdata = ins;
-    e.border_thickness = 1.0f;
     e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
     e.onrender = waveshaper_canvas_onrender;
     ui_attach_element(container, &e);
@@ -99,19 +111,27 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_toggle_ex(&w->render, "render");
+    Element e = ui_toggle_ex(&w->flipflop, "flipflop");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.tooltip = "render waveform (H)";
+    e.tooltip = "flip the counting direction of the internal clock\nthat generates the audio";
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->distortion, "distortion");
+    e.box = BOX(0, 0, 0, button_height);
+    e.sizing = SIZING_PERCENT(50, 0);
+    e.tooltip = "distort the audio signal";
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_button("reset");
     e.box = BOX(0, 0, 0, button_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.background_color = warmer_color(e.background_color, 80);
     e.onclick = waveshaper_reset_onclick;
     e.userdata = ins;
-    e.tooltip = "reset instrument parameters";
+    e.tooltip = "reset instrument parameters (Q)";
     ui_attach_element(container, &e);
   }
 
@@ -127,14 +147,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&ins->volume, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    Element e = ui_slider(&w->volume_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(-50.f, 50.0f));
+    Element e = ui_slider(&w->lfo_target, SLIDER_FLOAT, RANGE_FLOAT(0, 25.0f));
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
@@ -142,11 +162,36 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_text("frequency");
-    e.sizing = SIZING_PERCENT(100, 0);
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("interpolation speed");
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(50, 0);
+    e.data.slider.deadzone = deadzone;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&w->interp_speed, SLIDER_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(50, 0);
+    e.data.slider.deadzone = deadzone;
+    ui_attach_element(container, &e);
+  }
+
+  {
+    Element e = ui_text("speed");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider(&w->speed, SLIDER_INTEGER, RANGE(0, 10));
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.data.slider.deadzone = deadzone;
@@ -157,7 +202,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 void waveshaper_update(Instrument* ins, struct Mix* mix) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_reset(&w->arena);
-  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nlfo: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms", w->freq, w->lfo, ins->volume, 1000 * ins->latency, 1000 * ins->audio_latency);
+  stb_snprintf(w->text, MAX_TEXT_SIZE, "freq: %g\nlfo: %g\ninterp_speed: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms", w->freq, w->lfo, w->interp_speed, ins->volume, 1000 * ins->latency, 1000 * ins->audio_latency);
 
   if (IsKeyPressed(KEY_W)) {
     w->freq_target += 1;
@@ -178,7 +223,7 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     w->mute = !w->mute;
   }
   if (IsKeyPressed(KEY_Q)) {
-    w->tick = 0;
+    waveshaper_default(w);
   }
   if (IsKeyPressed(KEY_H)) {
     w->render = !w->render;
@@ -200,14 +245,36 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      ins->buffer[i + 1] = volume * sinf(
+      ins->buffer[i + 1] = volume * cosf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      w->tick += 2;
-      w->freq = lerp_f32(w->freq, w->freq_target, dt * 2.0f);
-      w->lfo = lerp_f32(w->lfo, w->lfo_target, dt * 2.0f);
+      w->tick += w->speed;
+      w->freq = lerp_f32(w->freq, w->freq_target, dt * w->interp_speed);
+      w->lfo = lerp_f32(w->lfo, w->lfo_target, dt * w->interp_speed);
+      ins->volume = lerp_f32(ins->volume, w->volume_target, dt * w->interp_speed);
     }
+    if (w->distortion) {
+#ifdef EXPERIMENTAL
+      static i32 tmp_index = 0;
+      static f32 tmp_buffer[256] = {0};
+      for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->frames; ++i) {
+        tmp_buffer[i] = ins->buffer[i];
+      }
+      for (size_t i = 0; i < ins->frames; ++i) {
+        tmp_index = (tmp_index + 1) % LENGTH(tmp_buffer);
+        ins->buffer[i] = 0.5f * ins->buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
+      }
+#endif
+      for (size_t i = 0; i < ins->frames; ++i) {
+        ins->buffer[i] *= 8.0f;
+        ins->buffer[i] = CLAMP(ins->buffer[i], -1.0f, 1.0f);
+        ins->buffer[i] *= 1/4.0f;
+      }
+    }
+  }
+  if (w->flipflop) {
+    w->speed = -w->speed;
   }
 }
 

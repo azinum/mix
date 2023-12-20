@@ -33,7 +33,7 @@ inline Color lerp_color(Color a, Color b, f32 t) {
 
 inline Color warmer_color(Color a, u8 amount) {
   return COLOR_RGB(
-    CLAMP(a.r - amount + amount, 0, 255),
+    CLAMP(a.r + amount, 0, 255),
     a.g,
     CLAMP(a.b - amount, 0, 255)
   );

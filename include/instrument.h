@@ -3,7 +3,7 @@
 #ifndef _INSTRUMENT_H
 #define _INSTRUMENT_H
 
-#define INSTRUMENT_VOLUME_DEFAULT 0.0f
+#define INSTRUMENT_VOLUME_DEFAULT 0.1f
 
 struct Mix;
 struct Audio_engine;
