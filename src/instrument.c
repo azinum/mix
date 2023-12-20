@@ -1,7 +1,5 @@
 // instrument.c
 
-#define VOLUME_DEFAULT 0.1f
-
 Instrument instruments[MAX_INSTRUMENT_ID] = {
   [INSTRUMENT_WAVE_SHAPER] = { .title = "waveshaper", .init = waveshaper_init, .ui_new = waveshaper_ui_new, .update = waveshaper_update, .process = waveshaper_process, .free = waveshaper_free, },
 };
@@ -11,7 +9,7 @@ static void instrument_init_default(Instrument* ins);
 void instrument_init_default(Instrument* ins) {
   ins->buffer = NULL;
   ins->frames = 0;
-  ins->volume = VOLUME_DEFAULT;
+  ins->volume = INSTRUMENT_VOLUME_DEFAULT;
   ins->latency = 0;
   ins->audio_latency = 0;
 }

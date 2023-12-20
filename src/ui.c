@@ -3,16 +3,19 @@
 //  - text input field
 //  - icon/image
 
-#ifndef DRAW_GUIDES
-  #define DRAW_GUIDES 0
-#endif
+#define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
+  static char _text##__LINE__[SIZE] = {0}; \
+  stb_snprintf(_text##__LINE__, sizeof(_text##__LINE__), FORMAT_STR, ##__VA_ARGS__); \
+  DrawText(_text##__LINE__, X, Y, FONT_SIZE_SMALLEST, COLOR); \
+} while (0)
 
-#define LOG_UI_HIERARCHY 0
-#define UI_LOG_PATH "ui.txt"
+#define DRAW_SIMPLE_TEXT(X, Y, FORMAT_STR, ...) DRAW_SIMPLE_TEXT_EX(X, Y, 64, COLOR_RGB(255, 255, 255), FORMAT_STR, ##__VA_ARGS__)
+#define DRAW_SIMPLE_TEXT2(X, Y, COLOR, FORMAT_STR, ...) DRAW_SIMPLE_TEXT_EX(X, Y, 64, COLOR, FORMAT_STR, ##__VA_ARGS__)
 
-#if DRAW_GUIDES
-static Color GUIDE_COLOR = COLOR_RGB(255, 0, 255);
-static Color GUIDE_COLOR2 = COLOR_RGB(255, 100, 255);
+#ifdef UI_DRAW_GUIDES
+static Color GUIDE_COLOR             = COLOR_RGB(255, 0, 255);
+static Color GUIDE_COLOR2            = COLOR_RGB(255, 100, 255);
+static Color GUIDE_TEXT_COLOR        = COLOR_RGB(255, 180, 255);
 static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
 #endif
 
@@ -37,10 +40,11 @@ static void ui_update_container(UI_state* ui, Element* e);
 static void ui_update_grid(UI_state* ui, Element* e);
 static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
-static void ui_element_init(Element* e);
+static void ui_element_init(Element* e, Element_type type);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static Box  ui_pad_box(Box box, i32 padding);
 static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
+static void ui_render_tooltip(UI_state* ui, char* tooltip);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
@@ -51,8 +55,7 @@ static void tabs(i32 fd, const u32 count);
 
 void ui_state_init(UI_state* ui) {
   ui_theme_init();
-  ui_element_init(&ui->root);
-  ui->root.type = ELEMENT_CONTAINER;
+  ui_element_init(&ui->root, ELEMENT_CONTAINER);
   ui->root.placement = PLACEMENT_FILL;
   ui->root.padding = 0;
   ui->root.border = false;
@@ -63,10 +66,11 @@ void ui_state_init(UI_state* ui) {
   ui->element_update_count = 0;
   ui->element_render_count = 0;
   ui->mouse = (Vector2) {0, 0},
+  ui->prev_mouse = ui->mouse;
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
-#if LOG_UI_HIERARCHY
+#ifdef UI_LOG_HIERARCHY
   ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to open file `%s` for writing\n", UI_LOG_PATH);
@@ -76,6 +80,7 @@ void ui_state_init(UI_state* ui) {
 #endif
   ui->active_id = 0;
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
+  ui->dt = 0.0f;
 }
 
 void ui_theme_init(void) {
@@ -119,6 +124,12 @@ void ui_update_elements(UI_state* ui, Element* e) {
 
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
+  }
+  else {
+    e->tooltip_timer = 0.0f;
+  }
+  if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
+    e->tooltip_timer = 0.0f;
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
@@ -181,8 +192,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
 }
 
 void ui_update_container(UI_state* ui, Element* e) {
-  (void)ui;
-  const Title_bar title_bar = e->title_bar;
+  (void)ui; // unused
 
   // placement offsets
   i32 px = 0;
@@ -325,7 +335,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
   }
 
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
   i32 guide_overlap = 0;
   if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
     DrawLine(e->box.x - guide_overlap, e->box.y + e->box.h / 2, e->box.x + e->box.w + guide_overlap, e->box.y + e->box.h / 2, GUIDE_COLOR);
@@ -351,7 +361,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
       (void)w;
       (void)h;
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
       if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
         DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
       }
@@ -373,7 +383,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 h = (i32)text_size.y;
       DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
       (void)w; (void)h;
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
       if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
         DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
       }
@@ -398,7 +408,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 h = (i32)text_size.y;
       DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
       (void)w; (void)h;
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
       if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
         DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
       }
@@ -500,13 +510,15 @@ void ui_free_elements(UI_state* ui, Element* e) {
   list_free(e);
 }
 
-void ui_element_init(Element* e) {
+void ui_element_init(Element* e, Element_type type) {
+  ASSERT(type >= ELEMENT_NONE && type < MAX_ELEMENT_TYPE);
+
   e->items = NULL;
   e->count = 0;
   e->size = 0;
   e->id = 1;
   e->box = BOX(0, 0, 0, 0);
-  e->type = ELEMENT_NONE;
+  e->type = type;
   memset(&e->data, 0, sizeof(e->data));
   e->userdata = NULL;
   e->title_bar = (Title_bar) {
@@ -535,6 +547,8 @@ void ui_element_init(Element* e) {
     .x = 0,
     .y = 0,
   };
+  e->tooltip_timer = 0.0f;
+  e->tooltip = NULL;
 
   e->onclick = ui_onclick;
   e->onrender = ui_onrender;
@@ -561,6 +575,63 @@ Box ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding) {
     box.w - 2 * x_padding,
     box.h - 2 * y_padding
   );
+}
+
+void ui_render_tooltip(UI_state* ui, char* tooltip) {
+  if (!tooltip) {
+    return;
+  }
+  const Box box = ui->root.box;
+  Vector2 center = (Vector2) {
+    .x = box.x + box.w / 2,
+    .y = box.y + box.h / 2,
+  };
+  if ((center.x == 0) || (center.y == 0)) {
+    return;
+  }
+
+  const Font font = assets.font;
+  const i32 font_size = FONT_SIZE;
+  const i32 spacing = 0;
+  Vector2 text_size = MeasureTextEx(font, tooltip, font_size, spacing);
+
+  i32 x = ui->mouse.x - text_size.x / 2;
+  i32 y = ui->mouse.y - text_size.y / 2;
+  i32 x_offset = 0;
+  i32 y_offset = 0;
+
+  Vector2 offset_from_center_factor = (Vector2) {
+    .x = -((x / center.x) - 1.0f),
+    .y = -((y / center.y) - 1.0f),
+  };
+
+  offset_from_center_factor.x = offset_from_center_factor.x / fabs(offset_from_center_factor.x);
+  offset_from_center_factor.y = offset_from_center_factor.y / fabs(offset_from_center_factor.y);
+
+  const i32 base_x_offset = 10;
+  const i32 base_y_offset = 10;
+
+  x_offset += offset_from_center_factor.x * text_size.x * 0.5f + (offset_from_center_factor.x * base_x_offset);
+  y_offset += offset_from_center_factor.y * text_size.y * 0.5f + (offset_from_center_factor.y * base_y_offset);
+
+  x += x_offset;
+  y += y_offset;
+
+  const Color background_color = UI_BACKGROUND_COLOR;
+  const i32 segments = 8;
+  const f32 roundness = UI_BUTTON_ROUNDNESS;
+  const f32 border_thickness = UI_BORDER_THICKNESS;
+  const Color border_color = UI_BORDER_COLOR;
+
+  if (roundness > 0) {
+    DrawRectangleRounded((Rectangle) { x, y, text_size.x, text_size.y }, roundness, segments, background_color);
+    DrawRectangleRoundedLines((Rectangle) { x, y, text_size.x, text_size.y}, roundness, segments, border_thickness, border_color);
+  }
+  else {
+    DrawRectangle(x, y, text_size.x, text_size.y, background_color);
+    DrawRectangleLinesEx((Rectangle) { x, y, text_size.x, text_size.y}, border_thickness, border_color);
+  }
+  DrawTextEx(font, tooltip, (Vector2) { x, y}, font_size, spacing, COLOR_RGB(255, 255, 255));
 }
 
 void ui_onclick(struct Element* e) {
@@ -614,15 +685,16 @@ Result ui_init(void) {
   return Ok;
 }
 
-void ui_update(void) {
+void ui_update(f32 dt) {
   TIMER_START();
   UI_state* ui = &ui_state;
   ui->latency = 0;
+  ui->dt = dt;
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
   arena_reset(&ui->frame_arena);
 
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
   ONLY_DRAW_GUIDE_ON_HOVER = true;
   if (IsKeyDown(KEY_LEFT_CONTROL)) {
     ONLY_DRAW_GUIDE_ON_HOVER = false;
@@ -631,6 +703,7 @@ void ui_update(void) {
 
   ui->element_update_count = 0;
   ui->element_render_count = 0;
+  ui->prev_mouse = ui->mouse;
   ui->mouse = GetMousePosition();
   ui->hover = NULL;
   ui->active = NULL;
@@ -656,6 +729,9 @@ void ui_update(void) {
     if (ui->active->id == ui->active_id && ui->active->type == ELEMENT_SLIDER) {
       ui_slider_onclick(ui, ui->active);
     }
+  }
+  if (ui->hover != NULL) {
+    ui->hover->tooltip_timer += ui->dt;
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
@@ -688,12 +764,19 @@ void ui_render(void) {
   UI_state* ui = &ui_state;
   Element* root = &ui->root;
   ui_render_elements(ui, root);
-#if DRAW_GUIDES
+#ifdef UI_DRAW_GUIDES
   if (ui->hover != NULL) {
     Element* e = ui->hover;
     DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.0f, GUIDE_COLOR2);
+    DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "timer: %g", e->tooltip_timer);
   }
 #endif
+  if (ui->hover != NULL) {
+    Element* e = ui->hover;
+    if (e->tooltip_timer >= UI_TOOLTIP_DELAY) {
+      ui_render_tooltip(ui, e->tooltip);
+    }
+  }
   ui->latency += TIMER_END();
 }
 
@@ -719,8 +802,7 @@ Element* ui_attach_element(Element* target, Element* e) {
 
 Element ui_container(char* title) {
   Element e;
-  ui_element_init(&e);
-  e.type = ELEMENT_CONTAINER;
+  ui_element_init(&e, ELEMENT_CONTAINER);
   e.render = true;
   e.scissor = true;
   e.title_bar = (Title_bar) {
@@ -735,8 +817,7 @@ Element ui_container(char* title) {
 
 Element ui_grid(u32 cols, bool render) {
   Element e;
-  ui_element_init(&e);
-  e.type = ELEMENT_GRID;
+  ui_element_init(&e, ELEMENT_GRID);
   e.data.grid.cols = cols;
   e.render = render;
   return e;
@@ -744,8 +825,7 @@ Element ui_grid(u32 cols, bool render) {
 
 Element ui_text(char* text) {
   Element e;
-  ui_element_init(&e);
-  e.type = ELEMENT_TEXT;
+  ui_element_init(&e, ELEMENT_TEXT);
   e.data.text.string = text;
   e.background = false;
   e.border = false;
@@ -755,8 +835,7 @@ Element ui_text(char* text) {
 
 Element ui_button(char* text) {
   Element e;
-  ui_element_init(&e);
-  e.type = ELEMENT_BUTTON;
+  ui_element_init(&e, ELEMENT_BUTTON);
   e.data.text.string = text;
   e.background = true;
   e.border = true;
@@ -768,7 +847,7 @@ Element ui_button(char* text) {
 
 Element ui_canvas(bool border) {
   Element e;
-  ui_element_init(&e);
+  ui_element_init(&e, ELEMENT_CANVAS);
   e.type = ELEMENT_CANVAS;
   e.background = true;
   e.border = border;
@@ -779,7 +858,7 @@ Element ui_canvas(bool border) {
 Element ui_toggle(i32* value) {
   ASSERT(value != NULL);
   Element e;
-  ui_element_init(&e);
+  ui_element_init(&e, ELEMENT_TOGGLE);
   e.data.toggle.value = value;
   e.data.toggle.text = NULL;
   e.type = ELEMENT_TOGGLE;
@@ -801,7 +880,7 @@ Element ui_slider(void* value, Slider_type type, Range range) {
   ASSERT(value != NULL);
 
   Element e;
-  ui_element_init(&e);
+  ui_element_init(&e, ELEMENT_SLIDER);
   switch (type) {
     case SLIDER_FLOAT:
       e.data.slider.v.f = (f32*)value;

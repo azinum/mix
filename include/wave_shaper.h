@@ -9,7 +9,7 @@ typedef struct Waveshaper {
   f32 freq_target;
   f32 lfo;
   f32 lfo_target;
-  i32 reshape;
+  i32 freeze;
   i32 mute;
   Arena arena;
   char* text;

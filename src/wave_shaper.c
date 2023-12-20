@@ -57,7 +57,7 @@ void waveshaper_init(Instrument* ins) {
     .freq_target = 55,
     .lfo = 0.0f,
     .lfo_target = 0.0f,
-    .reshape = true,
+    .freeze = false,
     .mute = false,
     .arena = arena_new(ARENA_SIZE),
     .text = NULL,
@@ -88,18 +88,21 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
+    e.tooltip = "mute (SPACEBAR)";
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_toggle_ex(&w->reshape, "reshape");
+    Element e = ui_toggle_ex(&w->freeze, "freeze");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
+    e.tooltip = "freeze the waveform (F)";
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_toggle_ex(&w->render, "render");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
+    e.tooltip = "render waveform (H)";
     ui_attach_element(container, &e);
   }
   {
@@ -108,6 +111,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PERCENT(50, 0);
     e.onclick = waveshaper_reset_onclick;
     e.userdata = ins;
+    e.tooltip = "reset instrument parameters";
     ui_attach_element(container, &e);
   }
 
@@ -167,6 +171,9 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   if (IsKeyPressed(KEY_D)) {
     w->lfo_target -= 1;
   }
+  if (IsKeyPressed(KEY_F)) {
+    w->freeze = !w->freeze;
+  }
   if (IsKeyPressed(KEY_SPACE)) {
     w->mute = !w->mute;
   }
@@ -187,7 +194,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     volume = 0.0f;
   }
 
-  if (w->reshape) {
+  if (!w->freeze) {
     for (size_t i = 0; i < ins->frames; i += 2) {
       ins->buffer[i] = volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->lfo * PI32) / (f32)sample_rate)))

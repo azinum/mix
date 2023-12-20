@@ -1,10 +1,25 @@
 // ui.h
+// macros:
+//  UI_FRAME_ARENA_SIZE
+//  UI_DRAW_GUIDES
+//  UI_LOG_HIERARCHY
+//  UI_LOG_PATH
+//  UI_TOOLTIP_DELAY
 
 #ifndef _UI_H
 #define _UI_H
 
 #ifndef UI_FRAME_ARENA_SIZE
   #define UI_FRAME_ARENA_SIZE Kb(8)
+#endif
+
+#ifndef UI_LOG_PATH
+  #define UI_LOG_PATH "ui.txt"
+#endif
+
+// delay, in seconds, until showing tooltip
+#ifndef UI_TOOLTIP_DELAY
+  #define UI_TOOLTIP_DELAY 0.8f
 #endif
 
 typedef struct Theme {
@@ -183,6 +198,9 @@ typedef struct Element {
   Placement placement;
   Sizing sizing;
 
+  f32 tooltip_timer;
+  char* tooltip;
+
   void (*onclick)(struct Element* e);
   void (*onrender)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
@@ -194,18 +212,20 @@ typedef struct UI_state {
   u32 element_update_count;
   u32 element_render_count;
   Vector2 mouse;
+  Vector2 prev_mouse;
   Element* hover;
   Element* active;
   Element* select;
   i32 fd;
   u32 active_id;
   Arena frame_arena;
+  f32 dt;
 } UI_state;
 
 extern UI_state ui_state;
 
 Result ui_init(void);
-void ui_update(void);
+void ui_update(f32 dt);
 void ui_hierarchy_print(void);
 void ui_render(void);
 void ui_free(void);

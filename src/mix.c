@@ -137,7 +137,7 @@ void mix_update_and_render(Mix* m) {
 
   instrument_update(&audio->instrument, m);
 
-  ui_update();
+  ui_update(m->dt);
   ui_render();
 
   static char debug_text[512] = {0};
