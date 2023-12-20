@@ -314,7 +314,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
   f32 factor = 0.0f;
 
   if (e->type == ELEMENT_TOGGLE) {
-    factor += 0.4f * (*e->data.toggle.value == false);
+    factor += 0.4f * (*e->data.toggle.value == true);
   }
 
   if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE) && e == ui->hover) {
@@ -391,13 +391,10 @@ void ui_render_elements(UI_state* ui, Element* e) {
       break;
     }
     case ELEMENT_TOGGLE: {
-      char* toggle_text = e->data.toggle.text;
-      if (!toggle_text) {
+      char* text = e->data.toggle.text[*e->data.toggle.value == true];
+      if (!text) {
         break;
       }
-      // NOTE: strlen call might be expensive here, this might be a point to come back to if latency becomes an issue
-      char* text = arena_alloc(&ui->frame_arena, strlen(toggle_text));
-      stb_snprintf(text, ui->frame_arena.size, "%s: %s", toggle_text, bool_str[*e->data.toggle.value == true]);
       const Font font = assets.font;
       i32 font_size = FONT_SIZE;
       i32 spacing = 0;
@@ -860,7 +857,8 @@ Element ui_toggle(i32* value) {
   Element e;
   ui_element_init(&e, ELEMENT_TOGGLE);
   e.data.toggle.value = value;
-  e.data.toggle.text = NULL;
+  e.data.toggle.text[0] = NULL;
+  e.data.toggle.text[1] = NULL;
   e.type = ELEMENT_TOGGLE;
   e.background = true;
   e.border = true;
@@ -872,7 +870,15 @@ Element ui_toggle(i32* value) {
 
 Element ui_toggle_ex(i32* value, char* text) {
   Element e = ui_toggle(value);
-  e.data.toggle.text = text;
+  e.data.toggle.text[0] = text;
+  e.data.toggle.text[1] = text;
+  return e;
+}
+
+Element ui_toggle_ex2(i32* value, char* false_text, char* true_text) {
+  Element e = ui_toggle(value);
+  e.data.toggle.text[0] = false_text;
+  e.data.toggle.text[1] = true_text;
   return e;
 }
 

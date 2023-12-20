@@ -112,7 +112,7 @@ typedef union Element_data {
   } canvas;
   struct {
     i32* value;
-    char* text;
+    char* text[2];
   } toggle;
   struct {
     union {
@@ -238,6 +238,7 @@ Element ui_button(char* text);
 Element ui_canvas(bool border);
 Element ui_toggle(i32* value);
 Element ui_toggle_ex(i32* value, char* text);
+Element ui_toggle_ex2(i32* value, char* false_text, char* true_text);
 Element ui_slider(void* value, Slider_type type, Range range);
 
 #endif // _UI_H
