@@ -1,8 +1,12 @@
 // ui.c
 // TODO:
+//  - overflow scroll in containers
+//  - string formatting of text elements
+//  - text wrapping
 //  - text input field
 //  - icon/image
-//  - string formatting of text elements
+//  - container tabs
+//  - drag and drop (external file browser)
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \

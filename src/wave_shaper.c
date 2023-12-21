@@ -92,18 +92,11 @@ void waveshaper_bind_lfo(Element* e, Element* target) {
       case SLIDER_FLOAT: {
         f32* binding = target->data.slider.v.f;
         w->lfo.lfo_target = binding;
-        break;
-      }
-      case SLIDER_INTEGER: {
-        i32* binding = target->data.slider.v.i;
-        // cursed...
-        w->lfo.lfo_target = (f32*)binding;
-        break;
+        return;
       }
       default:
         break;
     }
-    return;
   }
   w->lfo.lfo_target = NULL;
   w->lfo.connection_name = LFO_NO_CONNECTION;
