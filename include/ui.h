@@ -188,7 +188,6 @@ typedef struct Element {
   Placement placement;
   Sizing sizing;
 
-  f32 tooltip_timer;
   char* tooltip;
 
   void (*onclick)(struct Element* e);
@@ -215,6 +214,7 @@ typedef struct UI_state {
   Arena frame_arena;
   f32 dt;
   f32 timer;
+  f32 tooltip_timer;
   f32 slider_deadzone;
   bool (*connection_filter)(struct Element* e, struct Element* target);
 } UI_state;

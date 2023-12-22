@@ -82,6 +82,7 @@ void ui_state_init(UI_state* ui) {
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
   ui->dt = 0.0f;
   ui->timer = 0.0f;
+  ui->tooltip_timer = 0.0f;
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
 }
@@ -132,12 +133,6 @@ void ui_update_elements(UI_state* ui, Element* e) {
         ui->container = e;
       }
     }
-  }
-  else {
-    e->tooltip_timer = 0.0f;
-  }
-  if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
-    e->tooltip_timer = 0.0f;
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
@@ -543,7 +538,6 @@ void ui_element_init(Element* e, Element_type type) {
     .x = 0,
     .y = 0,
   };
-  e->tooltip_timer = 0.0f;
   e->tooltip = NULL;
 
   e->onclick = ui_onclick;
@@ -791,8 +785,11 @@ void ui_update(f32 dt) {
       ui_slider_onclick(ui, ui->active);
     }
   }
+  if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
+    ui->tooltip_timer = 0.0f;
+  }
   if (ui->hover != NULL) {
-    ui->hover->tooltip_timer += ui->dt;
+    ui->tooltip_timer += ui->dt;
   }
   if (ui->container != NULL) {
     ASSERT(ui->container->type == ELEMENT_CONTAINER);
@@ -872,7 +869,6 @@ void ui_render(void) {
   if (ui->hover != NULL) {
     Element* e = ui->hover;
     if (ui->marker) {
-
       // TODO(lucas): improve filtering
       if (ui->connection_filter(ui->marker, ui->hover)) {
         const Color color = lerp_color(marker_color_dim, marker_color_bright, (1 + sinf(12*ui->timer)) * 0.5f);
@@ -890,7 +886,7 @@ void ui_render(void) {
         DrawLine(x1, y1, x2, y2, color);
       }
     }
-    if (e->tooltip_timer >= UI_TOOLTIP_DELAY) {
+    if (ui->tooltip_timer >= UI_TOOLTIP_DELAY) {
       if (e->tooltip) {
         ui_render_tooltip(ui, e->tooltip);
       }
