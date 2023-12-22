@@ -1,6 +1,5 @@
 // ui.c
 // TODO:
-//  - overflow scroll in containers
 //  - string formatting of text elements
 //  - text wrapping
 //  - text input field
@@ -26,18 +25,6 @@ static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
 
 UI_state ui_state = {0};
 
-#if 0
-#define C(R, G, B) COLOR_RGB(R, G, B)
-static Theme themes[MAX_THEME_ID] = {
-  // main background     background           border               button               text                 border thickness  title bar padding   button roundness
-  { C(35, 35, 42),       C(85, 90, 115),      C(0, 0, 0),          C(153, 102, 255),    C(255, 255, 255),    0.0f,             8,                  0.1f },
-  { C(0x27, 0x2d, 0x3a), C(0x31, 0x3d, 0x5e), C(0, 0, 0),          C(0x45, 0x78, 0xa3), C(255, 255, 255),    1.0f,             4,                  0.0f },
-  { C(55, 55, 55),       C(75, 75, 75),       C(35, 35, 35),       C(0x55, 0x68, 0xa0), C(230, 230, 230),    2.0f,             8,                  0.3f },
-  { C(35, 65, 100),      C(65, 95, 145),      C(240, 100, 240),    C(0x84, 0x34, 0xbf), C(230, 230, 230),    1.0f,             12,                 0.1f },
-};
-#undef C
-#endif
-
 static void ui_state_init(UI_state* ui);
 static void ui_theme_init(void);
 static void ui_update_elements(UI_state* ui, Element* e);
@@ -61,6 +48,8 @@ static void ui_onconnect(struct Element* e, struct Element* target);
 static bool ui_connection_filter(struct Element* e, struct Element* target);
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
+static void ui_render_rectangle(Box box, f32 roundness, Color color);
+static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color);
 
 void ui_state_init(UI_state* ui) {
   ui_theme_init();
@@ -348,14 +337,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
   background_color = lerp_color(background_color, COLOR_RGB(0, 0, 0), factor);
 
-  const i32 segments = 8;
   if (e->background) {
-    if (e->roundness > 0) {
-      DrawRectangleRounded((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h }, e->roundness, segments, background_color);
-    }
-    else {
-      DrawRectangle(e->box.x, e->box.y, e->box.w, e->box.h, background_color);
-    }
+    ui_render_rectangle(e->box, e->roundness, background_color);
   }
 
 #ifdef UI_DRAW_GUIDES
@@ -443,12 +426,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       // TODO(lucas): vertical slider
       Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
       Color line_color = lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f);
-      if (e->roundness > 0) {
-        DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, e->roundness, segments, line_color);
-      }
-      else {
-        DrawRectangle(box.x, box.y, box.w, box.h, line_color);
-      }
+      ui_render_rectangle(box, e->roundness, line_color);
       Range range = e->data.slider.range;
       i32 x = box.x;
       i32 y = box.y;
@@ -490,12 +468,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
 
   if (e->border && e->border_thickness > 0) {
-    if (e->roundness > 0) {
-      DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, e->border_thickness, e->border_color);
-    }
-    else {
-      DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->border_thickness, e->border_color);
-    }
+    ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, e->border_color);
   }
 
   // draw title bar after ending scissor mode
@@ -828,7 +801,7 @@ void ui_update(f32 dt) {
     i32 scroll_y = e->data.container.scroll_y;
     i32 content_height = e->data.container.content_height;
     if (content_height > e->box.h || scroll_y < 0) {
-      scroll_y += wheel.y * 20;
+      scroll_y += wheel.y * UI_SCROLL_SPEED;
       if (scroll_y > 0) {
         scroll_y = 0;
       }
@@ -1160,4 +1133,22 @@ void tabs(i32 fd, const u32 count) {
   for (u32 i = 0; i < count; ++i) {
     stb_dprintf(fd, "%s", tab);
   }
+}
+
+void ui_render_rectangle(Box box, f32 roundness, Color color) {
+  const i32 segments = 8;
+  if (roundness > 0) {
+    DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, color);
+    return;
+  }
+  DrawRectangle(box.x, box.y, box.w, box.h, color);
+}
+
+void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color) {
+  const i32 segments = 8;
+  if (roundness > 0) {
+    DrawRectangleRoundedLines((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, thickness, color);
+    return;
+  }
+  DrawRectangleLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, thickness, color);
 }

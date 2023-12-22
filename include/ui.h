@@ -24,25 +24,9 @@
   #define UI_TOOLTIP_DELAY 0.8f
 #endif
 
-typedef struct Theme {
-  Color main_background;
-  Color background;
-  Color border;
-  Color button;
-  Color text;
-  f32 border_thickness;
-  i32 title_bar_padding;
-  f32 button_roundness;
-} Theme;
-
-typedef enum Theme_id {
-  THEME_DEFAULT = 0,
-  THEME_NAVY,
-  THEME_GRAY,
-  THEME_COLORFUL,
-
-  MAX_THEME_ID,
-} Theme_id;
+#ifndef UI_SCROLL_SPEED
+  #define UI_SCROLL_SPEED 20
+#endif
 
 typedef struct {
   i32 x;
