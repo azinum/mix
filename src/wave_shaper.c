@@ -34,7 +34,7 @@ void waveshaper_canvas_onrender(Element* e) {
     lerp_color(COLOR_RGB(40, 255, 40), warmer_color(UI_BUTTON_COLOR, 30), 0.5f),
   };
 
-  for (i32 i = 0; i < (i32)ins->frames && i < width; i += 1) {
+  for (i32 i = 0; i < (i32)ins->samples && i < width; i += 1) {
     f32 frame = CLAMP(ins->buffer[i], -1.0f, 1.0f);
     DrawLine(
       x + i,               // x1
@@ -271,7 +271,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 
   Element* lfo_container = NULL;
   {
-    Element e = ui_container(NULL);
+    Element e = ui_container_ex(NULL, false);
     e.scissor = false;
     e.background = true;
     e.placement = PLACEMENT_BLOCK;
@@ -389,7 +389,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   }
 
   if (!w->freeze) {
-    for (size_t i = 0; i < ins->frames; i += 2) {
+    for (size_t i = 0; i < ins->samples; i += 2) {
       w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
       w->lfo.tick += 1;
       if (w->lfo.lfo_target != NULL) {
@@ -418,22 +418,22 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 #ifdef EXPERIMENTAL
       static i32 tmp_index = 0;
       static f32 tmp_buffer[256] = {0};
-      for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->frames; ++i) {
+      for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->samples; ++i) {
         tmp_buffer[i] = ins->buffer[i];
       }
-      for (size_t i = 0; i < ins->frames; ++i) {
+      for (size_t i = 0; i < ins->samples; ++i) {
         tmp_index = (tmp_index + 1) % LENGTH(tmp_buffer);
         ins->buffer[i] = 0.5f * ins->buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
       }
 #endif
-      for (size_t i = 0; i < ins->frames; ++i) {
+      for (size_t i = 0; i < ins->samples; ++i) {
         ins->buffer[i] *= 8.0f;
         ins->buffer[i] = CLAMP(ins->buffer[i], -1.0f, 1.0f);
         ins->buffer[i] *= 1/4.0f;
       }
     }
     if (w->gain > 0) {
-      for (size_t i = 0; i < ins->frames; ++i) {
+      for (size_t i = 0; i < ins->samples; ++i) {
         ins->buffer[i] *= w->gain;
       }
     }

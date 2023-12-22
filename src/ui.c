@@ -138,6 +138,11 @@ void ui_update_elements(UI_state* ui, Element* e) {
 
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
+    if (e->type == ELEMENT_CONTAINER) {
+      if (e->data.container.scrollable) {
+        ui->container = e;
+      }
+    }
   }
   else {
     e->tooltip_timer = 0.0f;
@@ -208,14 +213,17 @@ void ui_update_elements(UI_state* ui, Element* e) {
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui; // unused
 
+  i32 scroll_y = e->data.container.scroll_y;
+
   // placement offsets
   i32 px = 0;
-  i32 py = 0;
+  i32 py = scroll_y;
   // block placement offsets
   i32 py_offset = 0; // element with the greatest height
 
   bool hide = false;
-  for (size_t i = 0; i < e->count; ++i) {
+  bool done = false;
+  for (size_t i = 0; i < e->count && !done; ++i) {
     Element* item = &e->items[i];
     item->hidden = hide;
     switch (e->placement) {
@@ -226,12 +234,13 @@ void ui_update_container(UI_state* ui, Element* e) {
           e->box.w - 2 * e->padding,
           e->box.h - 2 * e->padding
         );
-        return; // this fitment only allows one item
+        // this fitment only allows one item
+        done = true;
+        break;
       }
       case PLACEMENT_ROWS: {
         if (py >= e->box.h) {
           item->hidden = hide = true;
-          break;
         }
         const Sizing sizing = item->sizing;
         i32 w = item->box.w;
@@ -268,7 +277,6 @@ void ui_update_container(UI_state* ui, Element* e) {
 
         if (py >= e->box.h) {
           item->hidden = hide = true;
-          break;
         }
         if (px + w + e->padding >= e->box.w) {
           px = 0;
@@ -291,6 +299,7 @@ void ui_update_container(UI_state* ui, Element* e) {
         break;
     }
   }
+  e->data.container.content_height = py + py_offset - scroll_y;
 }
 
 void ui_update_grid(UI_state* ui, Element* e) {
@@ -769,6 +778,7 @@ void ui_update(f32 dt) {
   ui->hover = NULL;
   ui->active = NULL;
   ui->select = NULL;
+  ui->container = NULL;
 
   ui_update_elements(ui, root);
   if (ui->active) {
@@ -811,6 +821,27 @@ void ui_update(f32 dt) {
   if (ui->hover != NULL) {
     ui->hover->tooltip_timer += ui->dt;
   }
+  if (ui->container != NULL) {
+    ASSERT(ui->container->type == ELEMENT_CONTAINER);
+    Element* e = ui->container;
+    Vector2 wheel = GetMouseWheelMoveV();
+    i32 scroll_y = e->data.container.scroll_y;
+    i32 content_height = e->data.container.content_height;
+    if (content_height > e->box.h || scroll_y < 0) {
+      scroll_y += wheel.y * 20;
+      if (scroll_y > 0) {
+        scroll_y = 0;
+      }
+      i32 content_height_delta = content_height - e->box.h;
+      if (-scroll_y > content_height_delta) {
+        scroll_y = -content_height_delta;
+      }
+      e->data.container.scroll_y = scroll_y;
+    }
+    else {
+      e->data.container.scroll_y = 0;
+    }
+  }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
     switch (ui->hover->type) {
@@ -846,7 +877,9 @@ void ui_render(void) {
   if (ui->hover != NULL) {
     Element* e = ui->hover;
     DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.0f, GUIDE_COLOR2);
-    DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "timer: %g", e->tooltip_timer);
+    if (e->type == ELEMENT_CONTAINER) {
+      DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "content_height: %d, box.h: %d", e->data.container.content_height, e->box.h);
+    }
   }
 #endif
   static const Color marker_color_bright = COLOR_RGB(80, 200, 80);
@@ -942,6 +975,11 @@ Element ui_none(void) {
 Element ui_container(char* title) {
   Element e;
   ui_element_init(&e, ELEMENT_CONTAINER);
+  e.data.container.scroll_x = 0;
+  e.data.container.scroll_y = 0;
+  e.data.container.content_height = 0;
+  e.data.container.scrollable = true;
+
   e.render = true;
   e.scissor = true;
   e.title_bar = (Title_bar) {
@@ -949,11 +987,15 @@ Element ui_container(char* title) {
     .padding = UI_TITLE_BAR_PADDING,
     .top = true,
   };
-  e.data.container.title = title;
-  e.data.container.title_padding = UI_TITLE_BAR_PADDING;
   if (title) {
     e.roundness = 0;
   }
+  return e;
+}
+
+Element ui_container_ex(char* title, bool scrollable) {
+  Element e = ui_container(title);
+  e.data.container.scrollable = scrollable;
   return e;
 }
 

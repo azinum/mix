@@ -11,3 +11,5 @@ ui_button_roundness     = 0.1
 ui_slider_inner_padding = 8
 ui_slider_knob_size     = 8
 ui_roundness            = 0.05
+
+ui_roundness = 0.05

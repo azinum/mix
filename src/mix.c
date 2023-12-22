@@ -212,6 +212,7 @@ void mix_free(Mix* m) {
 void mix_ui_init(Mix* m) {
   Audio_engine* audio = &audio_engine;
   Element* container = NULL;
+  random_init(1234);
 
   {
     Element e = ui_container(NULL);
@@ -227,6 +228,7 @@ void mix_ui_init(Mix* m) {
     e.sizing = SIZING_PERCENT(70, 100);
     ui_attach_element(container, &e);
   }
+  Element* settings = NULL;
   {
     Element e = ui_container("settings");
     e.sizing = SIZING_PERCENT(30, 100);
@@ -234,7 +236,13 @@ void mix_ui_init(Mix* m) {
     e.scissor = true;
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
-    ui_attach_element(container, &e);
+    settings = ui_attach_element(container, &e);
+  }
+  for (size_t i = 0; i < 64; ++i) {
+    Element e = ui_button("test");
+    e.box = BOX(0, 0, 32 + random_number() % 64, 32 + random_number() % 64);
+    e.onclick = onclick_test;
+    ui_attach_element(settings, &e);
   }
 }
 

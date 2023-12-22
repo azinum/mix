@@ -1,8 +1,16 @@
 // audio_miniaudio.c
 
-// #error "miniaudio is not supported yet"
-
 #define MINIAUDIO_IMPLEMENTATION
+#define MA_SOUND_FLAG_NO_PITCH
+#define MA_SOUND_FLAG_NO_SPATIALIZATION
+#define MA_NO_RESOURCE_MANAGER
+#define MA_NO_NODE_GRAPH
+#define MA_NO_ENGINE
+#define MA_NO_GENERATION
+
+#define MA_MALLOC memory_alloc
+#define MA_REALLOC memory_realloc
+#define MA_FREE memory_free
 #include "miniaudio.h"
 
 static ma_device device = {0};

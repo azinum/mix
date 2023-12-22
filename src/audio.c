@@ -56,8 +56,7 @@ void audio_engine_exit(Audio_engine* audio) {
   audio_exit(audio);
 }
 
-// TODO(lucas): handle variable sample_count, number of ready samples may not be predictable
-Result audio_engine_process(const void* in, void* out, i32 sample_count) {
+Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
   Mix* m = &mix;
   Audio_engine* audio = &audio_engine;
@@ -65,8 +64,8 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
     audio->done = true;
     return Error;
   }
-  if (sample_count != audio->frames_per_buffer) {
-    FRAMES_PER_BUFFER = sample_count;
+  if (frames != audio->frames_per_buffer) {
+    FRAMES_PER_BUFFER = frames;
     audio->restart = true;
     return Error;
   }
@@ -74,14 +73,15 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   f32* buffer = (f32*)out;
   const i32 frames_per_buffer = audio->frames_per_buffer;
   const i32 channel_count = audio->channel_count;
+  const i32 sample_count = frames_per_buffer * channel_count;
 
   // clear master audio buffer
-  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+  for (i32 i = 0; i < sample_count; ++i) {
     audio->out_buffer[i] = 0;
   }
 
   if (in) {
-    for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+    for (i32 i = 0; i < sample_count; ++i) {
       audio->in_buffer[i] = ((f32*)in)[i];
     }
   }
@@ -89,15 +89,15 @@ Result audio_engine_process(const void* in, void* out, i32 sample_count) {
   Instrument* ins = &audio->instrument;
 
   // process instruments and effects
-  instrument_process(ins, m, audio, audio->dt);
+  instrument_process(ins, m, audio, 1.0f / sample_count);
 
   // sum all audio buffers
-  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+  for (i32 i = 0; i < sample_count; ++i) {
     audio->out_buffer[i] += ins->buffer[i];
   }
 
   // write to output buffer
-  for (i32 i = 0; i < frames_per_buffer * channel_count; ++i) {
+  for (i32 i = 0; i < sample_count; ++i) {
     buffer[i] = audio->out_buffer[i];
   }
   audio->dt = TIMER_END();

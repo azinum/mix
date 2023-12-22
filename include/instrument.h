@@ -10,7 +10,7 @@ struct Audio_engine;
 
 typedef struct Instrument {
   f32* buffer;
-  size_t frames;
+  size_t samples;
   f32 volume;
   f32 latency;
   f32 audio_latency;

@@ -8,7 +8,7 @@ static void instrument_init_default(Instrument* ins);
 
 void instrument_init_default(Instrument* ins) {
   ins->buffer = NULL;
-  ins->frames = 0;
+  ins->samples = 0;
   ins->volume = INSTRUMENT_VOLUME_DEFAULT;
   ins->latency = 0;
   ins->audio_latency = 0;
@@ -31,10 +31,10 @@ Instrument instrument_new_from_path(const char* path) {
 }
 
 void instrument_init(Instrument* ins, Audio_engine* audio) {
-  const size_t frames = audio->frames_per_buffer * audio->channel_count;
-  ins->buffer = memory_calloc(frames, sizeof(f32));
+  const size_t samples = audio->frames_per_buffer * audio->channel_count;
+  ins->buffer = memory_calloc(samples, sizeof(f32));
   if (ins->buffer) {
-    ins->frames = frames;
+    ins->samples = samples;
   }
   ins->init(ins);
 }
@@ -70,7 +70,7 @@ void instrument_free(Instrument* ins) {
   ins->free(ins);
   memory_free(ins->buffer);
   ins->buffer = NULL;
-  ins->frames = 0;
+  ins->samples = 0;
   memory_free(ins->userdata);
   ins->userdata = NULL;
 }

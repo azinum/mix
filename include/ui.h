@@ -105,8 +105,10 @@ typedef union Element_data {
     char* string;
   } text;
   struct {
-    char* title; // unused
-    i32 title_padding; // unused
+    i32 scroll_x;
+    i32 scroll_y;
+    i32 content_height;
+    bool scrollable;
   } container;
   struct {
     i32 mouse_x;
@@ -223,6 +225,7 @@ typedef struct UI_state {
   Element* active;
   Element* select;
   Element* marker; // a marker element is used to connect two elements together via a callback function
+  Element* container; // last container element that was hovered
   i32 fd;
   u32 active_id;
   Arena frame_arena;
@@ -249,6 +252,7 @@ void ui_reset_connection_filter(void);
 Element* ui_attach_element(Element* target, Element* e);
 Element ui_none(void);
 Element ui_container(char* title);
+Element ui_container_ex(char* title, bool scrollable);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_button(char* text);

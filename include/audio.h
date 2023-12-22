@@ -23,6 +23,6 @@ Result audio_engine_start(Audio_engine* e);
 Result audio_engine_start_new(Audio_engine* e);
 void audio_engine_restart(void);
 void audio_engine_exit(Audio_engine* e);
-Result audio_engine_process(const void* in, void* out, i32 sample_count);
+Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H
