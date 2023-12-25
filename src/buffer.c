@@ -10,6 +10,10 @@ Buffer buffer_new(size_t size) {
   return buffer;
 }
 
+void buffer_reset(Buffer* buffer) {
+  buffer->count = 0;
+}
+
 void buffer_free(Buffer* buffer) {
   memory_free(buffer->data);
   buffer->data = NULL;

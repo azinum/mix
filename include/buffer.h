@@ -10,6 +10,7 @@ typedef struct Buffer {
 } Buffer;
 
 Buffer buffer_new(size_t size);
+void buffer_reset(Buffer* buffer);
 void buffer_free(Buffer* buffer);
 Buffer buffer_new_from_fd(i32 fd);
 

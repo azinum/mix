@@ -146,17 +146,16 @@ void mix_update_and_render(Mix* m) {
     debug_text,
     sizeof(debug_text),
     "%zu/%zu bytes (%.2g %%)\n"
-    "%.4f/%.4f/%.4f ms ui latency (update/render/total)\n"
+    "%g ms ui latency\n"
     "%u ui element updates"
     ,
     memory_state.usage, memory_state.max_usage,
     100 * ((f32)memory_state.usage / memory_state.max_usage),
-    1000 * (ui_state.latency - ui_state.render_latency), 1000 * ui_state.render_latency, 1000 * ui_state.latency,
+    1000 * ui_state.latency,
     ui_state.element_update_count
   );
 
   DrawText(debug_text, 4, GetScreenHeight() - (0.5 * UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 3, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
-
 #endif
   render_delta_buffer(m);
 }
@@ -238,12 +237,14 @@ void mix_ui_init(Mix* m) {
     e.background = true;
     settings = ui_attach_element(container, &e);
   }
+#if 0
   for (size_t i = 0; i < 64; ++i) {
     Element e = ui_button("test");
-    e.box = BOX(0, 0, 32 + random_number() % 64, 32 + random_number() % 64);
+    e.box = BOX(0, 0, 44 + random_number() % 64, 32 + random_number() % 64);
     e.onclick = onclick_test;
     ui_attach_element(settings, &e);
   }
+#endif
 }
 
 void render_delta_buffer(Mix* m) {

@@ -10,7 +10,6 @@ typedef struct Lfo {
   f32 hz;
   f32 offset;
   size_t tick;
-  i32 additive;
   const char* connection_name;
 } Lfo;
 

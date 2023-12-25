@@ -5,6 +5,7 @@
 //  UI_LOG_HIERARCHY
 //  UI_LOG_PATH
 //  UI_TOOLTIP_DELAY
+//  UI_SCROLL_SPEED
 
 #ifndef _UI_H
 #define _UI_H
@@ -21,7 +22,7 @@
 
 // delay, in seconds, until showing tooltip
 #ifndef UI_TOOLTIP_DELAY
-  #define UI_TOOLTIP_DELAY 0.8f
+  #define UI_TOOLTIP_DELAY 0.7f
 #endif
 
 #ifndef UI_SCROLL_SPEED
@@ -191,6 +192,7 @@ typedef struct Element {
   char* tooltip;
 
   void (*onclick)(struct Element* e);
+  void (*onupdate)(struct Element* e);
   void (*onrender)(struct Element* e);
   void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
 } __attribute__((aligned(CACHELINESIZE))) Element;

@@ -26,7 +26,6 @@ static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
 UI_state ui_state = {0};
 
 static void ui_state_init(UI_state* ui);
-static void ui_theme_init(void);
 static void ui_update_elements(UI_state* ui, Element* e);
 static void ui_update_container(UI_state* ui, Element* e);
 static void ui_update_grid(UI_state* ui, Element* e);
@@ -43,6 +42,7 @@ static void ui_render_tooltip_of_element(UI_state* ui, Element* e);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
+static void ui_onupdate(struct Element* e);
 static void ui_onrender(struct Element* e);
 static void ui_onconnect(struct Element* e, struct Element* target);
 static bool ui_connection_filter(struct Element* e, struct Element* target);
@@ -52,7 +52,6 @@ static void ui_render_rectangle(Box box, f32 roundness, Color color);
 static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color);
 
 void ui_state_init(UI_state* ui) {
-  ui_theme_init();
   ui_element_init(&ui->root, ELEMENT_CONTAINER);
   ui->root.placement = PLACEMENT_FILL;
   ui->root.padding = 0;
@@ -85,22 +84,6 @@ void ui_state_init(UI_state* ui) {
   ui->tooltip_timer = 0.0f;
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
-}
-
-void ui_theme_init(void) {
-#if 0
-  if (UI_THEME >= 0 && UI_THEME < MAX_THEME_ID) {
-    const Theme* theme = &themes[UI_THEME];
-    BACKGROUND_COLOR = theme->main_background;
-    UI_BACKGROUND_COLOR = theme->background;
-    UI_BORDER_COLOR = theme->border;
-    UI_BUTTON_COLOR = theme->button;
-    UI_TEXT_COLOR = theme->text;
-    UI_BORDER_THICKNESS = theme->border_thickness;
-    UI_TITLE_BAR_PADDING = theme->title_bar_padding;
-    UI_BUTTON_ROUNDNESS = theme->button_roundness;
-  }
-#endif
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
@@ -188,6 +171,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
     default:
       break;
   }
+  e->onupdate(e);
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     ui_update_elements(ui, item);
@@ -541,6 +525,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->tooltip = NULL;
 
   e->onclick = ui_onclick;
+  e->onupdate = ui_onupdate;
   e->onrender = ui_onrender;
   e->onconnect = ui_onconnect;
 }
@@ -655,6 +640,10 @@ void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
 }
 
 void ui_onclick(struct Element* e) {
+  (void)e;
+}
+
+void ui_onupdate(struct Element* e) {
   (void)e;
 }
 
@@ -808,9 +797,6 @@ void ui_update(f32 dt) {
       }
       e->data.container.scroll_y = scroll_y;
     }
-    else {
-      e->data.container.scroll_y = 0;
-    }
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
@@ -835,7 +821,9 @@ void ui_update(f32 dt) {
 
 void ui_hierarchy_print(void) {
   UI_state* ui = &ui_state;
-  ui_print_elements(ui, ui->fd, &ui->root, 0);
+  if (ui->fd >= 0) {
+    ui_print_elements(ui, ui->fd, &ui->root, 0);
+  }
 }
 
 void ui_render(void) {
@@ -1060,7 +1048,6 @@ Element ui_slider(void* value, Slider_type type, Range range) {
   e.data.slider.range = range;
   e.data.slider.vertical = false;
   e.data.slider.deadzone = ui->slider_deadzone;
-  e.type = ELEMENT_SLIDER;
   e.scissor = false;
   e.background = true;
   e.border = true;

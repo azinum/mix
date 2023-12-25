@@ -13,6 +13,7 @@ static void waveshaper_canvas_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
 static void waveshaper_bind_lfo(Element* e, Element* target);
+static void waveshaper_update_lfo(Element* e);
 static bool waveshaper_connection_filter(Element* e, Element* target);
 
 void waveshaper_canvas_onrender(Element* e) {
@@ -72,10 +73,9 @@ void waveshaper_default(Waveshaper* w) {
   w->lfo = (Lfo) {
     .lfo_target = NULL,
     .lfo = 0,
-    .amplitude = 1.0f,
-    .hz = 0.0f,
+    .amplitude = 0.5f,
+    .hz = 2.0f,
     .tick = 0,
-    .additive = false,
     .connection_name = LFO_NO_CONNECTION,
   };
 }
@@ -87,7 +87,6 @@ void waveshaper_bind_lfo(Element* e, Element* target) {
     if (target->name != NULL) {
       w->lfo.connection_name = target->name;
     }
-    e->background_color = color_connected;
     switch (target->data.slider.type) {
       case SLIDER_FLOAT: {
         f32* binding = target->data.slider.v.f;
@@ -100,6 +99,15 @@ void waveshaper_bind_lfo(Element* e, Element* target) {
   }
   w->lfo.lfo_target = NULL;
   w->lfo.connection_name = LFO_NO_CONNECTION;
+}
+
+void waveshaper_update_lfo(Element* e) {
+  Instrument* ins = (Instrument*)e->userdata;
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  if (w->lfo.lfo_target) {
+    e->background_color = color_connected;
+    return;
+  }
   e->background_color = color_disconnected;
 }
 
@@ -319,12 +327,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(lfo_container, &e);
   }
   {
-    Element e = ui_toggle_ex(&w->lfo.additive, "additive");
-    e.box.h = slider_height;
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
     Element e = ui_none();
     e.render = true;
     e.background = true;
@@ -335,6 +337,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.box.w = e.box.h = FONT_SIZE;
     e.userdata = ins;
     e.onconnect = waveshaper_bind_lfo;
+    e.onupdate = waveshaper_update_lfo;
     e.tooltip = "hold ctrl+left mouse click to connect the LFO\nto one of the range sliders";
     ui_attach_element(lfo_container, &e);
   }
@@ -393,12 +396,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
       w->lfo.tick += 1;
       if (w->lfo.lfo_target != NULL) {
-        if (w->lfo.additive) {
-          *w->lfo.lfo_target += w->lfo.lfo;
-        }
-        else {
-          *w->lfo.lfo_target = w->lfo.lfo;
-        }
+        *w->lfo.lfo_target = w->lfo.lfo;
       }
 
       ins->buffer[i] = volume * sinf(
