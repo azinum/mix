@@ -88,6 +88,8 @@ typedef union Element_data {
   } grid;
   struct {
     char* string;
+    bool allow_overflow;
+    bool text_wrapping;
   } text;
   struct {
     i32 scroll_x;

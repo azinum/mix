@@ -112,6 +112,7 @@ void waveshaper_update_lfo(Element* e) {
 }
 
 bool waveshaper_connection_filter(Element* e, Element* target) {
+  (void)e;
   if (target->type == ELEMENT_SLIDER) {
     return target->data.slider.v.f != NULL;
   }

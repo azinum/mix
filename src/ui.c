@@ -50,6 +50,9 @@ static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
 static void ui_render_rectangle(Box box, f32 roundness, Color color);
 static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color);
+// returns true if box was mutated
+static bool ui_measure_text(Font, char* text, Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing);
+static void ui_render_text(Font font, char* text, const Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
 
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root, ELEMENT_CONTAINER);
@@ -140,12 +143,13 @@ void ui_update_elements(UI_state* ui, Element* e) {
         break;
       }
       const Font font = assets.font;
-      i32 font_size = FONT_SIZE;
-      i32 spacing = 0;
-      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
+      const i32 font_size = FONT_SIZE;
+      const i32 spacing = 0;
       const Sizing sizing = e->sizing;
-      i32 w = text_size.x;
-      i32 h = text_size.y;
+      i32 w = e->box.w;
+      i32 h = e->box.h;
+      const bool allow_overflow = e->data.text.allow_overflow;
+      const bool text_wrapping = e->data.text.text_wrapping;
       if (sizing.mode == SIZE_MODE_PERCENT) {
         if (sizing.x != 0) {
           w = e->box.w;
@@ -154,8 +158,10 @@ void ui_update_elements(UI_state* ui, Element* e) {
           h = e->box.h;
         }
       }
-      e->box.w = w;
-      e->box.h = h;
+      if (!ui_measure_text(font, text, &e->box, allow_overflow, text_wrapping, font_size, spacing, UI_LINE_SPACING)) {
+        e->box.w = w;
+        e->box.h = h;
+      }
       break;
     }
     case ELEMENT_CANVAS: {
@@ -338,18 +344,11 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
-      Vector2 text_size = MeasureTextEx(font, text, font_size, spacing);
-      const i32 x = e->box.x;
-      const i32 y = e->box.y;
-      const i32 w = (i32)text_size.x;
-      const i32 h = (i32)text_size.y;
-      DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
-      (void)w;
-      (void)h;
+      const bool allow_overflow = e->data.text.allow_overflow;
+      const bool text_wrapping = e->data.text.text_wrapping;
+      ui_render_text(font, text, &e->box, allow_overflow, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
 #ifdef UI_DRAW_GUIDES
-      if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
-        DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
-      }
+      ui_render_rectangle_lines(e->box, 1, 0, GUIDE_COLOR2);
 #endif
       break;
     }
@@ -427,6 +426,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
             break;
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
+      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, COLOR_RGB(255, 255, 255), 0.2f));
       DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
       if (e->border_thickness > 0.0f) {
         DrawCircleLines(x + box.w*factor, y + h/2, radius, e->border_color);
@@ -969,6 +969,8 @@ Element ui_text(char* text) {
   Element e;
   ui_element_init(&e, ELEMENT_TEXT);
   e.data.text.string = text;
+  e.data.text.allow_overflow = false;
+  e.data.text.text_wrapping = true;
   e.background = false;
   e.border = false;
   e.scissor = false;
@@ -1134,4 +1136,121 @@ void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color colo
     return;
   }
   DrawRectangleLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, thickness, color);
+}
+
+bool ui_measure_text(
+    Font font,
+    char* text,
+    Box* box,
+    bool allow_overflow,
+    bool text_wrapping,
+    i32 font_size,
+    i32 spacing,
+    i32 line_spacing) {
+  bool mutated = false;
+  if (font.texture.id == 0) {
+    font = GetFontDefault();
+  }
+  size_t length = strlen(text);
+  f32 x_offset = 0.0f;
+  f32 x_offset_largest = 0.0f;
+  i32 y_offset = 0;
+
+  f32 scale_factor = font_size / (f32)font.baseSize;
+  i32 max_line_width = 0;
+  if (text_wrapping) {
+    max_line_width = box->w;
+  }
+
+  for (size_t i = 0; i < length;) {
+    i32 codepoint_size = 0;
+    i32 codepoint = GetCodepointNext(&text[i], &codepoint_size);
+    i32 glyph_index = GetGlyphIndex(font, codepoint);
+    if (x_offset >= max_line_width && max_line_width > 0) {
+      x_offset = 0.0f;
+      y_offset += line_spacing;
+    }
+    if (codepoint == '\n') {
+      x_offset = 0.0f;
+      y_offset += line_spacing;
+    }
+    else {
+      if (font.glyphs[glyph_index].advanceX == 0) {
+        x_offset += ((f32)font.recs[glyph_index].width * scale_factor + spacing);
+      }
+      else {
+        x_offset += ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
+      }
+      if (x_offset > x_offset_largest) {
+        x_offset_largest = x_offset;
+      }
+    }
+    i += codepoint_size;
+  }
+
+  if (!allow_overflow) {
+    box->h = y_offset + line_spacing;
+    box->w = x_offset_largest;
+    mutated = true;
+  }
+
+  return mutated;
+}
+
+void ui_render_text(
+    Font font,
+    char* text,
+    const Box* box,
+    bool allow_overflow,
+    bool text_wrapping,
+    i32 font_size,
+    i32 spacing,
+    i32 line_spacing,
+    Color tint) {
+  if (font.texture.id == 0) {
+    font = GetFontDefault();
+  }
+  size_t length = strlen(text);
+  if (length == 0) {
+    return;
+  }
+
+  f32 x_offset = 0;
+  i32 y_offset = 0;
+
+  f32 scale_factor = font_size / (f32)font.baseSize;
+
+  i32 max_line_width = 0;
+  if (text_wrapping) {
+    max_line_width = box->w;
+  }
+
+  for (size_t i = 0; i < length;) {
+    i32 codepoint_size = 0;
+    i32 codepoint = GetCodepointNext(&text[i], &codepoint_size);
+    i32 glyph_index = GetGlyphIndex(font, codepoint);
+
+    if (x_offset >= max_line_width && max_line_width > 0) {
+      x_offset = 0.0f;
+      y_offset += line_spacing;
+    }
+
+    if (codepoint == '\n') {
+      y_offset += line_spacing;
+      x_offset = 0.0f;
+    }
+    else {
+      if ((codepoint != ' ') && (codepoint != '\t')) {
+        DrawTextCodepoint(font, codepoint, (Vector2) { box->x + x_offset, box->y + y_offset }, font_size, tint);
+      }
+
+      if (font.glyphs[glyph_index].advanceX == 0) {
+        x_offset += ((f32)font.recs[glyph_index].width*scale_factor + spacing);
+      }
+      else {
+        x_offset += ((f32)font.glyphs[glyph_index].advanceX*scale_factor + spacing);
+      }
+    }
+    i += codepoint_size;
+  }
 }
