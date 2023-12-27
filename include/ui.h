@@ -64,10 +64,13 @@ const char* element_type_str[] = {
 
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
 
-typedef enum {
-  SLIDER_FLOAT,
-  SLIDER_INTEGER,
-} Slider_type;
+typedef enum Value_type {
+  VALUE_TYPE_NONE = 0,
+  VALUE_TYPE_FLOAT,
+  VALUE_TYPE_INTEGER,
+
+  MAX_VALUE_TYPE,
+} Value_type;
 
 typedef union {
   struct {
@@ -79,6 +82,13 @@ typedef union {
     i32 i_max;
   };
 } Range;
+
+typedef enum Input_type {
+  INPUT_TEXT = 0,
+  INPUT_NUMBER,
+
+  MAX_INPUT_TYPE,
+} Input_type;
 
 #define RANGE_FLOAT(min, max) ((Range) { .f_min = min, .f_max = max, })
 #define RANGE(min, max) ((Range) { .i_min = min, .i_max = max, })
@@ -114,7 +124,7 @@ typedef union Element_data {
       f32* f;
       i32* i;
     } v;
-    Slider_type type;
+    Value_type type;
     Range range;
     bool vertical;
     f32 deadzone;
@@ -123,6 +133,9 @@ typedef union Element_data {
     Buffer buffer;
     size_t cursor;
     char* preview;
+    Input_type input_type;
+    Value_type value_type;
+    void* value;
   } input;
 } Element_data;
 
@@ -248,6 +261,7 @@ void ui_set_slider_deadzone(f32 deadzone);
 // set a filter for which elements that can be connected together
 void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*));
 void ui_reset_connection_filter(void);
+bool ui_no_input(void);
 
 Element* ui_attach_element(Element* target, Element* e);
 Element ui_none(void);
@@ -260,8 +274,10 @@ Element ui_canvas(bool border);
 Element ui_toggle(i32* value);
 Element ui_toggle_ex(i32* value, char* text);
 Element ui_toggle_ex2(i32* value, char* false_text, char* true_text);
-Element ui_slider(void* value, Slider_type type, Range range);
+Element ui_slider(void* value, Value_type type, Range range);
 Element ui_line_break(i32 height);
 Element ui_input(char* preview);
+Element ui_input_ex(char* preview, Input_type input_type);
+Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type);
 
 #endif // _UI_H

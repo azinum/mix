@@ -12,6 +12,44 @@ Buffer buffer_new(size_t size) {
   return buffer;
 }
 
+Buffer buffer_new_from_str(const char* str) {
+  size_t length = strlen(str);
+  Buffer buffer = (Buffer) {
+    .data = memory_alloc(length),
+    .count = length,
+    .size = length,
+  };
+  memcpy(buffer.data, str, length);
+  return buffer;
+}
+
+Buffer buffer_new_from_fmt(size_t size, const char* fmt, ...) {
+  Buffer buffer = buffer_new(size);
+
+  va_list argp;
+  va_start(argp, fmt);
+  buffer.count = stb_vsnprintf((char*)buffer.data, size, fmt, argp);
+  va_end(argp);
+
+  return buffer;
+}
+
+i32 buffer_to_int(Buffer* buffer) {
+  i32 value = 0;
+  if (buffer->count > 0) {
+    sscanf((char*)buffer->data, "%d", &value);
+  }
+  return value;
+}
+
+f32 buffer_to_float(Buffer* buffer) {
+  f32 value = 0.0f;
+  if (buffer->count > 0) {
+    sscanf((char*)buffer->data, "%f", &value);
+  }
+  return value;
+}
+
 void buffer_reset(Buffer* buffer) {
   buffer->count = 0;
 }

@@ -418,12 +418,12 @@ void ui_render_elements(UI_state* ui, Element* e) {
       i32 h = box.h;
       f32 factor = 0.0f;
       switch (e->data.slider.type) {
-        case SLIDER_FLOAT: {
+        case VALUE_TYPE_FLOAT: {
           f32 range_length = -(range.f_min - range.f_max);
           factor = (*e->data.slider.v.f - range.f_min) / range_length;
           break;
         }
-        case SLIDER_INTEGER: {
+        case VALUE_TYPE_INTEGER: {
           i32 range_length = -(range.i_min - range.i_max);
           factor = (*e->data.slider.v.i - range.i_min) / (f32)range_length;
           break;
@@ -648,7 +648,7 @@ void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
   static char tooltip[256] = {0};
   switch (e->type) {
     case ELEMENT_SLIDER: {
-      if (e->data.slider.type == SLIDER_FLOAT) {
+      if (e->data.slider.type == VALUE_TYPE_FLOAT) {
         stb_snprintf(tooltip, sizeof(tooltip), "range: %g, %g\nvalue: %g", e->data.slider.range.f_min, e->data.slider.range.f_max, *e->data.slider.v.f);
         break;
       }
@@ -683,7 +683,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
   f32 deadzone = e->data.slider.deadzone;
   Range range = e->data.slider.range;
   switch (e->data.slider.type) {
-    case SLIDER_FLOAT: {
+    case VALUE_TYPE_FLOAT: {
       f32 value = lerp_f32(range.f_min, range.f_max, factor);
       if (factor - deadzone <= 0.0f) {
         value = range.f_min;
@@ -694,7 +694,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
       *e->data.slider.v.f = value;
       break;
     }
-    case SLIDER_INTEGER: {
+    case VALUE_TYPE_INTEGER: {
       i32 value = (i32)lerp_f32(range.i_min, range.i_max, factor);
       if (factor - deadzone <= 0.0f) {
         value = range.i_min;
@@ -963,6 +963,11 @@ void ui_reset_connection_filter(void) {
   ui->connection_filter = ui_connection_filter;
 }
 
+bool ui_no_input(void) {
+  UI_state* ui = &ui_state;
+  return ui->input == NULL;
+}
+
 Element* ui_attach_element(Element* target, Element* e) {
   UI_state* ui = &ui_state;
   if (!target) {
@@ -1081,17 +1086,17 @@ Element ui_toggle_ex2(i32* value, char* false_text, char* true_text) {
   return e;
 }
 
-Element ui_slider(void* value, Slider_type type, Range range) {
+Element ui_slider(void* value, Value_type type, Range range) {
   ASSERT(value != NULL);
   UI_state* ui = &ui_state;
 
   Element e;
   ui_element_init(&e, ELEMENT_SLIDER);
   switch (type) {
-    case SLIDER_FLOAT:
+    case VALUE_TYPE_FLOAT:
       e.data.slider.v.f = (f32*)value;
       break;
-    case SLIDER_INTEGER:
+    case VALUE_TYPE_INTEGER:
       e.data.slider.v.i = (i32*)value;
       break;
     default:
@@ -1124,11 +1129,42 @@ Element ui_input(char* preview) {
   e.data.input.buffer = buffer_new(0);
   e.data.input.cursor = 0;
   e.data.input.preview = preview;
+  e.data.input.input_type = INPUT_TEXT;
+  e.data.input.value_type = VALUE_TYPE_NONE;
+  e.data.input.value = NULL;
   e.background = true;
   e.border = true;
   e.scissor = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  return e;
+}
+
+Element ui_input_ex(char* preview, Input_type input_type) {
+  Element e = ui_input(preview);
+  e.data.input.input_type = input_type;
+  return e;
+}
+
+Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type) {
+  ASSERT(value != NULL);
+
+  Element e = ui_input_ex(preview, input_type);
+  e.data.input.value_type = value_type;
+  e.data.input.value = value;
+  switch (value_type) {
+    case VALUE_TYPE_FLOAT: {
+      e.data.input.buffer = buffer_new_from_fmt(32, "%g", *(f32*)value);
+      break;
+    }
+    case VALUE_TYPE_INTEGER: {
+      e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i32*)value);
+      break;
+    }
+    default:
+      break;
+  }
+  e.data.input.cursor = e.data.input.buffer.count;
   return e;
 }
 
@@ -1327,8 +1363,22 @@ void ui_update_input(UI_state* ui, Element* e) {
   Buffer* buffer = &e->data.input.buffer;
   char ch = 0;
   while ((ch = GetCharPressed()) != 0) {
-    buffer_insert(buffer, ch, e->data.input.cursor);
-    e->data.input.cursor += 1;
+    switch (e->data.input.input_type) {
+      case INPUT_TEXT: {
+        buffer_insert(buffer, ch, e->data.input.cursor);
+        e->data.input.cursor += 1;
+        break;
+      }
+      case INPUT_NUMBER: {
+        if ((ch >= '0' && ch <= '9') || ch == '.') {
+          buffer_insert(buffer, ch, e->data.input.cursor);
+          e->data.input.cursor += 1;
+        }
+        break;
+      }
+      default:
+        break;
+    }
     e->oninput(e, ch);
   }
 
@@ -1350,6 +1400,23 @@ void ui_update_input(UI_state* ui, Element* e) {
     }
   }
   if (IsKeyPressed(KEY_ENTER)) {
+    if (e->data.input.value != NULL) {
+      Buffer* buffer = &e->data.input.buffer;
+      switch (e->data.input.value_type) {
+        case VALUE_TYPE_FLOAT: {
+          f32* value = (f32*)e->data.input.value;
+          *value = buffer_to_float(buffer);
+          break;
+        }
+        case VALUE_TYPE_INTEGER: {
+          i32* value = (i32*)e->data.input.value;
+          *value = buffer_to_int(buffer);
+          break;
+        }
+        default:
+          break;
+      }
+    }
     ui->input = NULL;
     e->onenter(e);
   }

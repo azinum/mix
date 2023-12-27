@@ -26,6 +26,7 @@ Instrument instrument_new(Instrument_id id) {
 
 Instrument instrument_new_from_path(const char* path) {
   Instrument ins = {0};
+  (void)path;
   NOT_IMPLEMENTED();
   return ins;
 }

@@ -88,7 +88,7 @@ void waveshaper_bind_lfo(Element* e, Element* target) {
       w->lfo.connection_name = target->name;
     }
     switch (target->data.slider.type) {
-      case SLIDER_FLOAT: {
+      case VALUE_TYPE_FLOAT: {
         f32* binding = target->data.slider.v.f;
         w->lfo.lfo_target = binding;
         return;
@@ -207,14 +207,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->volume_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    Element e = ui_slider(&w->volume_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.name = "volume";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->freq_mod_target, SLIDER_FLOAT, RANGE_FLOAT(0, 25.0f));
+    Element e = ui_slider(&w->freq_mod_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0, 25.0f));
     e.name = "frequency modulation";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
@@ -232,14 +232,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->freq_target, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
+    Element e = ui_slider(&w->freq_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
     e.name = "frequency";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->interp_speed, SLIDER_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
+    Element e = ui_slider(&w->interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
     e.box = BOX(0, 0, 0, slider_height);
     e.name = "interpolation speed";
     e.sizing = SIZING_PERCENT(50, 0);
@@ -257,14 +257,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->speed, SLIDER_INTEGER, RANGE(1, 12));
+    Element e = ui_slider(&w->speed, VALUE_TYPE_INTEGER, RANGE(1, 12));
     e.name = "speed";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->gain, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
+    Element e = ui_slider(&w->gain, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
     e.name = "gain";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);
@@ -302,14 +302,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(lfo_container, &e);
   }
   {
-    Element e = ui_slider(&w->lfo.amplitude, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+    Element e = ui_slider(&w->lfo.amplitude, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.name = "LFO amplitude";
     e.box.h = slider_height;
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(lfo_container, &e);
   }
   {
-    Element e = ui_slider(&w->lfo.hz, SLIDER_FLOAT, RANGE_FLOAT(0.0f, 25.0f));
+    Element e = ui_slider(&w->lfo.hz, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 25.0f));
     e.name = "LFO hz";
     e.box.h = slider_height;
     e.sizing = SIZING_PERCENT(50, 0);
@@ -321,7 +321,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(lfo_container, &e);
   }
   {
-    Element e = ui_slider(&w->lfo.offset, SLIDER_FLOAT, RANGE_FLOAT(-1.0f, 1.0f));
+    Element e = ui_slider(&w->lfo.offset, VALUE_TYPE_FLOAT, RANGE_FLOAT(-1.0f, 1.0f));
     e.name = "LFO offset";
     e.box.h = slider_height;
     e.sizing = SIZING_PERCENT(50, 0);
@@ -349,6 +349,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 }
 
 void waveshaper_update(Instrument* ins, struct Mix* mix) {
+  (void)mix;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_reset(&w->arena);
   w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
@@ -357,33 +358,37 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);
 
-  if (IsKeyPressed(KEY_W)) {
-    w->freq_target += 1;
-  }
-  if (IsKeyPressed(KEY_S)) {
-    w->freq_target -= 1;
-  }
-  if (IsKeyPressed(KEY_E)) {
-    w->freq_mod_target += 1;
-  }
-  if (IsKeyPressed(KEY_D)) {
-    w->freq_mod_target -= 1;
-  }
-  if (IsKeyPressed(KEY_F)) {
-    w->freeze = !w->freeze;
-  }
-  if (IsKeyPressed(KEY_SPACE)) {
-    w->mute = !w->mute;
-  }
-  if (IsKeyPressed(KEY_Q)) {
-    waveshaper_default(w);
-  }
-  if (IsKeyPressed(KEY_H)) {
-    w->render = !w->render;
+  if (ui_no_input()) {
+    if (IsKeyPressed(KEY_W)) {
+      w->freq_target += 1;
+    }
+    if (IsKeyPressed(KEY_S)) {
+      w->freq_target -= 1;
+    }
+    if (IsKeyPressed(KEY_E)) {
+      w->freq_mod_target += 1;
+    }
+    if (IsKeyPressed(KEY_D)) {
+      w->freq_mod_target -= 1;
+    }
+    if (IsKeyPressed(KEY_F)) {
+      w->freeze = !w->freeze;
+    }
+    if (IsKeyPressed(KEY_SPACE)) {
+      w->mute = !w->mute;
+    }
+    if (IsKeyPressed(KEY_Q)) {
+      waveshaper_default(w);
+    }
+    if (IsKeyPressed(KEY_H)) {
+      w->render = !w->render;
+    }
   }
 }
 
 void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+  (void)mix;
+
   Waveshaper* w = (Waveshaper*)ins->userdata;
   const i32 sample_rate = audio->sample_rate;
   const i32 channel_count = audio->channel_count;
@@ -405,7 +410,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         / (f32)sample_rate
       );
       ins->buffer[i + 1] = volume * cosf(
-        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
+        (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
       w->tick += w->speed;

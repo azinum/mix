@@ -10,6 +10,10 @@ typedef struct Buffer {
 } Buffer;
 
 Buffer buffer_new(size_t size);
+Buffer buffer_new_from_str(const char* str);
+Buffer buffer_new_from_fmt(size_t size, const char* fmt, ...);
+i32 buffer_to_int(Buffer* buffer);
+f32 buffer_to_float(Buffer* buffer);
 void buffer_reset(Buffer* buffer);
 void buffer_append(Buffer* buffer, u8 byte);
 void buffer_insert(Buffer* buffer, u8 byte, size_t index);

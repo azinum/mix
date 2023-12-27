@@ -402,8 +402,7 @@ inline i32 STB_WRAP(vprintf(const char* fmt, va_list argp)) {
 
 inline i32 STB_WRAP(vdprintf(i32 fd, const char* fmt, va_list argp)) {
   size_t n = stbsp_vsnprintf(sprintf_buffer, SPRINTF_BUFFER_SIZE, fmt, argp);
-  write(fd, sprintf_buffer, n);
-  return n;
+  return write(fd, sprintf_buffer, n);
 }
 
 inline i32 STB_WRAP(vsprintf(char* str, const char* fmt, va_list argp)) {
