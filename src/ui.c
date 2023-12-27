@@ -16,6 +16,8 @@
 #define DRAW_SIMPLE_TEXT(X, Y, FORMAT_STR, ...) DRAW_SIMPLE_TEXT_EX(X, Y, 64, COLOR_RGB(255, 255, 255), FORMAT_STR, ##__VA_ARGS__)
 #define DRAW_SIMPLE_TEXT2(X, Y, COLOR, FORMAT_STR, ...) DRAW_SIMPLE_TEXT_EX(X, Y, 64, COLOR, FORMAT_STR, ##__VA_ARGS__)
 
+#define KEY_PRESSED(KEY) (IsKeyPressed(KEY) || IsKeyPressedRepeat(KEY))
+
 #ifdef UI_DRAW_GUIDES
 static Color GUIDE_COLOR             = COLOR_RGB(255, 0, 255);
 static Color GUIDE_COLOR2            = COLOR_RGB(255, 100, 255);
@@ -45,6 +47,8 @@ static void ui_slider_onclick(UI_state* ui, struct Element* e);
 static void ui_onupdate(struct Element* e);
 static void ui_onrender(struct Element* e);
 static void ui_onconnect(struct Element* e, struct Element* target);
+static void ui_oninput(struct Element* e, char ch);
+static void ui_onenter(struct Element* e);
 static bool ui_connection_filter(struct Element* e, struct Element* target);
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
@@ -52,7 +56,9 @@ static void ui_render_rectangle(Box box, f32 roundness, Color color);
 static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color);
 // returns true if box was mutated
 static bool ui_measure_text(Font, char* text, Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing);
-static void ui_render_text(Font font, char* text, const Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
+static void ui_render_text(Font font, char* text, const Box* box, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
+static void ui_update_input(UI_state* ui, Element* e);
+static void ui_render_input(Element* e);
 
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root, ELEMENT_CONTAINER);
@@ -72,6 +78,8 @@ void ui_state_init(UI_state* ui) {
   ui->active = NULL;
   ui->select = NULL;
   ui->marker = NULL;
+  ui->container = NULL;
+  ui->input = NULL;
 #ifdef UI_LOG_HIERARCHY
   ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
@@ -336,7 +344,6 @@ void ui_render_elements(UI_state* ui, Element* e) {
 
   switch (e->type) {
     case ELEMENT_TEXT: {
-      // TODO(lucas): text wrapping
       char* text = e->data.text.string;
       if (!text) {
         break;
@@ -344,9 +351,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
-      const bool allow_overflow = e->data.text.allow_overflow;
       const bool text_wrapping = e->data.text.text_wrapping;
-      ui_render_text(font, text, &e->box, allow_overflow, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
+      ui_render_text(font, text, &e->box, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
 #ifdef UI_DRAW_GUIDES
       ui_render_rectangle_lines(e->box, 1, 0, GUIDE_COLOR2);
 #endif
@@ -433,6 +439,20 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       break;
     }
+    case ELEMENT_INPUT: {
+      const Font font = assets.font;
+      const i32 font_size = FONT_SIZE;
+      const i32 spacing = 0;
+      if (e->data.input.buffer.count > 0) {
+        ui_render_text(font, (char*)e->data.input.buffer.data, &e->box, false, font_size, spacing, UI_LINE_SPACING, e->text_color);
+        break;
+      }
+      char* preview = e->data.input.preview;
+      if (preview) {
+        ui_render_text(font, preview, &e->box, false, font_size, spacing, UI_LINE_SPACING, lerp_color(e->text_color, COLOR_RGB(0, 0, 0), 0.2f));
+      }
+      break;
+    }
     default:
       break;
   }
@@ -446,7 +466,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     EndScissorMode();
   }
 
-  if (e->border && e->border_thickness > 0) {
+  if (e->border) {
     ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, e->border_color);
   }
 
@@ -475,6 +495,9 @@ void ui_render_elements(UI_state* ui, Element* e) {
 void ui_free_elements(UI_state* ui, Element* e) {
   if (!e) {
     return;
+  }
+  if (e->type == ELEMENT_INPUT) {
+    buffer_free(&e->data.input.buffer);
   }
   for (size_t i = 0; i < e->count; ++i) {
     ui_free_elements(ui, &e->items[i]);
@@ -528,6 +551,8 @@ void ui_element_init(Element* e, Element_type type) {
   e->onupdate = ui_onupdate;
   e->onrender = ui_onrender;
   e->onconnect = ui_onconnect;
+  e->oninput = ui_oninput;
+  e->onenter = ui_onenter;
 }
 
 bool ui_overlap(i32 x, i32 y, Box box) {
@@ -700,6 +725,15 @@ void ui_onconnect(struct Element* e, struct Element* target) {
 #endif
 }
 
+void ui_oninput(struct Element* e, char ch) {
+  (void)e;
+  (void)ch;
+}
+
+void ui_onenter(struct Element* e) {
+  (void)e;
+}
+
 bool ui_connection_filter(struct Element* e, struct Element* target) {
   return (e != NULL) && (target != NULL);
 }
@@ -798,6 +832,17 @@ void ui_update(f32 dt) {
       e->data.container.scroll_y = scroll_y;
     }
   }
+  if (ui->select != NULL) {
+    if (ui->select->type == ELEMENT_INPUT) {
+      ui->input = ui->select;
+    }
+    else {
+      ui->input = NULL;
+    }
+  }
+  if (ui->input) {
+    ui_update_input(ui, ui->input);
+  }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
     switch (ui->hover->type) {
@@ -809,6 +854,10 @@ void ui_update(f32 dt) {
       }
       case ELEMENT_CANVAS: {
         cursor = MOUSE_CURSOR_CROSSHAIR;
+        break;
+      }
+      case ELEMENT_INPUT: {
+        cursor = MOUSE_CURSOR_IBEAM;
         break;
       }
       default:
@@ -853,6 +902,9 @@ void ui_render(void) {
     else {
       DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.1f, color);
     }
+  }
+  if (ui->input != NULL) {
+    ui_render_input(ui->input);
   }
   if (ui->hover != NULL) {
     Element* e = ui->hover;
@@ -1065,6 +1117,21 @@ Element ui_line_break(i32 height) {
   return e;
 }
 
+Element ui_input(char* preview) {
+  Element e;
+  ui_element_init(&e, ELEMENT_INPUT);
+  e.box.h = FONT_SIZE;
+  e.data.input.buffer = buffer_new(0);
+  e.data.input.cursor = 0;
+  e.data.input.preview = preview;
+  e.background = true;
+  e.border = true;
+  e.scissor = true;
+  e.roundness = UI_BUTTON_ROUNDNESS;
+  e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  return e;
+}
+
 void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
   stb_dprintf(fd, "{\n");
   level += 1;
@@ -1190,7 +1257,9 @@ bool ui_measure_text(
 
   if (!allow_overflow) {
     box->h = y_offset + line_spacing;
-    box->w = x_offset_largest;
+    if (!text_wrapping) {
+      box->w = x_offset_largest;
+    }
     mutated = true;
   }
 
@@ -1201,7 +1270,6 @@ void ui_render_text(
     Font font,
     char* text,
     const Box* box,
-    bool allow_overflow,
     bool text_wrapping,
     i32 font_size,
     i32 spacing,
@@ -1253,4 +1321,50 @@ void ui_render_text(
     }
     i += codepoint_size;
   }
+}
+
+void ui_update_input(UI_state* ui, Element* e) {
+  Buffer* buffer = &e->data.input.buffer;
+  char ch = 0;
+  while ((ch = GetCharPressed()) != 0) {
+    buffer_insert(buffer, ch, e->data.input.cursor);
+    e->data.input.cursor += 1;
+    e->oninput(e, ch);
+  }
+
+  if (KEY_PRESSED(KEY_BACKSPACE)) {
+    if (e->data.input.cursor > 0) {
+      buffer_erase(buffer, e->data.input.cursor - 1);
+      e->data.input.cursor -= 1;
+    }
+  }
+  if (KEY_PRESSED(KEY_LEFT)) {
+    if (e->data.input.cursor > 0) {
+      e->data.input.cursor -= 1;
+    }
+  }
+  if (KEY_PRESSED(KEY_RIGHT)) {
+    e->data.input.cursor += 1;
+    if (e->data.input.cursor > buffer->count) {
+      e->data.input.cursor = buffer->count;
+    }
+  }
+  if (IsKeyPressed(KEY_ENTER)) {
+    ui->input = NULL;
+    e->onenter(e);
+  }
+}
+
+void ui_render_input(Element* e) {
+  i32 cursor = e->data.input.cursor;
+  ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, UI_FOCUS_COLOR);
+  Box cursor_box = BOX(
+    e->box.x + cursor * FONT_SIZE/2,
+    e->box.y,
+    1,
+    e->box.h
+  );
+  cursor_box = ui_pad_box(cursor_box, 2);
+  cursor_box.w = 1;
+  ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
 }

@@ -45,6 +45,7 @@ typedef enum {
   ELEMENT_CANVAS,
   ELEMENT_TOGGLE,
   ELEMENT_SLIDER,
+  ELEMENT_INPUT,
 
   MAX_ELEMENT_TYPE,
 } Element_type;
@@ -58,6 +59,7 @@ const char* element_type_str[] = {
   "canvas",
   "toggle",
   "slider",
+  "input",
 };
 
 #define BOX(X, Y, W, H) ((Box) { .x = X, .y = Y, .w = W, .h = H })
@@ -88,6 +90,8 @@ typedef union Element_data {
   } grid;
   struct {
     char* string;
+    // allow overflow = true:  do not mutate element size, keep the current element size and let text overflow
+    // allow overflow = false: mutate element size based on the text content
     bool allow_overflow;
     bool text_wrapping;
   } text;
@@ -115,6 +119,11 @@ typedef union Element_data {
     bool vertical;
     f32 deadzone;
   } slider;
+  struct {
+    Buffer buffer;
+    size_t cursor;
+    char* preview;
+  } input;
 } Element_data;
 
 typedef struct Title_bar {
@@ -197,6 +206,8 @@ typedef struct Element {
   void (*onupdate)(struct Element* e);
   void (*onrender)(struct Element* e);
   void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
+  void (*oninput)(struct Element* e, char ch);
+  void (*onenter)(struct Element* e);
 } __attribute__((aligned(CACHELINESIZE))) Element;
 
 typedef struct UI_state {
@@ -213,6 +224,7 @@ typedef struct UI_state {
   Element* select;
   Element* marker; // a marker element is used to connect two elements together via a callback function
   Element* container; // last container element that was hovered
+  Element* input;
   i32 fd;
   u32 active_id;
   Arena frame_arena;
@@ -250,5 +262,6 @@ Element ui_toggle_ex(i32* value, char* text);
 Element ui_toggle_ex2(i32* value, char* false_text, char* true_text);
 Element ui_slider(void* value, Slider_type type, Range range);
 Element ui_line_break(i32 height);
+Element ui_input(char* preview);
 
 #endif // _UI_H

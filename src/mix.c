@@ -238,21 +238,18 @@ void mix_ui_init(Mix* m) {
     settings = ui_attach_element(container, &e);
   }
   {
-    Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
+    Element e = ui_input("input");
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(settings, &e);
   }
-  {
-    Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Elementum facilisis leo vel fringilla est ullamcorper eget nulla facilisi. Amet nisl purus in mollis nunc sed. Aliquet eget sit amet tellus. Mi in nulla posuere sollicitudin aliquam ultrices sagittis orci. Adipiscing bibendum est ultricies integer quis auctor. Et malesuada fames ac turpis egestas sed tempus. Est ante in nibh mauris. Volutpat maecenas volutpat blandit aliquam etiam erat velit. Gravida rutrum quisque non tellus. Faucibus vitae aliquet nec ullamcorper sit amet. Eu ultrices vitae auctor eu. In tellus integer feugiat scelerisque varius morbi enim. In arcu cursus euismod quis. Auctor augue mauris augue neque gravida in fermentum et sollicitudin. Duis ultricies lacus sed turpis tincidunt id. Urna condimentum mattis pellentesque id nibh tortor id aliquet. Lacus laoreet non curabitur gravida arcu ac tortor dignissim. At volutpat diam ut venenatis tellus in metus.");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
+#if 0
   for (size_t i = 0; i < 64; ++i) {
     Element e = ui_button("test");
     e.box = BOX(0, 0, 44 + random_number() % 64, 32 + random_number() % 64);
     e.onclick = onclick_test;
     ui_attach_element(settings, &e);
   }
+#endif
 }
 
 void render_delta_buffer(Mix* m) {

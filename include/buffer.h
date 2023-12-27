@@ -11,6 +11,9 @@ typedef struct Buffer {
 
 Buffer buffer_new(size_t size);
 void buffer_reset(Buffer* buffer);
+void buffer_append(Buffer* buffer, u8 byte);
+void buffer_insert(Buffer* buffer, u8 byte, size_t index);
+void buffer_erase(Buffer* buffer, size_t index);
 void buffer_free(Buffer* buffer);
 Buffer buffer_new_from_fd(i32 fd);
 

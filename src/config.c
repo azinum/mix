@@ -80,6 +80,7 @@ static Variable variables[] = {
   { "ui_border_color", T_COLOR, &UI_BORDER_COLOR, hook_default },
   { "ui_button_color", T_COLOR, &UI_BUTTON_COLOR, hook_default },
   { "ui_text_color", T_COLOR, &UI_TEXT_COLOR, hook_default },
+  { "ui_focus_color", T_COLOR, &UI_FOCUS_COLOR, hook_default },
   { "ui_border_thickness", T_FLOAT, &UI_BORDER_THICKNESS, hook_default },
   { "ui_title_bar_padding", T_INT, &UI_TITLE_BAR_PADDING, hook_default },
   { "ui_button_roundness", T_FLOAT, &UI_BUTTON_ROUNDNESS, hook_default },
