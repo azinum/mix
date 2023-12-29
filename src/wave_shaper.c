@@ -4,7 +4,7 @@
 #define INFO_TEXT_SIZE 256
 #define LFO_CONNECTION_STR_SIZE 64
 
-#define EXPERIMENTAL
+// #define EXPERIMENTAL
 
 static Color color_connected = COLOR_RGB(40, 140, 40);
 static Color color_disconnected = COLOR_RGB(120, 40, 40);
@@ -15,6 +15,18 @@ static void waveshaper_default(Waveshaper* w);
 static void waveshaper_bind_lfo(Element* e, Element* target);
 static void waveshaper_update_lfo(Element* e);
 static bool waveshaper_connection_filter(Element* e, Element* target);
+static void waveshaper_drumpad_init(Drumpad* d);
+static void waveshaper_update_drumpad(Element* e);
+
+static void waveshaper_drumpad_event0(Waveshaper* w);
+static void waveshaper_drumpad_event1(Waveshaper* w);
+static void waveshaper_drumpad_event2(Waveshaper* w);
+static void waveshaper_drumpad_event3(Waveshaper* w);
+
+static void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
+static void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
+static void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
+static void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 
 void waveshaper_canvas_onrender(Element* e) {
   TIMER_START();
@@ -31,21 +43,21 @@ void waveshaper_canvas_onrender(Element* e) {
   i32 y = e->box.y + height / 2;
 
   Color color_map[2] = {
-    lerp_color(COLOR_RGB(40, 255, 40), warmer_color(UI_BUTTON_COLOR, 40), 0.6f),
-    lerp_color(COLOR_RGB(40, 255, 40), warmer_color(UI_BUTTON_COLOR, 30), 0.5f),
+    lerp_color(COLOR_RGB(100, 225, 100), warmer_color(UI_BUTTON_COLOR, 40), 0.4f),
+    lerp_color(COLOR_RGB(100, 225, 100), warmer_color(UI_BUTTON_COLOR, 30), 0.5f),
   };
 
-  for (i32 i = 0; i < (i32)ins->samples && i < width; i += 1) {
-    f32 frame = CLAMP(ins->buffer[i], -1.0f, 1.0f);
+  for (size_t i = 0; i < ins->samples; ++i) {
+    f32 sample = CLAMP(ins->buffer[i], -1.0f, 1.0f);
+    i32 x_pos = x + ((f32)i/ins->samples) * width;
     DrawLine(
-      x + i,               // x1
+      x_pos,               // x1
       y,                   // y1
-      x + i,               // x2
-      y + (height/2 * frame), // y2
+      x_pos,               // x2
+      y + (height/2 * sample), // y2
       color_map[(i % 2) == 0]
     );
   }
-
   ins->latency += TIMER_END();
 }
 
@@ -78,6 +90,7 @@ void waveshaper_default(Waveshaper* w) {
     .tick = 0,
     .connection_name = LFO_NO_CONNECTION,
   };
+  waveshaper_drumpad_init(&w->drumpad);
 }
 
 void waveshaper_bind_lfo(Element* e, Element* target) {
@@ -117,6 +130,93 @@ bool waveshaper_connection_filter(Element* e, Element* target) {
     return target->data.slider.v.f != NULL;
   }
   return false;
+}
+
+void waveshaper_drumpad_init(Drumpad* d) {
+  memset(d->pad, 0, sizeof(d->pad));
+  d->event[0] = waveshaper_drumpad_event0;
+  d->event[1] = waveshaper_drumpad_event1;
+  d->event[2] = waveshaper_drumpad_event2;
+  d->event[3] = waveshaper_drumpad_event3;
+  d->process[0] = waveshaper_drumpad_process0;
+  d->process[1] = waveshaper_drumpad_process1;
+  d->process[2] = waveshaper_drumpad_process2;
+  d->process[3] = waveshaper_drumpad_process3;
+  memset(d->sample_index, 0, sizeof(d->sample_index));
+  d->index = 0;
+}
+
+void waveshaper_update_drumpad(Element* e) {
+  Instrument* ins = (Instrument*)e->userdata;
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  Drumpad* d = &w->drumpad;
+  if ((i32)d->index == e->v.i) {
+    e->border_color = UI_FOCUS_COLOR;
+    return;
+  }
+  e->border_color = UI_BORDER_COLOR;
+}
+
+void waveshaper_drumpad_event0(Waveshaper* w) {
+  w->drumpad.sample_index[0] = 0;
+  static f32 speed = 0.1f;
+  const f32 min_value = 0.0f;
+  const f32 max_value = 1.0f;
+  w->freq_mod_target += speed;
+  if ((w->freq_mod_target <= min_value) || (w->freq_mod_target >= max_value)) {
+    speed = -speed;
+    w->freq_mod_target = CLAMP(w->freq_mod_target, min_value, max_value);
+  }
+}
+
+void waveshaper_drumpad_event1(Waveshaper* w) {
+  w->drumpad.sample_index[1] = 0;
+}
+
+void waveshaper_drumpad_event2(Waveshaper* w) {
+  w->drumpad.sample_index[2] = 0;
+}
+
+void waveshaper_drumpad_event3(Waveshaper* w) {
+  w->drumpad.sample_index[3] = 0;
+}
+
+void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  for (size_t i = 0; i < samples; ++i) {
+  }
+}
+
+void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  size_t* sample_index = &w->drumpad.sample_index[1];
+  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
+    if (*sample_index >= LENGTH(hihat)) {
+      return;
+    }
+    buffer[i] += hihat[*sample_index % LENGTH(hihat)];
+  }
+}
+
+void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  size_t* sample_index = &w->drumpad.sample_index[2];
+  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
+    if (*sample_index >= LENGTH(snare)) {
+      return;
+    }
+    buffer[i] += snare[*sample_index % LENGTH(snare)];
+  }
+}
+
+void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+  size_t* sample_index = &w->drumpad.sample_index[3];
+  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
+    if (*sample_index >= LENGTH(bassdrum)) {
+      return;
+    }
+    buffer[i] += bassdrum[*sample_index % LENGTH(bassdrum)];
+  }
 }
 
 void waveshaper_init(Instrument* ins) {
@@ -274,6 +374,37 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_attach_element(container, &line_break);
 
   {
+    Element e = ui_text("DRUMPAD");
+    ui_attach_element(container, &e);
+  }
+  Element* grid = NULL;
+  {
+    Element e = ui_grid(DRUMPAD_COLS, true);
+    e.box = BOX(0, 0, 0, DRUMPAD_ROWS * button_height);
+    e.sizing = SIZING_PERCENT(100, 0);
+    e.padding = UI_BORDER_THICKNESS + 1;
+    grid = ui_attach_element(container, &e);
+  }
+  for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
+    for (size_t x = 0; x < DRUMPAD_COLS; ++x) {
+      i32* value = &w->drumpad.pad[x][y];
+      Element e = ui_toggle(value);
+      e.userdata = ins;
+      e.v.i = x;
+      if (!((x + 1) % 2)) {
+        e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.05f);
+      }
+      else {
+        e.background_color = lerp_color(e.background_color, COLOR_RGB(0, 0, 0), 0.05f);
+      }
+      e.onupdate = waveshaper_update_drumpad;
+      ui_attach_element(grid, &e);
+    }
+  }
+
+  ui_attach_element(container, &line_break);
+
+  {
     Element e = ui_text("LFO");
     ui_attach_element(container, &e);
   }
@@ -358,6 +489,19 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);
 
+  size_t prev_index = w->drumpad.index;
+  w->drumpad.index = mix->timed_tick;
+  w->drumpad.index = w->drumpad.index % DRUMPAD_COLS;
+
+  if (prev_index != w->drumpad.index) {
+    for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
+      size_t x = w->drumpad.index;
+      if (w->drumpad.pad[x][y]) {
+        w->drumpad.event[y](w);
+      }
+    }
+  }
+
   if (ui_no_input()) {
     if (IsKeyPressed(KEY_W)) {
       w->freq_target += 1;
@@ -398,6 +542,17 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   }
 
   if (!w->freeze) {
+    for (size_t i = 0; i < ins->samples; ++i) {
+      ins->buffer[i] = 0.0f;
+    }
+
+    for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
+      size_t x = w->drumpad.index;
+      if (w->drumpad.pad[x][y]) {
+        w->drumpad.process[y](audio, ins, ins->buffer, ins->samples);
+      }
+    }
+
     for (size_t i = 0; i < ins->samples; i += 2) {
       w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
       w->lfo.tick += 1;
@@ -405,11 +560,11 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         *w->lfo.lfo_target = w->lfo.lfo;
       }
 
-      ins->buffer[i] = volume * sinf(
+      ins->buffer[i] += volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      ins->buffer[i + 1] = volume * cosf(
+      ins->buffer[i + 1] += volume * cosf(
         (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
@@ -436,7 +591,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         ins->buffer[i] *= 1/4.0f;
       }
     }
-    if (w->gain > 0) {
+    if (w->gain >= 0.0f) {
       for (size_t i = 0; i < ins->samples; ++i) {
         ins->buffer[i] *= w->gain;
       }

@@ -15,6 +15,19 @@ typedef struct Lfo {
 
 #define LFO_NO_CONNECTION "none"
 
+#define DRUMPAD_ROWS 4
+#define DRUMPAD_COLS 16
+
+struct Waveshaper;
+
+typedef struct Drumpad {
+  i32 pad[DRUMPAD_COLS][DRUMPAD_ROWS];
+  void (*event[DRUMPAD_ROWS])(struct Waveshaper* w);
+  void (*process[DRUMPAD_ROWS])(struct Audio_engine* audio, struct Instrument* ins, f32* buffer, size_t samples);
+  size_t sample_index[DRUMPAD_ROWS];
+  size_t index;
+} Drumpad;
+
 typedef struct Waveshaper {
   ssize_t tick;
   f32 volume_target;
@@ -34,6 +47,7 @@ typedef struct Waveshaper {
   i32 render;
   Lfo lfo;
   char* lfo_connection;
+  Drumpad drumpad;
 } Waveshaper;
 
 void waveshaper_init(Instrument* ins);

@@ -49,6 +49,9 @@ struct Mix;
 #define FPS_MAX 10000
 #define DT_MIN (1.0f / FPS_MAX)
 #define DT_MAX (1.0f / FPS_MIN)
+#define CONFIG_PATH "data/init.lua"
+#define BPM 120
+#define SUBTICKS 8
 
 #include "common.h"
 #include "thread.h"
@@ -63,6 +66,7 @@ struct Mix;
 #include "arena.h"
 #include "module.h"
 #include "ui.h"
+#include "settings.h"
 #include "instrument.h"
 #include "wave_shaper.h"
 #include "audio.h"
@@ -72,6 +76,10 @@ typedef struct Mix {
   f32 fps;
   f32 dt;
   size_t tick;
+  size_t timed_tick;
+  i32 bpm;
+  f32 timer;
+  f32 timer_start;
 } Mix;
 
 typedef struct Assets {

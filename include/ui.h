@@ -136,6 +136,7 @@ typedef union Element_data {
     Input_type input_type;
     Value_type value_type;
     void* value;
+    // TODO(lucas): callback function
   } input;
 } Element_data;
 
@@ -193,6 +194,10 @@ typedef struct Element {
   Element_type type;
   Element_data data;
   void* userdata;
+  struct {
+    f32 f;
+    i32 i;
+  } v;
 
   i32 padding;
   Title_bar title_bar;

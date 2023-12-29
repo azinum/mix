@@ -22,11 +22,10 @@
 #include "memory.c"
 #include "module.c"
 #include "ui.c"
+#include "settings.c"
 #include "instrument.c"
 #include "wave_shaper.c"
 #include "audio.c"
-
-#define CONFIG_PATH "data/init.lua"
 
 static f32 delta_buffer[128] = {0};
 
@@ -37,11 +36,10 @@ Result mix_init(Mix* m);
 void mix_reset(Mix* m);
 void mix_update_and_render(Mix* m);
 void mix_free(Mix* m);
-void mix_ui_init(Mix* m);
+void mix_ui_new(Mix* m);
 void render_delta_buffer(Mix* m);
 void assets_load(Assets* a);
 void assets_unload(Assets* a);
-void config_store_onclick(Element* e);
 
 i32 mix_main(i32 argc, char** argv) {
   (void)argc;
@@ -92,6 +90,13 @@ i32 mix_main(i32 argc, char** argv) {
     if (mix.dt > DT_MAX) {
       mix.dt = DT_MAX;
     }
+    mix.timer += mix.dt;
+    f32 timestamp = mix.timer_start + ((60.0f / mix.bpm) / SUBTICKS);
+    if (mix.timer >= timestamp) {
+      f32 delta = mix.timer - timestamp;
+      mix.timer_start = mix.timer - delta;
+      mix.timed_tick += 1;
+    }
     mix.fps = 1.0f / mix.dt;
     mix.tick += 1;
   }
@@ -120,7 +125,7 @@ void mix_update_and_render(Mix* m) {
     ui_free();
     ui_init();
     mix_restart_audio_engine();
-    mix_ui_init(m);
+    mix_ui_new(m);
   }
 
   if (ui_no_input()) {
@@ -130,7 +135,7 @@ void mix_update_and_render(Mix* m) {
       if (IsKeyDown(KEY_LEFT_CONTROL)) {
         mix_restart_audio_engine();
       }
-      mix_ui_init(m);
+      mix_ui_new(m);
       mix_reset(m);
     }
     if (IsKeyPressed(KEY_L)) {
@@ -192,7 +197,7 @@ Result mix_init(Mix* m) {
   if (audio_engine_start_new(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
-  mix_ui_init(m);
+  mix_ui_new(m);
   return Ok;
 }
 
@@ -201,6 +206,10 @@ void mix_reset(Mix* m) {
   m->fps = 0;
   m->dt = DT_MIN;
   m->tick = 0;
+  m->timed_tick = 0;
+  m->bpm = BPM;
+  m->timer = 0.0f;
+  m->timer_start = 0.0f;
 }
 
 void mix_free(Mix* m) {
@@ -211,12 +220,11 @@ void mix_free(Mix* m) {
   CloseWindow();
 }
 
-void mix_ui_init(Mix* m) {
+void mix_ui_new(Mix* m) {
   (void)m;
 
   Audio_engine* audio = &audio_engine;
   Element* container = NULL;
-  random_init(1234);
 
   {
     Element e = ui_container(NULL);
@@ -232,118 +240,10 @@ void mix_ui_init(Mix* m) {
     e.sizing = SIZING_PERCENT(70, 100);
     ui_attach_element(container, &e);
   }
-  const i32 button_height = 48;
-  const i32 button_height_small = FONT_SIZE;
-  Element* settings = NULL;
   {
-    Element e = ui_container("settings");
+    Element e = settings_ui_new(m);
     e.sizing = SIZING_PERCENT(30, 100);
-    e.border = true;
-    e.scissor = true;
-    e.placement = PLACEMENT_BLOCK;
-    e.background = true;
-    settings = ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_text("window width");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("window width", &WINDOW_WIDTH, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("window height");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("window height", &WINDOW_HEIGHT, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_toggle_ex(&WINDOW_RESIZABLE, "resizable window");
-    e.box = BOX(0, 0, 0, button_height_small);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_toggle_ex(&WINDOW_FULLSCREEN, "fullscreen");
-    e.box = BOX(0, 0, 0, button_height_small);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_toggle_ex(&VSYNC, "vsync");
-    e.box = BOX(0, 0, 0, button_height_small);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_toggle_ex(&MSAA_4X, "msaa 4x");
-    e.box = BOX(0, 0, 0, button_height_small);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("font size");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("font size", &FONT_SIZE, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("target fps");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("target fps", &TARGET_FPS, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("frames per buffer");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("frames per buffer", &FRAMES_PER_BUFFER, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("sample rate");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("sample rate", &SAMPLE_RATE, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_text("channel count");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_input_ex2("channel count", &CHANNEL_COUNT, INPUT_NUMBER, VALUE_TYPE_INTEGER);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(settings, &e);
-  }
-  {
-    Element e = ui_button("save settings");
-    e.box = BOX(0, 0, 0, button_height);
-    e.sizing = SIZING_PERCENT(100, 0);
-    e.onclick = config_store_onclick;
-    ui_attach_element(settings, &e);
+    ui_attach_element(container, &e);
   }
 }
 
@@ -398,8 +298,4 @@ void assets_load(Assets* a) {
 
 void assets_unload(Assets* a) {
   UnloadFont(a->font);
-}
-
-void config_store_onclick(Element* e) {
-  config_store(CONFIG_PATH);
 }

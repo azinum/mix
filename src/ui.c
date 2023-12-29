@@ -290,10 +290,10 @@ void ui_update_grid(UI_state* ui, Element* e) {
   const u32 rows = (u32)ceilf((f32)e->count / cols);
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
-    const u32 w = ceilf((f32)e->box.w / cols);
-    const u32 h = ceilf((f32)e->box.h / rows);
-    const u32 x = i % cols;
-    const u32 y = (u32)floorf((f32)i / cols);
+    const i32 w = (i32)ceilf((f32)(e->box.w - 2 * e->padding) / cols);
+    const i32 h = (i32)ceilf((f32)e->box.h / rows);
+    const i32 x = i % cols;
+    const i32 y = (i32)floorf((f32)i / cols);
     item->box = BOX(
       e->box.x + x * w + e->padding,
       e->box.y + y * h + e->padding,
@@ -519,6 +519,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->type = type;
   memset(&e->data, 0, sizeof(e->data));
   e->userdata = NULL;
+  e->v.i = 0;
   e->title_bar = (Title_bar) {
     .title = NULL,
     .padding = UI_TITLE_BAR_PADDING,
@@ -779,6 +780,18 @@ void ui_update(f32 dt) {
 
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
+  if (ui->select != NULL) {
+    if (ui->select->type == ELEMENT_INPUT && ui->select->id == ui->active_id) {
+      ui->input = ui->select;
+    }
+    else {
+      ui->input = NULL;
+    }
+  }
+  if (ui->input) {
+    ui_update_input(ui, ui->input);
+  }
+
   if (ui->marker && !mod_key) {
     ui->marker = NULL;
   }
@@ -831,17 +844,6 @@ void ui_update(f32 dt) {
       }
       e->data.container.scroll_y = scroll_y;
     }
-  }
-  if (ui->select != NULL) {
-    if (ui->select->type == ELEMENT_INPUT) {
-      ui->input = ui->select;
-    }
-    else {
-      ui->input = NULL;
-    }
-  }
-  if (ui->input) {
-    ui_update_input(ui, ui->input);
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
