@@ -1134,7 +1134,7 @@ Element ui_input(char* preview) {
   e.data.input.value = NULL;
   e.background = true;
   e.border = true;
-  e.scissor = true;
+  e.scissor = false;
   e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
   return e;
@@ -1166,6 +1166,14 @@ Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_ty
   }
   e.data.input.cursor = e.data.input.buffer.count;
   return e;
+}
+
+Element ui_input_int(char* preview, i32* value) {
+  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+}
+
+Element ui_input_float(char* preview, i32* value) {
+  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_FLOAT);
 }
 
 void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {

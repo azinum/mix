@@ -135,8 +135,8 @@ void mix_update_and_render(Mix* m) {
       if (IsKeyDown(KEY_LEFT_CONTROL)) {
         mix_restart_audio_engine();
       }
-      mix_ui_new(m);
       mix_reset(m);
+      mix_ui_new(m);
     }
     if (IsKeyPressed(KEY_L)) {
       config_load(CONFIG_PATH);

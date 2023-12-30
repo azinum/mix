@@ -22,7 +22,7 @@
 
 // delay, in seconds, until showing tooltip
 #ifndef UI_TOOLTIP_DELAY
-  #define UI_TOOLTIP_DELAY 0.7f
+  #define UI_TOOLTIP_DELAY 0.4f
 #endif
 
 #ifndef UI_SCROLL_SPEED
@@ -286,5 +286,7 @@ Element ui_line_break(i32 height);
 Element ui_input(char* preview);
 Element ui_input_ex(char* preview, Input_type input_type);
 Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type);
+Element ui_input_int(char* preview, i32* value);
+Element ui_input_float(char* preview, i32* value);
 
 #endif // _UI_H

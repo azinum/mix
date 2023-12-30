@@ -139,12 +139,14 @@ const char* bool_str[] = { "false", "true" };
   #ifdef USE_STB_SPRINTF
     #define STB_WRAP(...) stb_##__VA_ARGS__
   #else
-    #define STB_WRAP(...) ##__VA_ARGS__
+    #define STB_WRAP(...) __VA_ARGS__
   #endif
 #else
   #include <stdio.h>
   #ifdef USE_STB_SPRINTF
     #define STB_WRAP(...) stb_##__VA_ARGS__
+  #else
+    #define STB_WRAP(...) __VA_ARGS__
   #endif
 #endif
 
@@ -416,7 +418,7 @@ inline i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list a
 #endif // USE_STB_SPRINTF
 
 void report_assert_failure(i32 fd, const char* filename, size_t line, const char* function_name, const char* message) {
-  stb_dprintf(fd, "[assert-failed]: %s:%zu %s(): %s\n", filename, line, function_name, message);
+  STB_WRAP(dprintf)(fd, "[assert-failed]: %s:%zu %s(): %s\n", filename, line, function_name, message);
 }
 
 i32 is_terminal(i32 fd) {

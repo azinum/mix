@@ -21,7 +21,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("window width", &WINDOW_WIDTH, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("window width", &WINDOW_WIDTH);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -31,7 +31,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("window height", &WINDOW_HEIGHT, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("window height", &WINDOW_HEIGHT);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -65,7 +65,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("font size", &FONT_SIZE, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("font size", &FONT_SIZE);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -75,7 +75,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("target fps", &TARGET_FPS, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("target fps", &TARGET_FPS);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -85,7 +85,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("frames per buffer", &FRAMES_PER_BUFFER, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("frames per buffer", &FRAMES_PER_BUFFER);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -95,7 +95,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("sample rate", &SAMPLE_RATE, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("sample rate", &SAMPLE_RATE);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -105,7 +105,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("channel count", &CHANNEL_COUNT, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("channel count", &CHANNEL_COUNT);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
@@ -123,7 +123,7 @@ Element settings_ui_new(Mix* mix) {
     ui_attach_element(&settings, &e);
   }
   {
-    Element e = ui_input_ex2("bpm", &mix->bpm, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+    Element e = ui_input_int("bpm", &mix->bpm);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(&settings, &e);
   }
