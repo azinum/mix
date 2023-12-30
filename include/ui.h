@@ -93,6 +93,16 @@ typedef enum Input_type {
 #define RANGE_FLOAT(min, max) ((Range) { .f_min = min, .f_max = max, })
 #define RANGE(min, max) ((Range) { .i_min = min, .i_max = max, })
 
+typedef struct Input {
+  Buffer buffer;
+  size_t cursor;
+  char* preview;
+  Input_type input_type;
+  Value_type value_type;
+  void* value;
+  void (*callback)(struct Input*);
+} Input;
+
 typedef union Element_data {
   struct {
     u32 rows;
@@ -129,15 +139,7 @@ typedef union Element_data {
     bool vertical;
     f32 deadzone;
   } slider;
-  struct {
-    Buffer buffer;
-    size_t cursor;
-    char* preview;
-    Input_type input_type;
-    Value_type value_type;
-    void* value;
-    // TODO(lucas): callback function
-  } input;
+  Input input;
 } Element_data;
 
 typedef struct Title_bar {

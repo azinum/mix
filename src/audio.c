@@ -89,7 +89,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   Instrument* ins = &audio->instrument;
 
   // process instruments and effects
-  instrument_process(ins, m, audio, 1.0f / sample_count);
+  instrument_process(ins, m, audio, frames / (f32)audio->sample_rate);
 
   // sum all audio buffers
   for (i32 i = 0; i < sample_count; ++i) {
@@ -101,5 +101,6 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     buffer[i] = audio->out_buffer[i];
   }
   audio->dt = TIMER_END();
+  // stb_printf("dt: %g, max dt: %g\n", 1000 * audio->dt, 1000 * (frames / (f32)audio->sample_rate));
   return Ok;
 }

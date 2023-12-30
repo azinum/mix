@@ -1,8 +1,6 @@
 // ui.c
 // TODO:
 //  - string formatting of text elements
-//  - text wrapping
-//  - text input field
 //  - icon/image
 //  - container tabs
 //  - drag and drop (external file browser)
@@ -1421,6 +1419,9 @@ void ui_update_input(UI_state* ui, Element* e) {
     }
     ui->input = NULL;
     e->onenter(e);
+    if (e->data.input.callback) {
+      e->data.input.callback(&e->data.input);
+    }
   }
 }
 

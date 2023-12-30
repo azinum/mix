@@ -182,11 +182,15 @@ void waveshaper_drumpad_event3(Waveshaper* w) {
 }
 
 void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  (void)audio;
+  (void)ins;
+  (void)buffer;
   for (size_t i = 0; i < samples; ++i) {
   }
 }
 
 void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  (void)audio;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   size_t* sample_index = &w->drumpad.sample_index[1];
   for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
@@ -198,6 +202,7 @@ void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buff
 }
 
 void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  (void)audio;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   size_t* sample_index = &w->drumpad.sample_index[2];
   for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
@@ -209,6 +214,7 @@ void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buff
 }
 
 void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  (void)audio;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   size_t* sample_index = &w->drumpad.sample_index[3];
   for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
