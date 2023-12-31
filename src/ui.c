@@ -3,7 +3,8 @@
 //  - string formatting of text elements
 //  - icon/image
 //  - container tabs
-//  - drag and drop (external file browser)
+//  - drag and drop (from external file browser)
+//  - multiple ui states to switch between
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
@@ -65,6 +66,7 @@ void ui_state_init(UI_state* ui) {
   ui->root.border = false;
   ui->root.background = false;
 
+  ui->element_count = 1;
   ui->id_counter = 2;
   ui->latency = 0;
   ui->render_latency = 0;
@@ -184,6 +186,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
       break;
   }
   e->onupdate(e);
+
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
     ui_update_elements(ui, item);
@@ -192,6 +195,8 @@ void ui_update_elements(UI_state* ui, Element* e) {
 
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui; // unused
+
+  Element* root = &ui->root;
 
   i32 scroll_y = e->data.container.scroll_y;
 
@@ -219,9 +224,6 @@ void ui_update_container(UI_state* ui, Element* e) {
         break;
       }
       case PLACEMENT_ROWS: {
-        if (py >= e->box.h) {
-          item->hidden = hide = true;
-        }
         const Sizing sizing = item->sizing;
         i32 w = item->box.w;
         i32 h = item->box.h;
@@ -255,9 +257,6 @@ void ui_update_container(UI_state* ui, Element* e) {
           }
         }
 
-        if (py >= e->box.h) {
-          item->hidden = hide = true;
-        }
         if (px + w + e->padding >= e->box.w) {
           px = 0;
           py += py_offset + 2 * e->padding;
@@ -278,6 +277,8 @@ void ui_update_container(UI_state* ui, Element* e) {
       default:
         break;
     }
+    item->hidden = (item->box.y + item->box.h < e->box.y) || (item->box.y > e->box.y + e->box.h) ||
+      ((item->box.y + item->box.h < root->box.y) || (item->box.y > root->box.y + root->box.h));
   }
   e->data.container.content_height = py + py_offset - scroll_y;
 }
@@ -648,10 +649,10 @@ void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
   switch (e->type) {
     case ELEMENT_SLIDER: {
       if (e->data.slider.type == VALUE_TYPE_FLOAT) {
-        stb_snprintf(tooltip, sizeof(tooltip), "range: %g, %g\nvalue: %g", e->data.slider.range.f_min, e->data.slider.range.f_max, *e->data.slider.v.f);
+        stb_snprintf(tooltip, sizeof(tooltip), "value: %g\nrange: %g, %g", *e->data.slider.v.f, e->data.slider.range.f_min, e->data.slider.range.f_max);
         break;
       }
-      stb_snprintf(tooltip, sizeof(tooltip), "range: %d, %d\nvalue: %d", e->data.slider.range.i_min, e->data.slider.range.i_max, *e->data.slider.v.i);
+      stb_snprintf(tooltip, sizeof(tooltip), "value: %d\nrange: %d, %d", *e->data.slider.v.i, e->data.slider.range.i_min, e->data.slider.range.i_max);
       break;
     }
     default:
@@ -830,13 +831,19 @@ void ui_update(f32 dt) {
     Element* e = ui->container;
     Vector2 wheel = GetMouseWheelMoveV();
     i32 scroll_y = e->data.container.scroll_y;
+    if (KEY_PRESSED(KEY_DOWN)) {
+      wheel.y -= 1;
+    }
+    if (KEY_PRESSED(KEY_UP)) {
+      wheel.y += 1;
+    }
     i32 content_height = e->data.container.content_height;
     if (content_height > e->box.h || scroll_y < 0) {
       scroll_y += wheel.y * UI_SCROLL_SPEED;
       if (scroll_y > 0) {
         scroll_y = 0;
       }
-      i32 content_height_delta = content_height - e->box.h;
+      i32 content_height_delta = content_height - e->box.h + 2 * e->padding;
       if (-scroll_y > content_height_delta) {
         scroll_y = -content_height_delta;
       }
@@ -885,7 +892,7 @@ void ui_render(void) {
     Element* e = ui->hover;
     DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.0f, GUIDE_COLOR2);
     if (e->type == ELEMENT_CONTAINER) {
-      DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "content_height: %d, box.h: %d", e->data.container.content_height, e->box.h);
+      DRAW_SIMPLE_TEXT2(e->box.x + 4, e->box.y + 4, GUIDE_TEXT_COLOR, "content_height: %d\nbox.h: %d\nscroll_y: %d", e->data.container.content_height, e->box.h, e->data.container.scroll_y);
     }
   }
 #endif
@@ -958,6 +965,14 @@ void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*)) 
   ui->connection_filter = filter;
 }
 
+void ui_set_title(Element* e, char* title) {
+  if (title) {
+    e->title_bar.title = title;
+    // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
+    e->roundness = 0;
+  }
+}
+
 void ui_reset_connection_filter(void) {
   UI_state* ui = &ui_state;
   ui->connection_filter = ui_connection_filter;
@@ -976,6 +991,7 @@ Element* ui_attach_element(Element* target, Element* e) {
   size_t index = target->count;
   e->id = ui->id_counter++;
   list_push(target, *e);
+  ui->element_count += 1;
   return &target->items[index];
 }
 
@@ -1002,6 +1018,7 @@ Element ui_container(char* title) {
     .top = true,
   };
   if (title) {
+    // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
     e.roundness = 0;
   }
   return e;
@@ -1115,6 +1132,16 @@ Element ui_slider(void* value, Value_type type, Range range) {
   return e;
 }
 
+Element ui_slider_int(i32* value, i32 min_value, i32 max_value) {
+  Element e = ui_slider(value, VALUE_TYPE_INTEGER, RANGE(min_value, max_value));
+  return e;
+}
+
+Element ui_slider_float(f32* value, f32 min_value, f32 max_value) {
+  Element e = ui_slider(value, VALUE_TYPE_FLOAT, RANGE_FLOAT(min_value, max_value));
+  return e;
+}
+
 Element ui_line_break(i32 height) {
   Element e = ui_none();
   e.box.h = height;
@@ -1172,7 +1199,7 @@ Element ui_input_int(char* preview, i32* value) {
   return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INTEGER);
 }
 
-Element ui_input_float(char* preview, i32* value) {
+Element ui_input_float(char* preview, f32* value) {
   return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_FLOAT);
 }
 
@@ -1249,6 +1276,8 @@ void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color colo
   DrawRectangleLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, thickness, color);
 }
 
+// TODO(lucas): improve text wrapping
+// TODO(lucas): check if font is monospace, size calculations can be made simpler if that is the case
 bool ui_measure_text(
     Font font,
     char* text,
@@ -1310,6 +1339,8 @@ bool ui_measure_text(
   return mutated;
 }
 
+// TODO(lucas): optimize for larger texts (bounding box check)
+// TODO(lucas): improve text wrapping
 void ui_render_text(
     Font font,
     char* text,

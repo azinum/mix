@@ -22,7 +22,7 @@
 
 // delay, in seconds, until showing tooltip
 #ifndef UI_TOOLTIP_DELAY
-  #define UI_TOOLTIP_DELAY 0.4f
+  #define UI_TOOLTIP_DELAY 0.5f
 #endif
 
 #ifndef UI_SCROLL_SPEED
@@ -233,6 +233,7 @@ typedef struct Element {
 typedef struct UI_state {
   Element root;
   u32 id_counter;
+  u32 element_count;
   f32 latency;
   f32 render_latency;
   u32 element_update_count;
@@ -267,7 +268,9 @@ void ui_free(void);
 void ui_set_slider_deadzone(f32 deadzone);
 // set a filter for which elements that can be connected together
 void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*));
+void ui_set_title(Element* e, char* title);
 void ui_reset_connection_filter(void);
+// is the user currently interacting with an input element?
 bool ui_no_input(void);
 
 Element* ui_attach_element(Element* target, Element* e);
@@ -282,11 +285,13 @@ Element ui_toggle(i32* value);
 Element ui_toggle_ex(i32* value, char* text);
 Element ui_toggle_ex2(i32* value, char* false_text, char* true_text);
 Element ui_slider(void* value, Value_type type, Range range);
+Element ui_slider_int(i32* value, i32 min_value, i32 max_value);
+Element ui_slider_float(f32* value, f32 min_value, f32 max_value);
 Element ui_line_break(i32 height);
 Element ui_input(char* preview);
 Element ui_input_ex(char* preview, Input_type input_type);
 Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type);
 Element ui_input_int(char* preview, i32* value);
-Element ui_input_float(char* preview, i32* value);
+Element ui_input_float(char* preview, f32* value);
 
 #endif // _UI_H

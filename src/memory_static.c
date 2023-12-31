@@ -1,4 +1,6 @@
 // memory_static.c
+// TODO:
+//  - use a free-list
 
 #define BLOCK_HEADER_ALIGNMENT 16
 // don't care to split a free block if the difference is less than this
@@ -128,6 +130,10 @@ Result memory_init(void) {
     .size = memory.size - sizeof(Block_header),
   };
   return protected_write(&memory, 0, &header, sizeof(header));
+}
+
+void memory_sweep_and_collect(void) {
+  memory_sweep(&memory);
 }
 
 void* memory_alloc(size_t size) {

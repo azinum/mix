@@ -13,6 +13,7 @@ struct {
 void memory_print_stats(i32 fd);
 
 Result memory_init(void);
+void memory_sweep_and_collect(void);
 void* memory_alloc(size_t size);
 void* memory_calloc(size_t n, size_t size);
 void* memory_realloc(void* p, size_t size);

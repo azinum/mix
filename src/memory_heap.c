@@ -10,6 +10,10 @@ Result memory_init(void) {
   return Ok;
 }
 
+void memory_sweep_and_collect(void) {
+  // nothing to do
+}
+
 void* memory_alloc(size_t size) {
 #ifdef NO_MEMORY_TRACKING
   return malloc(size);

@@ -27,6 +27,10 @@
 #include "wave_shaper.c"
 #include "audio.c"
 
+#ifdef TEST_UI
+  #include "test_ui.c"
+#endif
+
 static f32 delta_buffer[128] = {0};
 
 Mix mix = {0};
@@ -155,12 +159,13 @@ void mix_update_and_render(Mix* m) {
     sizeof(debug_text),
     "%zu/%zu bytes (%.2g %%)\n"
     "%g ms ui latency\n"
-    "%u ui element updates"
+    "%u/%u ui element updates"
     ,
     memory_state.usage, memory_state.max_usage,
     100 * ((f32)memory_state.usage / memory_state.max_usage),
     1000 * ui_state.latency,
-    ui_state.element_update_count
+    ui_state.element_update_count,
+    ui_state.element_count
   );
 
   DrawText(debug_text, 4, GetScreenHeight() - (0.5 * UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 3, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
@@ -224,8 +229,13 @@ void mix_ui_new(Mix* m) {
   (void)m;
 
   Audio_engine* audio = &audio_engine;
+#ifdef TEST_UI
+  {
+    Element e = test_ui_new();
+    ui_attach_element(NULL, &e);
+  }
+#else
   Element* container = NULL;
-
   {
     Element e = ui_container(NULL);
     e.scissor = false;
@@ -245,6 +255,7 @@ void mix_ui_new(Mix* m) {
     e.sizing = SIZING_PERCENT(30, 100);
     ui_attach_element(container, &e);
   }
+#endif
 }
 
 void render_delta_buffer(Mix* m) {
