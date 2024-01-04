@@ -38,12 +38,12 @@ struct Mix;
   (y0 >= y1 && y0 < y1 + h)
 
 #define TIMER_START(...) \
-  struct timeval _end = {0}; \
-  struct timeval _start = {0}; \
-  gettimeofday(&_start, NULL); \
+  struct timespec _end = {0}; \
+  struct timespec _start = {0}; \
+  clock_gettime(CLOCK_REALTIME, &_start); \
   __VA_ARGS__
 
-#define TIMER_END(...) (gettimeofday(&_end, NULL), ((((_end.tv_sec - _start.tv_sec) * 1000000.0f) + _end.tv_usec) - (_start.tv_usec)) / 1000000.0f)
+#define TIMER_END() (clock_gettime(CLOCK_REALTIME, &_end), ((((_end.tv_sec - _start.tv_sec) * 1000000000.0f) + _end.tv_nsec) - (_start.tv_nsec)) / 1000000000.0f)
 
 #define FPS_MIN 10
 #define FPS_MAX 10000

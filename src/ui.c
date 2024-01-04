@@ -1420,11 +1420,15 @@ void ui_update_input(UI_state* ui, Element* e) {
     }
     e->oninput(e, ch);
   }
-
   if (KEY_PRESSED(KEY_BACKSPACE)) {
     if (e->data.input.cursor > 0) {
       buffer_erase(buffer, e->data.input.cursor - 1);
       e->data.input.cursor -= 1;
+    }
+  }
+  if (KEY_PRESSED(KEY_DELETE)) {
+    if (buffer->count > 0 && e->data.input.cursor < buffer->count) {
+      buffer_erase(buffer, e->data.input.cursor);
     }
   }
   if (KEY_PRESSED(KEY_LEFT)) {

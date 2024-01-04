@@ -43,17 +43,23 @@ void audio_engine_restart(void) {
 }
 
 void audio_engine_exit(Audio_engine* audio) {
+  TIMER_START();
+  f32 dt = 0;
+
+#ifndef AUDIO_NULL
+  const f32 wait_time_max = 5.0f; // seconds
   audio->quit = true;
-  u32 spin = 0;
-  const u32 max_spin = 1000000;
-  while (!audio->done && spin < max_spin) {
+  while (!audio->done && dt < wait_time_max) {
     spin_wait();
-    spin += 1;
+    dt = TIMER_END();
   }
+#endif
   instrument_free(&audio->instrument);
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
   audio_exit(audio);
+  dt = TIMER_END();
+  log_print(STDOUT_FILENO, LOG_TAG_INFO, "shut down audio engine in %g ms\n", 1000 * dt);
 }
 
 Result audio_engine_process(const void* in, void* out, i32 frames) {
@@ -69,6 +75,8 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     audio->restart = true;
     return Error;
   }
+
+  const f32 process_dt = frames / (f32)audio->sample_rate;
 
   f32* buffer = (f32*)out;
   const i32 frames_per_buffer = audio->frames_per_buffer;
@@ -89,7 +97,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   Instrument* ins = &audio->instrument;
 
   // process instruments and effects
-  instrument_process(ins, m, audio, frames / (f32)audio->sample_rate);
+  instrument_process(ins, m, audio, process_dt);
 
   // sum all audio buffers
   for (i32 i = 0; i < sample_count; ++i) {
