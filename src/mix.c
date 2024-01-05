@@ -228,13 +228,13 @@ void mix_free(Mix* m) {
 void mix_ui_new(Mix* m) {
   (void)m;
 
-  Audio_engine* audio = &audio_engine;
 #ifdef TEST_UI
   {
     Element e = test_ui_new();
     ui_attach_element(NULL, &e);
   }
 #else
+  Audio_engine* audio = &audio_engine;
   Element* container = NULL;
   {
     Element e = ui_container(NULL);

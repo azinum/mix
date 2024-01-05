@@ -260,6 +260,7 @@ i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
   }
 
 #define list_push(list, item) \
+  ASSERT(list != NULL); \
   if ((list)->count >= (list)->size) { \
     if ((list)->size == 0) { \
       (list)->size = INIT_ITEMS_SIZE; \

@@ -176,6 +176,7 @@ const char* size_mode_str[] = {
   "percent",
 };
 
+// TODO(lucas): size mode per axis
 typedef struct Sizing {
   Size_mode mode;
   i32 x;

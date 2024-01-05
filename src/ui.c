@@ -1,5 +1,6 @@
 // ui.c
 // TODO:
+//  - use bounding box when rendering text to not draw text that is invisible
 //  - string formatting of text elements
 //  - icon/image
 //  - container tabs
@@ -18,10 +19,13 @@
 #define KEY_PRESSED(KEY) (IsKeyPressed(KEY) || IsKeyPressedRepeat(KEY))
 
 #ifdef UI_DRAW_GUIDES
-static Color GUIDE_COLOR             = COLOR_RGB(255, 0, 255);
-static Color GUIDE_COLOR2            = COLOR_RGB(255, 100, 255);
-static Color GUIDE_TEXT_COLOR        = COLOR_RGB(255, 180, 255);
+#define GUIDE_COLOR_ALPHA 100
+static Color GUIDE_COLOR             = COLOR(255, 0, 255, GUIDE_COLOR_ALPHA);
+static Color GUIDE_COLOR2            = COLOR(255, 100, 255, GUIDE_COLOR_ALPHA);
+static Color GUIDE_COLOR3            = COLOR(100, 100, 255, GUIDE_COLOR_ALPHA);
+static Color GUIDE_TEXT_COLOR        = COLOR_RGB(100, 255, 100);
 static bool ONLY_DRAW_GUIDE_ON_HOVER = false;
+#undef GUIDE_COLOR_ALPHA
 #endif
 
 UI_state ui_state = {0};
@@ -153,23 +157,9 @@ void ui_update_elements(UI_state* ui, Element* e) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
-      const Sizing sizing = e->sizing;
-      i32 w = e->box.w;
-      i32 h = e->box.h;
       const bool allow_overflow = e->data.text.allow_overflow;
       const bool text_wrapping = e->data.text.text_wrapping;
-      if (sizing.mode == SIZE_MODE_PERCENT) {
-        if (sizing.x != 0) {
-          w = e->box.w;
-        }
-        if (sizing.y != 0) {
-          h = e->box.h;
-        }
-      }
-      if (!ui_measure_text(font, text, &e->box, allow_overflow, text_wrapping, font_size, spacing, UI_LINE_SPACING)) {
-        e->box.w = w;
-        e->box.h = h;
-      }
+      ui_measure_text(font, text, &e->box, allow_overflow, text_wrapping, font_size, spacing, UI_LINE_SPACING);
       break;
     }
     case ELEMENT_CANVAS: {
@@ -280,6 +270,8 @@ void ui_update_container(UI_state* ui, Element* e) {
     item->hidden = (item->box.y + item->box.h < e->box.y) || (item->box.y > e->box.y + e->box.h) ||
       ((item->box.y + item->box.h < root->box.y) || (item->box.y > root->box.y + root->box.h));
   }
+
+  py_offset += 2 * e->padding;
   e->data.container.content_height = py + py_offset - scroll_y;
 }
 
@@ -489,6 +481,11 @@ void ui_render_elements(UI_state* ui, Element* e) {
       DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
     }
   }
+#ifdef UI_DRAW_GUIDES
+  if (e->type == ELEMENT_CONTAINER && e->padding > 0) {
+    ui_render_rectangle_lines(ui_pad_box(e->box, e->padding), 1, 0, GUIDE_COLOR3);
+  }
+#endif
 }
 
 void ui_free_elements(UI_state* ui, Element* e) {
@@ -555,7 +552,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->onenter = ui_onenter;
 }
 
-bool ui_overlap(i32 x, i32 y, Box box) {
+inline bool ui_overlap(i32 x, i32 y, Box box) {
   return (x >= box.x && x <= box.x + box.w)
     && (y >= box.y && y <= box.y + box.h);
 }
@@ -838,14 +835,14 @@ void ui_update(f32 dt) {
       wheel.y += 1;
     }
     i32 content_height = e->data.container.content_height;
-    if (content_height > e->box.h || scroll_y < 0) {
+    if ((content_height > e->box.h) || (scroll_y < 0)) {
       scroll_y += wheel.y * UI_SCROLL_SPEED;
-      if (scroll_y > 0) {
-        scroll_y = 0;
-      }
-      i32 content_height_delta = content_height - e->box.h + 2 * e->padding;
+      i32 content_height_delta = content_height - e->box.h; //  + 2 * e->padding;
       if (-scroll_y > content_height_delta) {
         scroll_y = -content_height_delta;
+      }
+      if (scroll_y > 0) {
+        scroll_y = 0;
       }
       e->data.container.scroll_y = scroll_y;
     }
@@ -1276,8 +1273,6 @@ void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color colo
   DrawRectangleLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, thickness, color);
 }
 
-// TODO(lucas): improve text wrapping
-// TODO(lucas): check if font is monospace, size calculations can be made simpler if that is the case
 bool ui_measure_text(
     Font font,
     char* text,
@@ -1306,24 +1301,29 @@ bool ui_measure_text(
     i32 codepoint_size = 0;
     i32 codepoint = GetCodepointNext(&text[i], &codepoint_size);
     i32 glyph_index = GetGlyphIndex(font, codepoint);
-    if (x_offset >= max_line_width && max_line_width > 0) {
+    f32 advance = 0.0f;
+
+    if (font.glyphs[glyph_index].advanceX == 0) {
+      advance = ((f32)font.recs[glyph_index].width * scale_factor + spacing);
+    }
+    else {
+      advance = ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
+    }
+
+    if (x_offset + advance >= max_line_width && max_line_width > 0) {
       x_offset = 0.0f;
       y_offset += line_spacing;
+      advance = 0;
     }
     if (codepoint == '\n') {
       x_offset = 0.0f;
       y_offset += line_spacing;
     }
     else {
-      if (font.glyphs[glyph_index].advanceX == 0) {
-        x_offset += ((f32)font.recs[glyph_index].width * scale_factor + spacing);
-      }
-      else {
-        x_offset += ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
-      }
-      if (x_offset > x_offset_largest) {
-        x_offset_largest = x_offset;
-      }
+      x_offset += advance;
+    }
+    if (x_offset_largest < x_offset) {
+      x_offset_largest = x_offset;
     }
     i += codepoint_size;
   }
@@ -1333,14 +1333,12 @@ bool ui_measure_text(
     if (!text_wrapping) {
       box->w = x_offset_largest;
     }
-    mutated = true;
+    // mutated = true;
   }
 
   return mutated;
 }
 
-// TODO(lucas): optimize for larger texts (bounding box check)
-// TODO(lucas): improve text wrapping
 void ui_render_text(
     Font font,
     char* text,
@@ -1360,6 +1358,8 @@ void ui_render_text(
 
   f32 x_offset = 0;
   i32 y_offset = 0;
+  i32 x = 0;
+  i32 y = 0;
 
   f32 scale_factor = font_size / (f32)font.baseSize;
 
@@ -1372,10 +1372,19 @@ void ui_render_text(
     i32 codepoint_size = 0;
     i32 codepoint = GetCodepointNext(&text[i], &codepoint_size);
     i32 glyph_index = GetGlyphIndex(font, codepoint);
+    f32 advance = 0.0f;
 
-    if (x_offset >= max_line_width && max_line_width > 0) {
+    if (font.glyphs[glyph_index].advanceX == 0) {
+      advance = ((f32)font.recs[glyph_index].width * scale_factor + spacing);
+    }
+    else {
+      advance = ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
+    }
+
+    if (x_offset + advance >= max_line_width && max_line_width > 0) {
       x_offset = 0.0f;
       y_offset += line_spacing;
+      advance = 0;
     }
 
     if (codepoint == '\n') {
@@ -1383,16 +1392,16 @@ void ui_render_text(
       x_offset = 0.0f;
     }
     else {
+      x = box->x + x_offset;
+      y = box->y + y_offset;
+      if (!ui_overlap(x, y, *box)) {
+        break;
+      }
       if ((codepoint != ' ') && (codepoint != '\t')) {
-        DrawTextCodepoint(font, codepoint, (Vector2) { box->x + x_offset, box->y + y_offset }, font_size, tint);
+        DrawTextCodepoint(font, codepoint, (Vector2) { x, y }, font_size, tint);
       }
 
-      if (font.glyphs[glyph_index].advanceX == 0) {
-        x_offset += ((f32)font.recs[glyph_index].width*scale_factor + spacing);
-      }
-      else {
-        x_offset += ((f32)font.glyphs[glyph_index].advanceX*scale_factor + spacing);
-      }
+      x_offset += advance;
     }
     i += codepoint_size;
   }
