@@ -1048,6 +1048,12 @@ Element ui_text(char* text) {
   return e;
 }
 
+Element ui_text_ex(char* text, bool text_wrapping) {
+  Element e = ui_text(text);
+  e.data.text.text_wrapping = text_wrapping;
+  return e;
+}
+
 Element ui_button(char* text) {
   Element e;
   ui_element_init(&e, ELEMENT_BUTTON);
@@ -1333,7 +1339,7 @@ bool ui_measure_text(
     if (!text_wrapping) {
       box->w = x_offset_largest;
     }
-    // mutated = true;
+    mutated = true;
   }
 
   return mutated;

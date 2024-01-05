@@ -380,7 +380,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_attach_element(container, &line_break);
 
   {
-    Element e = ui_text("DRUMPAD");
+    Element e = ui_text_ex("DRUMPAD", false);
     ui_attach_element(container, &e);
   }
   Element* grid = NULL;
@@ -411,7 +411,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_attach_element(container, &line_break);
 
   {
-    Element e = ui_text("LFO");
+    Element e = ui_text_ex("LFO", false);
     ui_attach_element(container, &e);
   }
 

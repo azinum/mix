@@ -113,6 +113,8 @@ typedef union Element_data {
     // allow overflow = true:  do not mutate element size, keep the current element size and let text overflow
     // allow overflow = false: mutate element size based on the text content
     bool allow_overflow;
+    // if text wrapping is true and allow overflow is false, the text element will be adjusted according to its text content
+    // TODO(lucas): these settings can be confusing, make simpler
     bool text_wrapping;
   } text;
   struct {
@@ -280,6 +282,7 @@ Element ui_container(char* title);
 Element ui_container_ex(char* title, bool scrollable);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
+Element ui_text_ex(char* text, bool text_wrapping);
 Element ui_button(char* text);
 Element ui_canvas(bool border);
 Element ui_toggle(i32* value);
