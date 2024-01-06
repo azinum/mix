@@ -38,6 +38,7 @@ static void ui_render_elements(UI_state* ui, Element* e);
 static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e, Element_type type);
 static bool ui_overlap(i32 x, i32 y, Box box);
+static bool ui_container_is_scrollable(Element* e);
 static Box  ui_pad_box(Box box, i32 padding);
 static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
 static Box  ui_expand_box(Box box, i32 padding);
@@ -127,7 +128,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
     if (e->type == ELEMENT_CONTAINER) {
-      if (e->data.container.scrollable) {
+      if (e->data.container.scrollable && ui_container_is_scrollable(e)) {
         ui->container = e;
       }
     }
@@ -475,7 +476,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     if (!title_bar.top) {
       y = e->box.y + e->box.h;
     }
-    DrawRectangle(x, y, w, h, lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f));
+    DrawRectangle(x, y, w, h, UI_TITLE_BAR_COLOR);
     DrawTextEx(font, title_bar.title, (Vector2) { x + title_bar.padding, y + title_bar.padding }, font_size, spacing, e->text_color);
     if (e->border) {
       DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
@@ -555,6 +556,12 @@ void ui_element_init(Element* e, Element_type type) {
 inline bool ui_overlap(i32 x, i32 y, Box box) {
   return (x >= box.x && x <= box.x + box.w)
     && (y >= box.y && y <= box.y + box.h);
+}
+
+bool ui_container_is_scrollable(Element* e) {
+  i32 content_height = e->data.container.content_height;
+  i32 scroll_y = e->data.container.scroll_y;
+  return (content_height > e->box.h) || (scroll_y < 0);
 }
 
 Box ui_pad_box(Box box, i32 padding) {
@@ -747,6 +754,7 @@ void ui_update(f32 dt) {
   ui->dt = dt;
   ui->timer += dt;
 
+
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
   arena_reset(&ui->frame_arena);
@@ -835,9 +843,9 @@ void ui_update(f32 dt) {
       wheel.y += 1;
     }
     i32 content_height = e->data.container.content_height;
-    if ((content_height > e->box.h) || (scroll_y < 0)) {
+    if (ui_container_is_scrollable(e)) {
       scroll_y += wheel.y * UI_SCROLL_SPEED;
-      i32 content_height_delta = content_height - e->box.h; //  + 2 * e->padding;
+      i32 content_height_delta = content_height - e->box.h;
       if (-scroll_y > content_height_delta) {
         scroll_y = -content_height_delta;
       }
@@ -1319,7 +1327,6 @@ bool ui_measure_text(
     if (x_offset + advance >= max_line_width && max_line_width > 0) {
       x_offset = 0.0f;
       y_offset += line_spacing;
-      advance = 0;
     }
     if (codepoint == '\n') {
       x_offset = 0.0f;
@@ -1390,9 +1397,7 @@ void ui_render_text(
     if (x_offset + advance >= max_line_width && max_line_width > 0) {
       x_offset = 0.0f;
       y_offset += line_spacing;
-      advance = 0;
     }
-
     if (codepoint == '\n') {
       y_offset += line_spacing;
       x_offset = 0.0f;

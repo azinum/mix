@@ -480,7 +480,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(lfo_container, &e);
   }
   {
-    Element e = ui_text(w->lfo_connection);
+    Element e = ui_text_ex(w->lfo_connection, false);
     ui_attach_element(lfo_container, &e);
   }
 }

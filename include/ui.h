@@ -26,7 +26,7 @@
 #endif
 
 #ifndef UI_SCROLL_SPEED
-  #define UI_SCROLL_SPEED 20
+  #define UI_SCROLL_SPEED 40
 #endif
 
 typedef struct {

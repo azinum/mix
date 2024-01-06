@@ -6,6 +6,7 @@ ui_border_color         = "f0f0f0"
 ui_button_color         = "404040"
 ui_text_color           = "f0f0f0"
 ui_focus_color          = "9595d0"
+ui_title_bar_color      = "303030"
 ui_border_thickness     = 1.1
 ui_title_bar_padding    = 8
 ui_button_roundness     = 0
