@@ -39,6 +39,14 @@ inline Color warmer_color(Color a, u8 amount) {
   );
 }
 
+Color invert_color(Color a) {
+  return COLOR_RGB(
+    255 - a.r,
+    255 - a.g,
+    255 - a.b
+  );
+}
+
 void print_bits(i32 fd, char byte) {
   for (i32 bit = 7; bit >= 0; --bit) {
     stb_dprintf(fd, "%d", EXTRACTBIT(bit, byte) != 0);

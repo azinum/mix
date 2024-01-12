@@ -7,6 +7,7 @@ ui_button_color         = "7584dd"
 ui_text_color           = "ffffff"
 ui_focus_color          = "c8c8c8"
 ui_title_bar_color      = "525582"
+ui_interpolation_color  = "ffffff"
 ui_border_thickness     = 1.1
 ui_title_bar_padding    = 4
 ui_button_roundness     = 0.1

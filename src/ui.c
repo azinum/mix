@@ -320,7 +320,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       factor += 0.15f;
     }
   }
-  background_color = lerp_color(background_color, COLOR_RGB(0, 0, 0), factor);
+  background_color = lerp_color(background_color, invert_color(UI_INTERPOLATION_COLOR), factor);
 
   if (e->background) {
     ui_render_rectangle(e->box, e->roundness, background_color);
@@ -401,7 +401,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     case ELEMENT_SLIDER: {
       // TODO(lucas): vertical slider
       Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
-      Color line_color = lerp_color(e->background_color, COLOR_RGB(0, 0, 0), 0.2f);
+      Color line_color = lerp_color(e->background_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f);
       ui_render_rectangle(box, e->roundness, line_color);
       Range range = e->data.slider.range;
       i32 x = box.x;
@@ -424,7 +424,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
             break;
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
-      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, COLOR_RGB(255, 255, 255), 0.2f));
+      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, UI_INTERPOLATION_COLOR, 0.2f));
       DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
       if (e->border_thickness > 0.0f) {
         DrawCircleLines(x + box.w*factor, y + h/2, radius, e->border_color);
@@ -441,7 +441,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       char* preview = e->data.input.preview;
       if (preview) {
-        ui_render_text(font, preview, &e->box, false, font_size, spacing, UI_LINE_SPACING, lerp_color(e->text_color, COLOR_RGB(0, 0, 0), 0.2f));
+        ui_render_text(font, preview, &e->box, false, font_size, spacing, UI_LINE_SPACING, lerp_color(e->text_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f));
       }
       break;
     }
@@ -1139,7 +1139,7 @@ Element ui_slider(void* value, Value_type type, Range range) {
   e.background = true;
   e.border = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
-  e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
   return e;
 }
 
@@ -1174,7 +1174,7 @@ Element ui_input(char* preview) {
   e.border = true;
   e.scissor = false;
   e.roundness = UI_BUTTON_ROUNDNESS;
-  e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 255, 255), 0.2f);
+  e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
   return e;
 }
 
