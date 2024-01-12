@@ -23,7 +23,7 @@ struct Mix;
   #include <raylib.h>
 #endif
 
-#include <sys/time.h>
+#include <time.h>
 #include <math.h>
 #include <fcntl.h>
 

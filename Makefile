@@ -23,7 +23,7 @@ install_shared:
 	cp -r ${INC}/* ${PREFIX}/include/${TARGET}
 
 shared: ${SRC}
-	${CC} $< -o lib${TARGET}.so ${FLAGS} ${LIBS} -shared -rdynamic -fPIC
+	${CC} $< -o lib${TARGET}.so ${FLAGS} ${LIBS} -shared -rdynamic -fPIC || echo "\nerror: compiling shared library failed; make sure raylib is compiled with position independent code (-fPIC)"
 
 profile:
 	perf record -e cycles -c 2000000 ./${TARGET} && perf report -n -f > perf.txt && rm -f perf.data perf.data.old
