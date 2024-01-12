@@ -50,6 +50,22 @@ f32 buffer_to_float(Buffer* buffer) {
   return value;
 }
 
+void buffer_from_fmt(Buffer* buffer, size_t size, const char* fmt, ...) {
+  if (size <= buffer->size) {
+    va_list argp;
+    va_start(argp, fmt);
+    buffer->count = stb_vsnprintf((char*)buffer->data, size, fmt, argp);
+    va_end(argp);
+    return;
+  }
+  buffer_free(buffer);
+  *buffer = buffer_new(size);
+  va_list argp;
+  va_start(argp, fmt);
+  buffer->count = stb_vsnprintf((char*)buffer->data, size, fmt, argp);
+  va_end(argp);
+}
+
 void buffer_reset(Buffer* buffer) {
   buffer->count = 0;
 }

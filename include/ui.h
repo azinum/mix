@@ -99,6 +99,7 @@ typedef struct Input {
   char* preview;
   Input_type input_type;
   Value_type value_type;
+  Hash value_hash; // hash the current value to detect changes, update the buffer if a change is detected
   void* value;
   void (*callback)(struct Input*);
 } Input;

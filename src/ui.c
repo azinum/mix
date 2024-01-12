@@ -45,6 +45,7 @@ static Box  ui_expand_box(Box box, i32 padding);
 static void ui_center_of(const Box* box, i32* x, i32* y);
 static void ui_render_tooltip(UI_state* ui, char* tooltip);
 static void ui_render_tooltip_of_element(UI_state* ui, Element* e);
+static Hash ui_hash(const u8* data, const size_t size);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
@@ -171,6 +172,43 @@ void ui_update_elements(UI_state* ui, Element* e) {
       }
       e->data.canvas.mouse_x = 0;
       e->data.canvas.mouse_y = 0;
+      break;
+    }
+    case ELEMENT_INPUT: {
+      if (e->data.input.input_type == INPUT_NUMBER && e->data.input.value) {
+        size_t size = 0;
+        switch (e->data.input.value_type) {
+          case VALUE_TYPE_FLOAT: {
+            size = sizeof(f32);
+            break;
+          }
+          case VALUE_TYPE_INTEGER: {
+            size = sizeof(i32);
+            break;
+          }
+          default: {
+            ASSERT(!"invalid numerical value type of input element");
+            break;
+          }
+        }
+        Hash hash = ui_hash(e->data.input.value, size);
+        if (hash != e->data.input.value_hash) {
+          e->data.input.value_hash = hash;
+          switch (e->data.input.value_type) {
+            case VALUE_TYPE_FLOAT: {
+              buffer_from_fmt(&e->data.input.buffer, 32, "%g", *(f32*)e->data.input.value);
+              break;
+            }
+            case VALUE_TYPE_INTEGER: {
+              buffer_from_fmt(&e->data.input.buffer, 32, "%d", *(i32*)e->data.input.value);
+              break;
+            }
+            default:
+              break;
+          }
+          e->data.input.cursor = e->data.input.buffer.count;
+        }
+      }
       break;
     }
     default:
@@ -666,6 +704,13 @@ void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
     ui_render_tooltip(ui, tooltip);
   }
   memset(tooltip, 0, sizeof(tooltip));
+}
+
+Hash ui_hash(const u8* data, const size_t size) {
+  if (!data) {
+    return 0;
+  }
+  return hash_djb2(data, size);
 }
 
 void ui_onclick(struct Element* e) {
@@ -1169,6 +1214,7 @@ Element ui_input(char* preview) {
   e.data.input.preview = preview;
   e.data.input.input_type = INPUT_TEXT;
   e.data.input.value_type = VALUE_TYPE_NONE;
+  e.data.input.value_hash = 0;
   e.data.input.value = NULL;
   e.background = true;
   e.border = true;
