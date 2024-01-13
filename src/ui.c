@@ -6,6 +6,7 @@
 //  - container tabs
 //  - drag and drop (from external file browser)
 //  - multiple ui states to switch between
+//  - fix input text wrapping
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
@@ -438,7 +439,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
     case ELEMENT_SLIDER: {
       // TODO(lucas): vertical slider
-      Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
+      Box box = ui_expand_box(e->box, -UI_SLIDER_INNER_PADDING);
       Color line_color = lerp_color(e->background_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f);
       ui_render_rectangle(box, e->roundness, line_color);
       Range range = e->data.slider.range;
@@ -1497,7 +1498,7 @@ void ui_update_input(UI_state* ui, Element* e) {
         break;
       }
       case INPUT_NUMBER: {
-        if ((ch >= '0' && ch <= '9') || ch == '.') {
+        if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
           buffer_insert(buffer, ch, e->data.input.cursor);
           e->data.input.cursor += 1;
         }

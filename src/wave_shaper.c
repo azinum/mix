@@ -161,7 +161,7 @@ void waveshaper_drumpad_event0(Waveshaper* w) {
   w->drumpad.sample_index[0] = 0;
   static f32 speed = 0.1f;
   const f32 min_value = 0.0f;
-  const f32 max_value = 1.0f;
+  const f32 max_value = 2.0f;
   w->freq_mod_target += speed;
   if ((w->freq_mod_target <= min_value) || (w->freq_mod_target >= max_value)) {
     speed = -speed;
@@ -260,7 +260,8 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   Element line_break = ui_line_break(FONT_SIZE);
 
   const i32 button_height = 48;
-  const i32 slider_height = 38;
+  const i32 slider_height = FONT_SIZE;
+  const i32 input_height = slider_height;
   {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, button_height);
@@ -313,17 +314,29 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
+    Element e = ui_input_float("volume", &w->volume_target);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
+    ui_attach_element(container, &e);
+  }
+  {
     Element e = ui_slider(&w->volume_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.name = "volume";
     e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("frequency modulation", &w->freq_mod_target);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->freq_mod_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0, 25.0f));
     e.name = "frequency modulation";
     e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
     e.userdata = ins;
     ui_attach_element(container, &e);
   }
@@ -338,17 +351,29 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
+    Element e = ui_input_float("frequency", &w->freq_target);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
+    ui_attach_element(container, &e);
+  }
+  {
     Element e = ui_slider(&w->freq_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
     e.name = "frequency";
     e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("interpolation speed", &w->interp_speed);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
     e.box = BOX(0, 0, 0, slider_height);
     e.name = "interpolation speed";
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
     ui_attach_element(container, &e);
   }
 
@@ -363,17 +388,29 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
+    Element e = ui_input_int("speed", &w->speed);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
+    ui_attach_element(container, &e);
+  }
+  {
     Element e = ui_slider(&w->speed, VALUE_TYPE_INTEGER, RANGE(1, 12));
     e.name = "speed";
     e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("gain", &w->gain);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
     ui_attach_element(container, &e);
   }
   {
     Element e = ui_slider(&w->gain, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
     e.name = "gain";
     e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(35, 0);
     ui_attach_element(container, &e);
   }
 
@@ -397,7 +434,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       Element e = ui_toggle(value);
       e.userdata = ins;
       e.v.i = x;
-      if (!((x + 1) % 2)) {
+      if (!((x + 0) % 4)) {
         e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.05f);
       }
       else {
@@ -490,7 +527,7 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_reset(&w->arena);
   w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
-  stb_snprintf(w->text, INFO_TEXT_SIZE, "freq: %g\nfreq_mod: %g\ninterp_speed: %g\nvolume: %g\nlatency: %g ms\naudio_latency: %g ms", w->freq, w->freq_mod, w->interp_speed, ins->volume, 1000 * ins->latency, 1000 * ins->audio_latency);
+  stb_snprintf(w->text, INFO_TEXT_SIZE, "latency: %g ms\naudio_latency: %g ms", 1000 * ins->latency, 1000 * ins->audio_latency);
 
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);
