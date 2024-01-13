@@ -1,6 +1,6 @@
 // test_ui.c
 
-#define ELEMENT_COUNT 128
+#define ELEMENT_COUNT 512
 // #define LOTS_OF_TEXT
 
 static void button_onclick(Element* e);

@@ -71,7 +71,7 @@ struct Mix;
 #include "wave_shaper.h"
 #include "audio.h"
 
-#define TEST_UI
+// #define TEST_UI
 
 #ifdef TEST_UI
   #include "test_ui.h"

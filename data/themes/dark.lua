@@ -13,5 +13,5 @@ ui_title_bar_padding    = 8
 ui_button_roundness     = 0.1
 ui_slider_inner_padding = 8
 ui_slider_knob_size     = 8
-ui_roundness            = 0.0
-ui_padding              = 6
+ui_roundness            = 0.00
+ui_padding              = 8

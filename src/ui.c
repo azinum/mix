@@ -520,6 +520,28 @@ void ui_render_elements(UI_state* ui, Element* e) {
       DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
     }
   }
+
+  if (ui->container == e) {
+    if (ui_container_is_scrollable(e)) {
+      const i32 content_height = e->data.container.content_height;
+      const i32 height = e->box.h;
+      const i32 scroll_y = e->data.container.scroll_y;
+      const i32 height_delta = content_height - height;
+      const f32 scroll_factor = -scroll_y / (f32)height_delta;
+      const i32 scrollbar_width = 4;
+      const i32 scrollbar_height = height * (height/(f32)content_height);
+      Box box = BOX(
+        e->box.x + e->box.w - scrollbar_width - e->border_thickness,
+        e->box.y + scroll_factor * (e->box.h - scrollbar_height - 2 * e->border_thickness) + e->border_thickness,
+        scrollbar_width,
+        scrollbar_height);
+      ui_render_rectangle(
+        box,
+        UI_ROUNDNESS,
+        COLOR_RGB(127, 127, 127)
+      );
+    }
+  }
 #ifdef UI_DRAW_GUIDES
   if (e->type == ELEMENT_CONTAINER && e->padding > 0) {
     ui_render_rectangle_lines(ui_pad_box(e->box, e->padding), 1, 0, GUIDE_COLOR3);

@@ -138,6 +138,15 @@ const char* bool_str[] = { "false", "true" };
 #if defined(NO_STDIO) && defined(NO_STDLIB)
   #ifdef USE_STB_SPRINTF
     #define STB_WRAP(...) stb_##__VA_ARGS__
+    i32 (*printf(const char* fmt, ...)) = STB_WRAP(printf);
+    i32 (*dprintf(i32 fd, const char* fmt, ...)) = STB_WRAP(dprintf);
+    i32 (*sprintf(char* str, const char* fmt, ...)) = STB_WRAP(sprintf);
+    i32 (*snprintf(char* str, size_t size, const char* fmt, ...)) = STB_WRAP(snprintf);
+
+    i32 (*vprintf(const char* fmt, va_list argp)) = STB_WRAP(vprintf);
+    i32 (*vdprintf(i32 fd, const char* fmt, va_list argp)) = STB_WRAP(vdprintf);
+    i32 (*vsprintf(char* str, const char* fmt, va_list argp)) = STB_WRAP(vsprintf);
+    i32 (*vsnprintf(char* str, size_t size, const char* fmt, va_list argp)) = STB_WRAP(vsnprintf);
   #else
     #define STB_WRAP(...) __VA_ARGS__
   #endif
