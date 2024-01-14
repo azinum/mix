@@ -7,6 +7,9 @@
 //  - drag and drop (from external file browser)
 //  - multiple ui states to switch between
 //  - fix input text wrapping
+//  - implement an element `watcher` mechanism that notifies external references
+//      to elements that changes, for instance when reallocating or detaching ui nodes. external
+//      element references must not be invalidated.
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
@@ -1051,9 +1054,9 @@ void ui_reset_connection_filter(void) {
   ui->connection_filter = ui_connection_filter;
 }
 
-bool ui_no_input(void) {
+bool ui_input_interacting(void) {
   UI_state* ui = &ui_state;
-  return ui->input == NULL;
+  return ui->input != NULL;
 }
 
 Element* ui_attach_element(Element* target, Element* e) {

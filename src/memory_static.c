@@ -2,7 +2,7 @@
 // TODO:
 //  - use a free-list
 
-#define BLOCK_HEADER_ALIGNMENT 16
+#define BLOCK_HEADER_ALIGNMENT sizeof(size_t)
 // don't care to split a free block if the difference is less than this
 #define FREE_BLOCK_DIFF_DONT_CARE BLOCK_HEADER_ALIGNMENT*2
 
@@ -11,7 +11,7 @@
 #endif
 
 #ifndef MEMORY_SWEEP_ON_FREE
-  #define MEMORY_SWEEP_ON_FREE 1
+  #define MEMORY_SWEEP_ON_FREE 2
 #endif
 
 typedef struct {
@@ -196,7 +196,9 @@ void memory_free(void* p) {
   memory_state.usage -= header->size;
 #endif
 #if MEMORY_SWEEP_ON_FREE
-  memory_sweep(m);
+  for (size_t i = 0; i < MEMORY_SWEEP_ON_FREE; ++i) {
+    memory_sweep(m);
+  }
 #else
   (void)memory_sweep;
 #endif

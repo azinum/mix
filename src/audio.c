@@ -54,7 +54,7 @@ void audio_engine_exit(Audio_engine* audio) {
     dt = TIMER_END();
   }
 #endif
-  instrument_free(&audio->instrument);
+  instrument_destroy(&audio->instrument);
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
   audio_exit(audio);

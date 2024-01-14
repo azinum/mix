@@ -545,7 +545,7 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     }
   }
 
-  if (ui_no_input()) {
+  if (!ui_input_interacting()) {
     if (IsKeyPressed(KEY_W)) {
       w->freq_target += 1;
     }
@@ -645,7 +645,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   }
 }
 
-void waveshaper_free(struct Instrument* ins) {
+void waveshaper_destroy(struct Instrument* ins) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_free(&w->arena);
 }

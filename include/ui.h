@@ -232,7 +232,7 @@ typedef struct Element {
   void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
   void (*oninput)(struct Element* e, char ch);
   void (*onenter)(struct Element* e);
-} __attribute__((aligned(CACHELINESIZE))) Element;
+} __attribute__((aligned(sizeof(size_t)))) Element;
 
 typedef struct UI_state {
   Element root;
@@ -275,7 +275,7 @@ void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*));
 void ui_set_title(Element* e, char* title);
 void ui_reset_connection_filter(void);
 // is the user currently interacting with an input element?
-bool ui_no_input(void);
+bool ui_input_interacting(void);
 
 Element* ui_attach_element(Element* target, Element* e);
 Element ui_none(void);

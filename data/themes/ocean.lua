@@ -11,6 +11,6 @@ ui_interpolation_color  = "ffffff"
 ui_border_thickness     = 1.1
 ui_title_bar_padding    = 8
 ui_button_roundness     = 0.1
-ui_slider_inner_padding = 8
+ui_slider_inner_padding = 2
 ui_slider_knob_size     = 8
 ui_roundness            = 0.05

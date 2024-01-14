@@ -15,6 +15,7 @@ typedef struct Instrument {
   f32 latency;
   f32 audio_latency;
   bool blocking;
+  bool initialized;
 
   void* userdata;
   char* title;
@@ -23,7 +24,7 @@ typedef struct Instrument {
   void (*ui_new)(struct Instrument*, Element*);
   void (*update)(struct Instrument*, struct Mix*);
   void (*process)(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);
-  void (*free)(struct Instrument*);
+  void (*destroy)(struct Instrument*);
 } Instrument;
 
 typedef enum {
@@ -32,12 +33,14 @@ typedef enum {
   MAX_INSTRUMENT_ID,
 } Instrument_id;
 
+extern Instrument instruments[MAX_INSTRUMENT_ID];
+
 Instrument instrument_new(Instrument_id id);
 Instrument instrument_new_from_path(const char* path);
 void instrument_init(Instrument* ins, struct Audio_engine* audio);
 Element instrument_ui_new(Instrument* ins);
 void instrument_update(Instrument* ins, struct Mix* mix);
 void instrument_process(Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);
-void instrument_free(Instrument* ins);
+void instrument_destroy(Instrument* ins);
 
 #endif // _INSTRUMENT_H

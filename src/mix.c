@@ -132,7 +132,7 @@ void mix_update_and_render(Mix* m) {
     mix_ui_new(m);
   }
 
-  if (ui_no_input()) {
+  if (!ui_input_interacting()) {
     if (IsKeyPressed(KEY_R)) {
       ui_free();
       ui_init();

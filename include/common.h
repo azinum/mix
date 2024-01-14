@@ -121,6 +121,19 @@ const char* bool_str[] = { "false", "true" };
   #define RANDOM_MAX (size_t)((~0-1) >> 1)
 #endif
 
+#if defined(__has_builtin) // will not work for gcc versions < 10, even though the builtins do exist
+  #if __has_builtin(__builtin_expect)
+    #define LIKELY(x) (__builtin_expect(((x) != 0), 1))
+    #define UNLIKELY(x) (__builtin_expect(((x) != 0), 0))
+  #else
+    #define LIKELY(x) (x)
+    #define UNLIKELY(x) (x)
+  #endif
+#else
+  #define LIKELY(x) (x)
+  #define UNLIKELY(x) (x)
+#endif
+
 #ifdef NO_STDLIB
   void* memset(void* p, i32 c, size_t n);
   void* memcpy(void* dest, const void* src, size_t n);
