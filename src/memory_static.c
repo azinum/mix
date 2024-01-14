@@ -1,17 +1,18 @@
 // memory_static.c
 // TODO:
 //  - use a free-list
+//  - named tags on block headers to more easily track their origin (debugging only)
 
 #define BLOCK_HEADER_ALIGNMENT sizeof(size_t)
 // don't care to split a free block if the difference is less than this
-#define FREE_BLOCK_DIFF_DONT_CARE BLOCK_HEADER_ALIGNMENT*2
+#define FREE_BLOCK_DIFF_DONT_CARE 1
 
 #ifndef MEMORY_ALLOC_STATIC_SIZE
   #define MEMORY_ALLOC_STATIC_SIZE ALIGN(Mb(8), BLOCK_HEADER_ALIGNMENT)
 #endif
 
 #ifndef MEMORY_SWEEP_ON_FREE
-  #define MEMORY_SWEEP_ON_FREE 2
+  #define MEMORY_SWEEP_ON_FREE 1
 #endif
 
 typedef struct {
@@ -54,6 +55,10 @@ void* allocate_block(Memory* const m, const size_t size, Block_tag tag, Block_he
   if (m->size < aligned_size) {
     return NULL;
   }
+  if (size == 0) {
+    return NULL;
+  }
+  ASSERT(aligned_size != 0);
   for (m->index = 0; m->index < m->size; ) {
     Block_header* header = (Block_header*)&m->data[m->index];
     if (header->tag == BLOCK_TAG_FREE) {
@@ -207,15 +212,39 @@ void memory_free(void* p) {
 void memory_print_info(i32 fd) {
   stb_dprintf(fd, "Static memory: %zu/%zu bytes\n", (size_t)memory_state.usage, (size_t)MEMORY_ALLOC_STATIC_SIZE);
   const Memory* const m = &memory;
+  size_t block_index = 0;
   for (size_t i = 0;;) {
-    Block_header* header = (Block_header*)&m->data[i];
-    size_t total_size = header->size + sizeof(Block_header);
+    Block_header* header  = (Block_header*)&m->data[i];
 #ifdef MEMORY_ALLOC_STATIC_PRINT_OVERHEAD
-    stb_dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size + sizeof(Block_header), (void*)header, total_size, (f32)total_size / Kb(1));
+    size_t total_size     = header->size + sizeof(Block_header);
 #else
-    stb_dprintf(fd, "  block (%s) from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", block_tag_str[header->tag], i, i + header->size, (void*)header, header->size, (f32)header->size / Kb(1));
+    size_t total_size     = header->size;
 #endif
-    i += total_size;
+    size_t from           = i;
+    size_t to             = i + total_size;
+
+    bool zero_sized_used_block = (header->size == 0) && (header->tag == BLOCK_TAG_USED);
+    if (zero_sized_used_block) {
+      color_begin(COLOR_RED);
+    }
+    stb_dprintf(fd, "%4zu: ", block_index);
+    color_end();
+    if (header->tag == BLOCK_TAG_FREE) {
+      color_begin(COLOR_GREEN);
+    }
+    else {
+      color_begin(COLOR_YELLOW);
+    }
+    stb_dprintf(fd, "%s", block_tag_str[header->tag]);
+    color_end();
+    if (zero_sized_used_block) {
+      color_begin(COLOR_RED);
+    }
+    stb_dprintf(fd, " from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", from, to, (void*)header, total_size, (f32)total_size / Kb(1));
+    color_end();
+
+    i += header->size + sizeof(Block_header);
+    block_index += 1;
     break_if(i + sizeof(Block_header) >= m->size);
   }
   memory_print_stats(fd);

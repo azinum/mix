@@ -18,6 +18,7 @@
 #include "buffer.c"
 #include "config.c"
 #include "misc.c"
+#include "colors.c"
 #include "log.c"
 #include "memory.c"
 #include "module.c"
@@ -144,6 +145,9 @@ void mix_update_and_render(Mix* m) {
     }
     if (IsKeyPressed(KEY_L)) {
       config_load(CONFIG_PATH);
+    }
+    if (IsKeyPressed(KEY_M)) {
+      memory_print_info(STDOUT_FILENO);
     }
   }
 

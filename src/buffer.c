@@ -8,7 +8,7 @@ Buffer buffer_new(size_t size) {
     .count = 0,
     .size = size,
   };
-  ASSERT(buffer.data != NULL);
+  ASSERT(buffer.data != NULL || size == 0);
   return buffer;
 }
 

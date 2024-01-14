@@ -61,6 +61,7 @@ struct Mix;
 #include "config.h"
 #include "misc.h"
 #include "lut.h"
+#include "colors.h"
 #include "log.h"
 #include "memory.h"
 #include "arena.h"

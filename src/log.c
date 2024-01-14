@@ -3,19 +3,9 @@
 //  - log levels
 
 struct {
-  u32 use_colors;
+  bool use_colors;
 } log_state = {
   .use_colors = false,
-};
-
-static const char* color_str[MAX_COLOR] = {
-  [COLOR_NONE]       = "",
-  [COLOR_RESET]      = "\033[0;00m",
-  [COLOR_BLUE]       = "\033[0;34m",
-  [COLOR_RED]        = "\033[0;31m",
-  [COLOR_GREEN]      = "\033[0;32m",
-  [COLOR_BOLD_WHITE] = "\033[1;37m",
-  [COLOR_YELLOW]     = "\033[1;33m",
 };
 
 static const char* tags[MAX_LOG_TAG] = {
@@ -34,8 +24,9 @@ static Log_color tag_colors[MAX_LOG_TAG] = {
   COLOR_YELLOW,
 };
 
-void log_init(u32 use_colors) {
+void log_init(bool use_colors) {
 #ifndef NO_COLORS
+  colors_init(use_colors && enable_vt100_mode());
   log_state.use_colors = use_colors && enable_vt100_mode();
 #else
   log_state.use_colors = false;
@@ -55,11 +46,7 @@ void log_print_tag(i32 fd, const char* tag, Log_color tag_color) {
   ASSERT(tag != NULL);
   ASSERT(tag_color < MAX_COLOR);
 
-  if (log_state.use_colors) {
-    STB_WRAP(dprintf)(fd, "%s", color_str[tag_color]);
-  }
+  color_begin_fd(fd, tag_color);
   STB_WRAP(dprintf)(fd, "[%s]: ", tag);
-  if (log_state.use_colors) {
-    STB_WRAP(dprintf)(fd, "%s", color_str[COLOR_RESET]);
-  }
+  color_end_fd(fd);
 }
