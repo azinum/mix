@@ -53,6 +53,7 @@ static Hash ui_hash(const u8* data, const size_t size);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
 static void ui_slider_onclick(UI_state* ui, struct Element* e);
+static void ui_input_onclick(UI_state* ui, struct Element* e);
 static void ui_onupdate(struct Element* e);
 static void ui_onrender(struct Element* e);
 static void ui_onconnect(struct Element* e, struct Element* target);
@@ -67,7 +68,7 @@ static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Col
 static bool ui_measure_text(Font, char* text, Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing);
 static void ui_render_text(Font font, char* text, const Box* box, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
 static void ui_update_input(UI_state* ui, Element* e);
-static void ui_render_input(Element* e);
+static void ui_render_input(UI_state* ui, Element* e);
 
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root, ELEMENT_CONTAINER);
@@ -99,11 +100,12 @@ void ui_state_init(UI_state* ui) {
   ui->fd = -1;
 #endif
   ui->active_id = 0;
-  MEMORY_TAG("ui: frame arena");
+  MEMORY_TAG("ui.ui_state_init: frame arena");
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
   ui->dt = 0.0f;
   ui->timer = 0.0f;
   ui->tooltip_timer = 0.0f;
+  ui->blink_timer = 0.0f;
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
 }
@@ -786,6 +788,11 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
   }
 }
 
+void ui_input_onclick(UI_state* ui, struct Element* e) {
+  (void)e;
+  ui->blink_timer = 0;
+}
+
 void ui_onrender(struct Element* e) {
   (void)e;
 }
@@ -825,7 +832,7 @@ void ui_update(f32 dt) {
   ui->latency = 0;
   ui->dt = dt;
   ui->timer += dt;
-
+  ui->blink_timer += dt;
 
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
@@ -886,6 +893,9 @@ void ui_update(f32 dt) {
       else {
         if (ui->select->type == ELEMENT_TOGGLE) {
           ui_toggle_onclick(ui->select);
+        }
+        else if (ui->select->type == ELEMENT_INPUT) {
+          ui_input_onclick(ui, ui->select);
         }
         ui->select->onclick(ui->select);
       }
@@ -988,7 +998,7 @@ void ui_render(void) {
     }
   }
   if (ui->input != NULL) {
-    ui_render_input(ui->input);
+    ui_render_input(ui, ui->input);
   }
   if (ui->hover != NULL) {
     Element* e = ui->hover;
@@ -1067,9 +1077,35 @@ Element* ui_attach_element(Element* target, Element* e) {
   }
   size_t index = target->count;
   e->id = ui->id_counter++;
+  MEMORY_TAG("ui.ui_attach_element");
   list_push(target, *e);
   ui->element_count += 1;
   return &target->items[index];
+}
+
+void ui_detach_elements(Element* e) {
+  ASSERT(e != NULL);
+  UI_state* ui = &ui_state;
+  ui_free_elements(ui, e);
+  e->items = NULL;
+}
+
+void ui_detach(Element* e, u32 index) {
+  ASSERT(e != NULL);
+  if (index < e->count && e->count > 0) {
+    ui_detach_elements(&e->items[index]);
+    memmove(&e->items[index], &e->items[index + 1], sizeof(Element) * ((e->count - index) - 1));
+    e->count -= 1;
+    return;
+  }
+  e->count = 0;
+}
+
+void ui_detach_last(Element* e) {
+  ASSERT(e != NULL);
+  if (e->count > 0) {
+    ui_detach(e, e->count - 1);
+  }
 }
 
 Element ui_none(void) {
@@ -1497,6 +1533,7 @@ void ui_update_input(UI_state* ui, Element* e) {
   Buffer* buffer = &e->data.input.buffer;
   char ch = 0;
   while ((ch = GetCharPressed()) != 0) {
+    ui->blink_timer = 0;
     switch (e->data.input.input_type) {
       case INPUT_TEXT: {
         buffer_insert(buffer, ch, e->data.input.cursor);
@@ -1516,28 +1553,32 @@ void ui_update_input(UI_state* ui, Element* e) {
     e->oninput(e, ch);
   }
   if (KEY_PRESSED(KEY_BACKSPACE)) {
+    ui->blink_timer = 0;
     if (e->data.input.cursor > 0) {
       buffer_erase(buffer, e->data.input.cursor - 1);
       e->data.input.cursor -= 1;
     }
   }
   if (KEY_PRESSED(KEY_DELETE)) {
+    ui->blink_timer = 0;
     if (buffer->count > 0 && e->data.input.cursor < buffer->count) {
       buffer_erase(buffer, e->data.input.cursor);
     }
   }
   if (KEY_PRESSED(KEY_LEFT)) {
+    ui->blink_timer = 0;
     if (e->data.input.cursor > 0) {
       e->data.input.cursor -= 1;
     }
   }
   if (KEY_PRESSED(KEY_RIGHT)) {
+    ui->blink_timer = 0;
     e->data.input.cursor += 1;
     if (e->data.input.cursor > buffer->count) {
       e->data.input.cursor = buffer->count;
     }
   }
-  if (IsKeyPressed(KEY_ENTER)) {
+  if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
     if (e->data.input.value != NULL) {
       Buffer* buffer = &e->data.input.buffer;
       switch (e->data.input.value_type) {
@@ -1563,7 +1604,7 @@ void ui_update_input(UI_state* ui, Element* e) {
   }
 }
 
-void ui_render_input(Element* e) {
+void ui_render_input(UI_state* ui, Element* e) {
   i32 cursor = e->data.input.cursor;
   ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, UI_FOCUS_COLOR);
   Box cursor_box = BOX(
@@ -1574,5 +1615,8 @@ void ui_render_input(Element* e) {
   );
   cursor_box = ui_pad_box(cursor_box, 2);
   cursor_box.w = 1;
-  ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
+  f32 blink = cosf(ui->blink_timer * 5);
+  if (blink > 0) {
+    ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
+  }
 }

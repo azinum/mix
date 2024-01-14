@@ -256,6 +256,7 @@ typedef struct UI_state {
   f32 dt;
   f32 timer;
   f32 tooltip_timer;
+  f32 blink_timer;
   f32 slider_deadzone;
   bool (*connection_filter)(struct Element* e, struct Element* target);
 } UI_state;
@@ -278,6 +279,9 @@ void ui_reset_connection_filter(void);
 bool ui_input_interacting(void);
 
 Element* ui_attach_element(Element* target, Element* e);
+void    ui_detach_elements(Element* e); // detach child nodes of this element
+void    ui_detach(Element* e, u32 index);
+void    ui_detach_last(Element* e);
 Element ui_none(void);
 Element ui_container(char* title);
 Element ui_container_ex(char* title, bool scrollable);
