@@ -216,6 +216,11 @@ void memory_free(void* p) {
   if (block_header_from_pointer(m, p, &header) != Ok) {
     return;
   }
+#ifdef MEMORY_USE_NAMED_TAGS
+  if (header->tag != BLOCK_TAG_USED) {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "double-free at %p from origin: %s", p, header->named_tag);
+  }
+#endif
   ASSERT(header->tag == BLOCK_TAG_USED);
   header->tag = BLOCK_TAG_FREE;
 #ifndef NO_MEMORY_TRACKING

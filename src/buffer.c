@@ -71,7 +71,7 @@ void buffer_reset(Buffer* buffer) {
 }
 
 void buffer_append(Buffer* buffer, u8 byte) {
-  if (buffer->count + sizeof(byte) >= buffer->size) {
+  if (buffer->count + sizeof(byte) >= buffer->size - 1) {
     size_t new_size = buffer->size * 2;
     if (!new_size) {
       new_size = BUFFER_INIT_SIZE;
