@@ -54,6 +54,7 @@ struct Mix;
 #define SUBTICKS 8
 
 #include "common.h"
+#include "memory.h"
 #include "thread.h"
 #include "hash.h"
 #include "random.h"
@@ -63,7 +64,6 @@ struct Mix;
 #include "lut.h"
 #include "colors.h"
 #include "log.h"
-#include "memory.h"
 #include "arena.h"
 #include "module.h"
 #include "ui.h"

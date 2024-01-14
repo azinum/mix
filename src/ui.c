@@ -99,6 +99,7 @@ void ui_state_init(UI_state* ui) {
   ui->fd = -1;
 #endif
   ui->active_id = 0;
+  MEMORY_TAG("ui: frame arena");
   ui->frame_arena = arena_new(UI_FRAME_ARENA_SIZE);
   ui->dt = 0.0f;
   ui->timer = 0.0f;
@@ -1264,10 +1265,12 @@ Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_ty
   e.data.input.value = value;
   switch (value_type) {
     case VALUE_TYPE_FLOAT: {
+      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt (VALUE_TYPE_FLOAT)");
       e.data.input.buffer = buffer_new_from_fmt(32, "%g", *(f32*)value);
       break;
     }
     case VALUE_TYPE_INTEGER: {
+      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt (VALUE_TYPE_INTEGER)");
       e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i32*)value);
       break;
     }

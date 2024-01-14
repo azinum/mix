@@ -134,6 +134,9 @@ const char* bool_str[] = { "false", "true" };
   #define UNLIKELY(x) (x)
 #endif
 
+#define STR_(x) #x
+#define STR(x) STR_(x)
+
 #ifdef NO_STDLIB
   void* memset(void* p, i32 c, size_t n);
   void* memcpy(void* dest, const void* src, size_t n);

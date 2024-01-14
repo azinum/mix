@@ -1,7 +1,6 @@
 // memory_static.c
 // TODO:
 //  - use a free-list
-//  - named tags on block headers to more easily track their origin (debugging only)
 
 #define BLOCK_HEADER_ALIGNMENT sizeof(size_t)
 // don't care to split a free block if the difference is less than this
@@ -11,8 +10,17 @@
   #define MEMORY_ALLOC_STATIC_SIZE ALIGN(Mb(8), BLOCK_HEADER_ALIGNMENT)
 #endif
 
+// number of times to sweep the memory after a free
 #ifndef MEMORY_SWEEP_ON_FREE
   #define MEMORY_SWEEP_ON_FREE 1
+#endif
+
+#ifdef MEMORY_USE_NAMED_TAGS
+  #define NAMED_TAG_DEFAULT "unknown"
+  static const char* named_tag = NAMED_TAG_DEFAULT;
+  #define MEMORY_TAG(name) named_tag = name
+#else
+  #define MEMORY_TAG(name)
 #endif
 
 typedef struct {
@@ -30,6 +38,9 @@ typedef enum {
 
 typedef struct {
   Block_tag tag;
+#ifdef MEMORY_USE_NAMED_TAGS
+  const char* named_tag;
+#endif
   size_t size;
 } __attribute__((aligned(BLOCK_HEADER_ALIGNMENT))) Block_header;
 
@@ -76,6 +87,9 @@ void* allocate_block(Memory* const m, const size_t size, Block_tag tag, Block_he
           // split the free block by allocating another block and set its' size to the diff (minus header size)
           Block_header* free_block = (Block_header*)&m->data[m->index + header->size + sizeof(Block_header)];
           free_block->tag = BLOCK_TAG_FREE;
+#ifdef MEMORY_USE_NAMED_TAGS
+          free_block->named_tag = NAMED_TAG_DEFAULT;
+#endif
           free_block->size = size_diff - sizeof(Block_header); // this should be aligned, TODO(lucas): check to be sure
         }
         // give back the allocated block
@@ -132,6 +146,9 @@ Result memory_init(void) {
   memory.index = 0;
   Block_header header = {
     .tag = BLOCK_TAG_FREE,
+#ifdef MEMORY_USE_NAMED_TAGS
+    .named_tag = NAMED_TAG_DEFAULT,
+#endif
     .size = memory.size - sizeof(Block_header),
   };
   return protected_write(&memory, 0, &header, sizeof(header));
@@ -150,6 +167,10 @@ void* memory_alloc(size_t size) {
   if (!p) {
     return NULL;
   }
+#ifdef MEMORY_USE_NAMED_TAGS
+  header->named_tag = named_tag;
+#endif
+  MEMORY_TAG(NAMED_TAG_DEFAULT);
   memory_state.num_allocs += 1;
   memory_state.usage += header->size;
   return p;
@@ -173,6 +194,7 @@ void* memory_realloc(void* p, size_t size) {
     return NULL;
   }
   ASSERT(header->tag == BLOCK_TAG_USED);
+  MEMORY_TAG(header->named_tag);
   void* new_ptr = memory_alloc(size);
   if (!new_ptr) {
     return NULL;
@@ -240,7 +262,11 @@ void memory_print_info(i32 fd) {
     if (zero_sized_used_block) {
       color_begin(COLOR_RED);
     }
-    stb_dprintf(fd, " from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb\n", from, to, (void*)header, total_size, (f32)total_size / Kb(1));
+    stb_dprintf(fd, " from %9lu to %9lu, %p, size: %9lu bytes, %10.4f Kb", from, to, (void*)header, total_size, (f32)total_size / Kb(1));
+#ifdef MEMORY_USE_NAMED_TAGS
+    stb_dprintf(fd, ", origin: %s", header->named_tag);
+#endif
+    stb_dprintf(fd, "\n");
     color_end();
 
     i += header->size + sizeof(Block_header);

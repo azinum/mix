@@ -13,12 +13,17 @@ extern void audio_exit(Audio_engine* e);
 #endif
 
 Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channel_count) {
+  MEMORY_TAG("audio engine output buffer");
+  f32* out_buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32));
+  MEMORY_TAG("audio engine input buffer");
+  f32* in_buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32));
+
   return (Audio_engine) {
     .sample_rate       = sample_rate,
     .frames_per_buffer = frames_per_buffer,
     .channel_count     = channel_count,
-    .out_buffer        = memory_calloc(frames_per_buffer * channel_count, sizeof(f32)),
-    .in_buffer         = memory_calloc(frames_per_buffer * channel_count, sizeof(f32)),
+    .out_buffer        = out_buffer,
+    .in_buffer         = in_buffer,
     .dt                = DT_MIN,
     .instrument        = instrument_new(INSTRUMENT_WAVE_SHAPER),
     .quit              = false,

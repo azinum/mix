@@ -12,6 +12,7 @@
 
 #include "ext/lua/luaone.c"
 
+#include "memory.c"
 #include "thread.c"
 #include "hash.c"
 #include "random.c"
@@ -20,7 +21,6 @@
 #include "misc.c"
 #include "colors.c"
 #include "log.c"
-#include "memory.c"
 #include "module.c"
 #include "ui.c"
 #include "settings.c"

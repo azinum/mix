@@ -35,6 +35,7 @@ Instrument instrument_new_from_path(const char* path) {
 
 void instrument_init(Instrument* ins, Audio_engine* audio) {
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
+  MEMORY_TAG("instrument: audio buffer");
   ins->buffer = memory_calloc(samples, sizeof(f32));
   if (ins->buffer) {
     ins->samples = samples;

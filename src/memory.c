@@ -4,6 +4,7 @@
   #include "memory_static.c"
 #else
   #include "memory_heap.c"
+  #define MEMORY_TAG(name)
 #endif
 
 void memory_print_stats(i32 fd) {
