@@ -11,6 +11,7 @@
 #define _UI_H
 
 // #define UI_DRAW_GUIDES
+#define UI_LOG_HIERARCHY
 
 #ifndef UI_FRAME_ARENA_SIZE
   #define UI_FRAME_ARENA_SIZE Kb(8)
@@ -203,6 +204,7 @@ typedef struct Element {
   struct {
     f32 f;
     i32 i;
+    char* s;
   } v;
 
   i32 padding;
@@ -282,6 +284,7 @@ Element* ui_attach_element(Element* target, Element* e);
 void    ui_detach_elements(Element* e); // detach child nodes of this element
 void    ui_detach(Element* e, u32 index);
 void    ui_detach_last(Element* e);
+Element* ui_replace_element(Element* e, Element* new_element);
 Element ui_none(void);
 Element ui_container(char* title);
 Element ui_container_ex(char* title, bool scrollable);

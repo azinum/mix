@@ -14,15 +14,15 @@ static i32 stereo_callback(const void* in, void* out, unsigned long frames_per_b
 }
 
 static Result open_stream(void) {
-  Audio_engine* e = &audio_engine;
+  Audio_engine* audio = &audio_engine;
   PaStreamParameters* input_port = AUDIO_INPUT ? &in_port : NULL;
 
   PaError err = Pa_OpenStream(
     &stream,
     input_port,
     &out_port,
-    e->sample_rate,
-    e->frames_per_buffer,
+    audio->sample_rate,
+    audio->frames_per_buffer,
     paNoFlag,
     stereo_callback,
     NULL
@@ -40,8 +40,7 @@ static Result open_stream(void) {
   return Ok;
 }
 
-Result audio_new(Audio_engine* e) {
-  (void)in_port; // unused
+Result audio_new(Audio_engine* audio) {
   PaError err = Pa_Initialize();
   if (err != paNoError) {
     Pa_Terminate();
@@ -61,7 +60,7 @@ Result audio_new(Audio_engine* e) {
 
   i32 output_device = Pa_GetDefaultOutputDevice();
   out_port.device = output_device;
-  out_port.channelCount = CHANNEL_COUNT;
+  out_port.channelCount = audio->channel_count;
   out_port.sampleFormat = paFloat32;
   out_port.suggestedLatency = Pa_GetDeviceInfo(out_port.device)->defaultLowOutputLatency;
   out_port.hostApiSpecificStreamInfo = NULL;
@@ -78,7 +77,7 @@ Result audio_new(Audio_engine* e) {
     stb_dprintf(STDOUT_FILENO, "\n");
   }
 
-  if ((err = Pa_IsFormatSupported(NULL, &out_port, e->sample_rate)) != paFormatIsSupported) {
+  if ((err = Pa_IsFormatSupported(NULL, &out_port, audio->sample_rate)) != paFormatIsSupported) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "portaudio error: %s\n", Pa_GetErrorText(err));
     return Error;
   }

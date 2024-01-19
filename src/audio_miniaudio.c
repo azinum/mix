@@ -20,14 +20,14 @@ static void stereo_callback(ma_device* device, void* out, const void* in, u32 sa
   audio_engine_process(in, out, (i32)sample_count);
 }
 
-Result audio_new(Audio_engine* e) {
+Result audio_new(Audio_engine* audio) {
   ma_device_config device_config = ma_device_config_init(ma_device_type_playback);
   device_config.playback.format = ma_format_f32;
-  device_config.playback.channels = e->channel_count;
-  device_config.sampleRate = e->sample_rate;
+  device_config.playback.channels = audio->channel_count;
+  device_config.sampleRate = audio->sample_rate;
   device_config.dataCallback = stereo_callback;
   device_config.pUserData = NULL;
-  device_config.periodSizeInFrames = e->frames_per_buffer;
+  device_config.periodSizeInFrames = audio->frames_per_buffer;
 
   if (ma_device_init(NULL, &device_config, &device) != MA_SUCCESS) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "miniaudio error: failed to open playback device\n");
@@ -44,7 +44,7 @@ Result audio_new(Audio_engine* e) {
   return Ok;
 }
 
-void audio_exit(Audio_engine* e) {
-  (void)e;
+void audio_exit(Audio_engine* audio) {
+  (void)audio;
   ma_device_uninit(&device);
 }

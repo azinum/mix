@@ -563,6 +563,21 @@ void ui_free_elements(UI_state* ui, Element* e) {
   if (e->type == ELEMENT_INPUT) {
     buffer_free(&e->data.input.buffer);
   }
+  if (ui->hover == e) {
+    ui->hover = NULL;
+  }
+  if (ui->select == e) {
+    ui->select = NULL;
+  }
+  if (ui->marker == e) {
+    ui->marker = NULL;
+  }
+  if (ui->container == e) {
+    ui->container = NULL;
+  }
+  if (ui->input == e) {
+    ui->input = NULL;
+  }
   for (size_t i = 0; i < e->count; ++i) {
     ui_free_elements(ui, &e->items[i]);
   }
@@ -1108,6 +1123,17 @@ void ui_detach_last(Element* e) {
   }
 }
 
+Element* ui_replace_element(Element* e, Element* new_element) {
+  ASSERT(e != NULL);
+  UI_state* ui = &ui_state;
+  ui_detach_elements(e);
+  *e = *new_element;
+  if (e->id < 2) {
+    e->id = ui->id_counter++;
+  }
+  return e;
+}
+
 Element ui_none(void) {
   Element e;
   ui_element_init(&e, ELEMENT_NONE);
@@ -1349,6 +1375,19 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
     }
     case ELEMENT_TOGGLE: {
       stb_dprintf(fd, "%s\n", bool_str[*e->data.toggle.value == true]);
+      break;
+    }
+    case ELEMENT_SLIDER: {
+      stb_dprintf(fd, "{ ");
+      if (e->data.slider.type == VALUE_TYPE_FLOAT) {
+        stb_dprintf(fd, "value: %g, ", *e->data.slider.v.f);
+        stb_dprintf(fd, "range: { %g, %g }", e->data.slider.range.f_min, e->data.slider.range.f_max);
+      }
+      else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
+        stb_dprintf(fd, "value: %g, ", *e->data.slider.v.i);
+        stb_dprintf(fd, "range: { %d, %d }", e->data.slider.range.i_min, e->data.slider.range.i_max);
+      }
+      stb_dprintf(fd, " }\n");
       break;
     }
     default:

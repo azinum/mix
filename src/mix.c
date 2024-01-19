@@ -150,7 +150,6 @@ void mix_update_and_render(Mix* m) {
       memory_print_info(STDOUT_FILENO);
     }
   }
-
   instrument_update(&audio->instrument, m);
 
   ui_update(m->dt);
@@ -229,8 +228,7 @@ void mix_free(Mix* m) {
   CloseWindow();
 }
 
-void mix_ui_new(Mix* m) {
-  (void)m;
+void mix_ui_new(Mix* mix) {
 
 #ifdef TEST_UI
   {
@@ -255,7 +253,7 @@ void mix_ui_new(Mix* m) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = settings_ui_new(m);
+    Element e = settings_ui_new(mix);
     e.sizing = SIZING_PERCENT(30, 100);
     ui_attach_element(container, &e);
   }

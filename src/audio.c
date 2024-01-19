@@ -32,14 +32,14 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
   };
 }
 
-Result audio_engine_start(Audio_engine* e) {
-  return audio_new(e);
+Result audio_engine_start(Audio_engine* audio) {
+  return audio_new(audio);
 }
 
-Result audio_engine_start_new(Audio_engine* e) {
-  *e = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
-  instrument_init(&e->instrument, e);
-  return audio_new(e);
+Result audio_engine_start_new(Audio_engine* audio) {
+  *audio = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
+  instrument_init(&audio->instrument, audio);
+  return audio_new(audio);
 }
 
 void audio_engine_restart(void) {

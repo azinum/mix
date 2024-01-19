@@ -51,6 +51,7 @@ Element instrument_ui_new(Instrument* ins) {
   container.scissor = true;
   container.placement = PLACEMENT_BLOCK;
   container.background = true;
+  container.sizing = SIZING_PERCENT(100, 100);
   ins->ui_new(ins, &container);
   return container;
 }
