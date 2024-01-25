@@ -2,6 +2,7 @@
 
 Instrument instruments[MAX_INSTRUMENT_ID] = {
   [INSTRUMENT_WAVE_SHAPER] = { .title = "waveshaper", .init = waveshaper_init, .ui_new = waveshaper_ui_new, .update = waveshaper_update, .process = waveshaper_process, .destroy = waveshaper_destroy, },
+  [INSTRUMENT_DUMMY]       = { .title = "dummy",      .init = dummy_init,      .ui_new = dummy_ui_new,      .update = dummy_update,      .process = dummy_process,      .destroy = dummy_destroy, },
 };
 
 static void instrument_init_default(Instrument* ins);
@@ -14,6 +15,7 @@ void instrument_init_default(Instrument* ins) {
   ins->audio_latency = 0;
   ins->blocking = false;
   ins->initialized = false;
+  ins->ui = NULL;
 }
 
 Instrument instrument_new(Instrument_id id) {
@@ -44,16 +46,15 @@ void instrument_init(Instrument* ins, Audio_engine* audio) {
   ins->initialized = true;
 }
 
-Element instrument_ui_new(Instrument* ins) {
+void instrument_ui_new(Instrument* ins, Element* container) {
   ASSERT(ins->initialized && "instrument must be initialized before creating the ui for it");
-  Element container = ui_container(ins->title);
-  container.border = true;
-  container.scissor = true;
-  container.placement = PLACEMENT_BLOCK;
-  container.background = true;
-  container.sizing = SIZING_PERCENT(100, 100);
-  ins->ui_new(ins, &container);
-  return container;
+  ui_set_title(container, ins->title);
+  container->border = true;
+  container->scissor = true;
+  container->placement = PLACEMENT_BLOCK;
+  container->background = true;
+  ins->ui_new(ins, container);
+  ins->ui = container;
 }
 
 void instrument_update(Instrument* ins, struct Mix* mix) {
@@ -81,6 +82,7 @@ void instrument_destroy(Instrument* ins) {
   while (ins->blocking) {
     spin_wait();
   }
+  ui_detach_elements(ins->ui);
   ins->destroy(ins);
   memory_free(ins->buffer);
   ins->buffer = NULL;

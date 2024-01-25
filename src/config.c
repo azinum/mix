@@ -5,6 +5,7 @@
 //
 // TODO:
 //  - control when lua does GC sweeps
+//  - add option to disable lua support
 
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
 

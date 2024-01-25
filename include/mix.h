@@ -70,6 +70,8 @@ struct Mix;
 #include "settings.h"
 #include "instrument.h"
 #include "wave_shaper.h"
+#include "dummy.h"
+#include "instrument_picker.h"
 #include "audio.h"
 
 // #define TEST_UI
@@ -87,6 +89,8 @@ typedef struct Mix {
   i32 bpm;
   f32 timer;
   f32 timer_start;
+
+  Element* ins_container;
 } Mix;
 
 typedef struct Assets {

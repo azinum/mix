@@ -581,6 +581,7 @@ void ui_free_elements(UI_state* ui, Element* e) {
   for (size_t i = 0; i < e->count; ++i) {
     ui_free_elements(ui, &e->items[i]);
   }
+  ui->element_count -= e->count;
   list_free(e);
 }
 
@@ -1099,14 +1100,18 @@ Element* ui_attach_element(Element* target, Element* e) {
 }
 
 void ui_detach_elements(Element* e) {
-  ASSERT(e != NULL);
+  if (!e) {
+    return;
+  }
   UI_state* ui = &ui_state;
   ui_free_elements(ui, e);
   e->items = NULL;
 }
 
 void ui_detach(Element* e, u32 index) {
-  ASSERT(e != NULL);
+  if (!e) {
+    return;
+  }
   if (index < e->count && e->count > 0) {
     ui_detach_elements(&e->items[index]);
     memmove(&e->items[index], &e->items[index + 1], sizeof(Element) * ((e->count - index) - 1));

@@ -26,6 +26,8 @@
 #include "settings.c"
 #include "instrument.c"
 #include "wave_shaper.c"
+#include "dummy.c"
+#include "instrument_picker.c"
 #include "audio.c"
 
 #ifdef TEST_UI
@@ -127,19 +129,19 @@ void mix_update_and_render(Mix* m) {
   delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
 
   if (audio->restart) {
+    mix_restart_audio_engine();
     ui_free();
     ui_init();
-    mix_restart_audio_engine();
     mix_ui_new(m);
   }
 
   if (!ui_input_interacting()) {
     if (IsKeyPressed(KEY_R)) {
-      ui_free();
-      ui_init();
       if (IsKeyDown(KEY_LEFT_CONTROL)) {
         mix_restart_audio_engine();
       }
+      ui_free();
+      ui_init();
       mix_reset(m);
       mix_ui_new(m);
     }
@@ -248,12 +250,20 @@ void mix_ui_new(Mix* mix) {
     container = ui_attach_element(NULL, &e);
   }
   {
-    Element e = instrument_ui_new(&audio->instrument);
+    Element e = ui_container("instrument");
     e.sizing = SIZING_PERCENT(70, 100);
-    ui_attach_element(container, &e);
+    mix->ins_container = ui_attach_element(container, &e);
+    if (audio->instrument.initialized) {
+      instrument_ui_new(&audio->instrument, mix->ins_container);
+    }
   }
+  // {
+  //   Element e = settings_ui_new(mix);
+  //   e.sizing = SIZING_PERCENT(30, 100);
+  //   ui_attach_element(container, &e);
+  // }
   {
-    Element e = settings_ui_new(mix);
+    Element e = instrument_picker_ui_new(mix);
     e.sizing = SIZING_PERCENT(30, 100);
     ui_attach_element(container, &e);
   }

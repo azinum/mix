@@ -42,6 +42,22 @@ Result audio_engine_start_new(Audio_engine* audio) {
   return audio_new(audio);
 }
 
+Result audio_engine_detach_instrument(void) {
+  Audio_engine* audio = &audio_engine;
+  instrument_destroy(&audio->instrument);
+  return Ok;
+}
+
+Instrument* audio_engine_attach_instrument(Instrument* ins) {
+  Audio_engine* audio = &audio_engine;
+  if (audio->instrument.initialized) {
+    audio_engine_detach_instrument();
+  }
+  instrument_init(ins, audio);
+  audio->instrument = *ins;
+  return &audio->instrument;
+}
+
 void audio_engine_restart(void) {
   Audio_engine* audio = &audio_engine;
   audio->restart = true;
@@ -101,12 +117,14 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
 
   Instrument* ins = &audio->instrument;
 
-  // process instruments and effects
-  instrument_process(ins, m, audio, process_dt);
+  if (ins->initialized) {
+    // process instruments and effects
+    instrument_process(ins, m, audio, process_dt);
 
-  // sum all audio buffers
-  for (i32 i = 0; i < sample_count; ++i) {
-    audio->out_buffer[i] += ins->buffer[i];
+    // sum all audio buffers
+    for (i32 i = 0; i < sample_count; ++i) {
+      audio->out_buffer[i] += ins->buffer[i];
+    }
   }
 
   // write to output buffer
