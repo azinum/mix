@@ -11,7 +11,7 @@
 #define _UI_H
 
 // #define UI_DRAW_GUIDES
-#define UI_LOG_HIERARCHY
+// #define UI_LOG_HIERARCHY
 
 #ifndef UI_FRAME_ARENA_SIZE
   #define UI_FRAME_ARENA_SIZE Kb(8)

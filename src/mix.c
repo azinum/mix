@@ -14,6 +14,7 @@
 
 #include "memory.c"
 #include "thread.c"
+#include "glob.c"
 #include "hash.c"
 #include "random.c"
 #include "buffer.c"

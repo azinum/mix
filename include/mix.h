@@ -56,6 +56,7 @@ struct Mix;
 #include "common.h"
 #include "memory.h"
 #include "thread.h"
+#include "glob.h"
 #include "hash.h"
 #include "random.h"
 #include "buffer.h"
