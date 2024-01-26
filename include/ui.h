@@ -30,6 +30,11 @@
   #define UI_SCROLL_SPEED 40
 #endif
 
+// how many seconds to wait until scrollbar hides
+#ifndef UI_SCROLLBAR_DECAY
+  #define UI_SCROLLBAR_DECAY 2.0f
+#endif
+
 typedef struct {
   i32 x;
   i32 y;
@@ -259,6 +264,7 @@ typedef struct UI_state {
   f32 timer;
   f32 tooltip_timer;
   f32 blink_timer;
+  f32 scrollbar_timer;
   f32 slider_deadzone;
   bool (*connection_filter)(struct Element* e, struct Element* target);
 } UI_state;

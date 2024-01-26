@@ -106,6 +106,7 @@ void ui_state_init(UI_state* ui) {
   ui->timer = 0.0f;
   ui->tooltip_timer = 0.0f;
   ui->blink_timer = 0.0f;
+  ui->scrollbar_timer = 0.0f;
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
 }
@@ -529,7 +530,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
   }
 
   if (ui->container == e) {
-    if (ui_container_is_scrollable(e)) {
+    if (ui_container_is_scrollable(e) && ui->scrollbar_timer < UI_SCROLLBAR_DECAY) {
       const i32 content_height = e->data.container.content_height;
       const i32 height = e->box.h;
       const i32 scroll_y = e->data.container.scroll_y;
@@ -849,6 +850,7 @@ void ui_update(f32 dt) {
   ui->dt = dt;
   ui->timer += dt;
   ui->blink_timer += dt;
+  ui->scrollbar_timer += dt;
 
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
@@ -925,9 +927,11 @@ void ui_update(f32 dt) {
   }
   if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
     ui->tooltip_timer = 0.0f;
+    ui->scrollbar_timer = 0.0f;
   }
   if (ui->hover != NULL) {
     ui->tooltip_timer += ui->dt;
+    ui->scrollbar_timer += ui->dt;
   }
   if (ui->container != NULL) {
     ASSERT(ui->container->type == ELEMENT_CONTAINER);
@@ -951,6 +955,9 @@ void ui_update(f32 dt) {
         scroll_y = 0;
       }
       e->data.container.scroll_y = scroll_y;
+      if (wheel.y != 0) {
+        ui->scrollbar_timer = 0.0f;
+      }
     }
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
