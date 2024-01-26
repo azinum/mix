@@ -11,6 +11,6 @@ CC=gcc
 LIBS=-lm
 SRC=src/main.c
 INC=include
-FLAGS=-I${INC} -Wall -Wextra -march=native -ffast-math -ggdb -O0
+FLAGS=-I${INC} -Wall -Wextra -march=native -ggdb -O0
 TARGET=mix
 PREFIX=/usr/local

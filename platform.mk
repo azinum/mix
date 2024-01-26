@@ -28,7 +28,7 @@ else
 endif
 
 ifeq (${USE_STATIC_MEMORY_ALLOCATOR}, 1)
-	FLAGS+=-DMEMORY_ALLOC_STATIC
+	FLAGS+=-DMEMORY_ALLOC_STATIC -DMEMORY_ALLOC_STATIC_PRINT_OVERHEAD -DMEMORY_USE_NAMED_TAGS
 endif
 
 ifeq (${USE_PORTAUDIO}, 1)
@@ -44,7 +44,8 @@ ifeq (${PLATFORM}, LINUX)
 endif
 
 ifeq (${PLATFORM}, WINDOWS)
-	FLAGS+=-DNPROC=`echo ${NUMBER_OF_PROCESSORS}`
+	LIBS+=-lopengl32 -lgdi32 -lwinmm
+	FLAGS+=-DNPROC=${NUMBER_OF_PROCESSORS} -L.\deps\raylib\src -I.\deps\raylib\src
 endif
 
 ifeq (${PLATFORM}, DARWIN)

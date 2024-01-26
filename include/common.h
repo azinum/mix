@@ -88,6 +88,9 @@ typedef uint8_t u8;
 #elif __linux__
   #define TARGET_LINUX
 #elif _WIN32 || _WIN64
+  #define WIN32_LEAN_AND_MEAN
+  #define NOGDI
+  #define NOUSER
   #define TARGET_WINDOWS
   #include <windows.h>
 #elif defined(TARGET_WASM)
