@@ -360,10 +360,10 @@ void ui_render_elements(UI_state* ui, Element* e) {
     factor += 0.4f * (*e->data.toggle.value == true);
   }
 
-  if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE) && e == ui->hover) {
-    factor += 0.1f;
+  if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE || e->type == ELEMENT_SLIDER) && e == ui->hover) {
+    factor += 0.10f;
     if (e == ui->active) {
-      factor += 0.15f;
+      factor += 0.20f;
     }
   }
   background_color = lerp_color(background_color, invert_color(UI_INTERPOLATION_COLOR), factor);
@@ -1382,7 +1382,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
         stb_dprintf(fd, "\"%s\"\n", string);
         break;
       }
-      stb_dprintf(fd, "\"\"\n", string);
+      stb_dprintf(fd, "\"%s\"\n", string);
       break;
     }
     case ELEMENT_TOGGLE: {
@@ -1396,7 +1396,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
         stb_dprintf(fd, "range: { %g, %g }", e->data.slider.range.f_min, e->data.slider.range.f_max);
       }
       else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
-        stb_dprintf(fd, "value: %g, ", *e->data.slider.v.i);
+        stb_dprintf(fd, "value: %d, ", *e->data.slider.v.i);
         stb_dprintf(fd, "range: { %d, %d }", e->data.slider.range.i_min, e->data.slider.range.i_max);
       }
       stb_dprintf(fd, " }\n");
