@@ -124,7 +124,7 @@ const char* bool_str[] = { "false", "true" };
   #define RANDOM_MAX (size_t)((~0-1) >> 1)
 #endif
 
-#if defined(__has_builtin) // will not work for gcc versions < 10, even though the builtins do exist
+#if defined(__has_builtin) // will not work for gcc versions < 10, even though the builtins may exist
   #if __has_builtin(__builtin_expect)
     #define LIKELY(x) (__builtin_expect(((x) != 0), 1))
     #define UNLIKELY(x) (__builtin_expect(((x) != 0), 0))
@@ -157,15 +157,15 @@ const char* bool_str[] = { "false", "true" };
 #if defined(NO_STDIO) && defined(NO_STDLIB)
   #ifdef USE_STB_SPRINTF
     #define STB_WRAP(...) stb_##__VA_ARGS__
-    i32 (*printf(const char* fmt, ...)) = STB_WRAP(printf);
-    i32 (*dprintf(i32 fd, const char* fmt, ...)) = STB_WRAP(dprintf);
-    i32 (*sprintf(char* str, const char* fmt, ...)) = STB_WRAP(sprintf);
-    i32 (*snprintf(char* str, size_t size, const char* fmt, ...)) = STB_WRAP(snprintf);
+    #define printf(...)    stb_printf(__VA_ARGS__)
+    #define dprintf(...)   stb_dprintf(__VA_ARGS__)
+    #define sprintf(...)   stb_sprintf(__VA_ARGS__)
+    #define snprintf(...)  stb_snprintf(__VA_ARGS__)
 
-    i32 (*vprintf(const char* fmt, va_list argp)) = STB_WRAP(vprintf);
-    i32 (*vdprintf(i32 fd, const char* fmt, va_list argp)) = STB_WRAP(vdprintf);
-    i32 (*vsprintf(char* str, const char* fmt, va_list argp)) = STB_WRAP(vsprintf);
-    i32 (*vsnprintf(char* str, size_t size, const char* fmt, va_list argp)) = STB_WRAP(vsnprintf);
+    #define vprintf(...)   stb_vprintf(__VA_ARGS__)
+    #define vdprintf(...)  stb_vdprintf(__VA_ARGS__)
+    #define vsprintf(...)  stb_vsprintf(__VA_ARGS__)
+    #define vsnprintf(...) stb_vsnprintf(__VA_ARGS__)
   #else
     #define STB_WRAP(...) __VA_ARGS__
   #endif
