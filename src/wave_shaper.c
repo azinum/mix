@@ -9,7 +9,6 @@
 static Color color_connected = COLOR_RGB(40, 140, 40);
 static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
-static void waveshaper_canvas_onrender(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
 static void waveshaper_bind_lfo(Element* e, Element* target);
@@ -27,39 +26,6 @@ static void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f3
 static void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
-
-void waveshaper_canvas_onrender(Element* e) {
-  TIMER_START();
-  Instrument* ins = (Instrument*)e->userdata;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-
-  if (!w->render) {
-    return;
-  }
-
-  i32 width = e->box.w - 2 * e->border_thickness;
-  i32 height = e->box.h;
-  i32 x = e->box.x + e->border_thickness;
-  i32 y = e->box.y + height / 2;
-
-  Color color_map[2] = {
-    lerp_color(COLOR_RGB(100, 225, 100), warmer_color(UI_BUTTON_COLOR, 40), 0.4f),
-    lerp_color(COLOR_RGB(100, 225, 100), warmer_color(UI_BUTTON_COLOR, 30), 0.5f),
-  };
-
-  for (size_t i = 0; i < ins->samples; ++i) {
-    f32 sample = CLAMP(ins->buffer[i], -1.0f, 1.0f);
-    i32 x_pos = x + ((f32)i/ins->samples) * width;
-    DrawLine(
-      x_pos,               // x1
-      y,                   // y1
-      x_pos,               // x2
-      y + (height/2 * sample), // y2
-      color_map[(i % 2) == 0]
-    );
-  }
-  ins->latency += TIMER_END();
-}
 
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
@@ -80,7 +46,6 @@ void waveshaper_default(Waveshaper* w) {
   w->speed            = 2;
   w->flipflop         = false;
   w->distortion       = false;
-  w->render           = true;
   w->gain             = 1.0f;
   w->lfo = (Lfo) {
     .lfo_target = NULL,
@@ -250,15 +215,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
-  {
-    Element e = ui_canvas(true);
-    e.box.h = 84;
-    e.sizing = SIZING_PERCENT(100, 0);
-    e.userdata = ins;
-    e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
-    e.onrender = waveshaper_canvas_onrender;
-    ui_attach_element(container, &e);
-  }
   Element line_break = ui_line_break(FONT_SIZE);
 
   const i32 button_height = 48;
@@ -419,13 +375,14 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_attach_element(container, &line_break);
 
   {
-    Element e = ui_text_ex("DRUMPAD", false);
+    Element e = ui_text_ex("DRUMPAD", true);
+    e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
   Element* grid = NULL;
   {
     Element e = ui_grid(DRUMPAD_COLS, true);
-    e.box = BOX(0, 0, 0, DRUMPAD_ROWS * button_height);
+    e.box = BOX(0, 0, DRUMPAD_COLS * button_height/2, DRUMPAD_ROWS * button_height/2);
     e.sizing = SIZING_PERCENT(100, 0);
     e.padding = UI_BORDER_THICKNESS + 1;
     grid = ui_attach_element(container, &e);
@@ -437,7 +394,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       e.userdata = ins;
       e.v.i = x;
       if (!((x + 0) % 4)) {
-        e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.05f);
+        e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.1f);
       }
       else {
         e.background_color = lerp_color(e.background_color, COLOR_RGB(0, 0, 0), 0.05f);
@@ -568,9 +525,6 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     }
     if (IsKeyPressed(KEY_Q)) {
       waveshaper_default(w);
-    }
-    if (IsKeyPressed(KEY_H)) {
-      w->render = !w->render;
     }
   }
 }

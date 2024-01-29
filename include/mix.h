@@ -34,7 +34,7 @@ struct Mix;
 #define DT_MIN (1.0f / FPS_MAX)
 #define DT_MAX (1.0f / FPS_MIN)
 #define CONFIG_PATH "data/init.lua"
-#define BPM 120
+#define BPM 80
 #define SUBTICKS 8
 
 #include "common.h"
@@ -57,6 +57,7 @@ struct Mix;
 #include "wave_shaper.h"
 #include "dummy.h"
 #include "instrument_picker.h"
+#include "control_panel.h"
 #include "audio.h"
 
 #ifdef TEST_UI

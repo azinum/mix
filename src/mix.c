@@ -29,6 +29,7 @@
 #include "wave_shaper.c"
 #include "dummy.c"
 #include "instrument_picker.c"
+#include "control_panel.c"
 #include "audio.c"
 
 #ifdef TEST_UI
@@ -247,25 +248,30 @@ void mix_ui_new(Mix* mix) {
     e.border = false;
     e.background = false;
     e.placement = PLACEMENT_BLOCK;
-    e.padding = 2;
+    e.padding = UI_BORDER_THICKNESS;
     container = ui_attach_element(NULL, &e);
   }
   {
+    Element e = ui_container(NULL);
+    e.sizing = SIZING_PERCENT(100, 10);
+    e.scissor = true;
+    e.border = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.background = true;
+    Element* control_panel = ui_attach_element(container, &e);
+    control_panel_ui_new(mix, control_panel);
+  }
+  {
     Element e = ui_container("instrument");
-    e.sizing = SIZING_PERCENT(70, 100);
+    e.sizing = SIZING_PERCENT(70, 90);
     mix->ins_container = ui_attach_element(container, &e);
     if (audio->instrument.initialized) {
       instrument_ui_new(&audio->instrument, mix->ins_container);
     }
   }
-  // {
-  //   Element e = settings_ui_new(mix);
-  //   e.sizing = SIZING_PERCENT(30, 100);
-  //   ui_attach_element(container, &e);
-  // }
   {
     Element e = instrument_picker_ui_new(mix);
-    e.sizing = SIZING_PERCENT(30, 100);
+    e.sizing = SIZING_PERCENT(30, 90);
     ui_attach_element(container, &e);
   }
 #endif

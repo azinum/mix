@@ -16,7 +16,7 @@ typedef struct Lfo {
 #define LFO_NO_CONNECTION "none"
 
 #define DRUMPAD_ROWS 4
-#define DRUMPAD_COLS 16
+#define DRUMPAD_COLS 32
 
 struct Waveshaper;
 
@@ -44,7 +44,6 @@ typedef struct Waveshaper {
   f32 gain;
   Arena arena;
   char* text;
-  i32 render;
   Lfo lfo;
   char* lfo_connection;
   Drumpad drumpad;
