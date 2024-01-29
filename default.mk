@@ -5,12 +5,11 @@ USE_STATIC_MEMORY_ALLOCATOR=1
 
 USE_PORTAUDIO=1
 USE_MINIAUDIO=0
-INLINE_RAYLIB=0
 
 CC=gcc
 LIBS=-lm
 SRC=src/main.c
 INC=include
-FLAGS=-I${INC} -Wall -Wextra -march=native -ggdb -O0
+FLAGS=-I${INC} -Wall -Wextra -march=native -ggdb -O0 -DMEMORY_ALLOC_STATIC_PRINT_OVERHEAD -DMEMORY_USE_NAMED_TAGS
 TARGET=mix
 PREFIX=/usr/local
