@@ -5,6 +5,8 @@
 *.so
 *.dSYM
 
+docs/
+
 .DS_Store
 mix
 perf.txt
