@@ -417,9 +417,9 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.scissor = false;
     e.background = true;
     e.placement = PLACEMENT_BLOCK;
-    e.border = true;
+    // e.border = true;
     e.background = true;
-    e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.05f);
+    e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);
     e.sizing = SIZING_PERCENT(100, 0);
     e.box.h = 4 * button_height;
     lfo_container = ui_attach_element(container, &e);

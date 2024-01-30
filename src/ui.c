@@ -200,7 +200,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
           }
         }
         Hash hash = ui_hash(e->data.input.value, size);
-        if (hash != e->data.input.value_hash) {
+        if (hash != e->data.input.value_hash && ui->input != e) {
           e->data.input.value_hash = hash;
           switch (e->data.input.value_type) {
             case VALUE_TYPE_FLOAT: {
@@ -470,7 +470,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
             break;
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
-      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, UI_INTERPOLATION_COLOR, 0.2f));
+      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
       DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
       if (e->border_thickness > 0.0f) {
         DrawCircleLines(x + box.w*factor, y + h/2, radius, e->border_color);
@@ -504,7 +504,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     EndScissorMode();
   }
 
-  if (e->border) {
+  if (e->border && e->border_thickness > 0) {
     ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, e->border_color);
   }
 

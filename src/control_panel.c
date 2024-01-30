@@ -1,6 +1,7 @@
 // control_panel.c
 
 static void control_panel_waveform_onrender(Element* e);
+static void control_panel_change_audio_setting(Element* e);
 
 void control_panel_waveform_onrender(Element* e) {
   TIMER_START();
@@ -33,9 +34,12 @@ void control_panel_waveform_onrender(Element* e) {
   (void)dt;
 }
 
-void control_panel_ui_new(Mix* mix, Element* container) {
-  Audio_engine* audio = &audio_engine;
+void control_panel_change_audio_setting(Element* e) {
+  (void)e;
+  audio_engine_restart();
+}
 
+void control_panel_ui_new(Mix* mix, Element* container) {
   const i32 button_height = FONT_SIZE;
   {
     Element e = ui_canvas(true);
@@ -50,9 +54,16 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     Element e = ui_container(NULL);
     e.sizing = SIZING_PERCENT(80, 100);
     e.placement = PLACEMENT_BLOCK;
+    e.background = true;
+    e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);
     rhs_container = ui_attach_element(container, &e);
   }
 
+  {
+    Element e = ui_text_ex("bpm", false);
+    e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
   {
     Element e = ui_input_int("bpm", &mix->bpm);
     e.box.w = FONT_SIZE * 4;
@@ -60,8 +71,38 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     ui_attach_element(rhs_container, &e);
   }
   {
-    Element e = ui_text_ex("bpm", false);
+    Element e = ui_text_ex("tick", false);
     e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_input_int("tick", (i32*)&mix->tick);
+    e.box.w = FONT_SIZE * 4;
+    e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_text_ex("timed tick", false);
+    e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_input_int("timed tick", (i32*)&mix->timed_tick);
+    e.box.w = FONT_SIZE * 4;
+    e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_text_ex("sample rate", false);
+    e.box.h = button_height;
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_input_int("sample rate", &SAMPLE_RATE);
+    e.box.w = FONT_SIZE * 4;
+    e.box.h = button_height;
+    e.tooltip = "changing the sample rate restarts the audio engine";
+    e.onenter = control_panel_change_audio_setting;
     ui_attach_element(rhs_container, &e);
   }
 }

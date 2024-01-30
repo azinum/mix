@@ -248,7 +248,7 @@ void mix_ui_new(Mix* mix) {
     e.border = false;
     e.background = false;
     e.placement = PLACEMENT_BLOCK;
-    e.padding = UI_BORDER_THICKNESS;
+    e.padding = UI_PADDING / 2;
     container = ui_attach_element(NULL, &e);
   }
   {
