@@ -4,7 +4,6 @@
 //  CONFIG_VERBOSE_OUTPUT
 //
 // TODO:
-//  - control when lua does GC sweeps
 //  - add option to disable lua support
 
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
@@ -88,7 +87,6 @@ static Variable variables[] = {
   { "ui_title_bar_padding", T_INT, &UI_TITLE_BAR_PADDING, hook_default },
   { "ui_button_roundness", T_FLOAT, &UI_BUTTON_ROUNDNESS, hook_default },
   { "ui_slider_inner_padding", T_INT, &UI_SLIDER_INNER_PADDING, hook_default },
-  { "ui_slider_knob_size", T_INT, &UI_SLIDER_KNOB_SIZE, hook_default },
   { "ui_theme", T_STRING, &UI_THEME, hook_default },
   { "ui_roundness", T_FLOAT, &UI_ROUNDNESS, hook_default },
 };
@@ -119,6 +117,7 @@ void config_init(void) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to initialize lua state\n");
     return;
   }
+  lua_gc(config.l, LUA_GCSTOP);
   lua_open_libs(config.l);
 }
 

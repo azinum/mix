@@ -12,6 +12,5 @@ ui_border_thickness     = 2.1
 ui_title_bar_padding    = 6
 ui_button_roundness     = 0.00
 ui_slider_inner_padding = 0
-ui_slider_knob_size     = 0
 ui_roundness            = 0.02
 ui_padding              = 6

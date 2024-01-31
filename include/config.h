@@ -38,7 +38,6 @@ static f32 UI_BORDER_THICKNESS = 1.1f;
 static i32 UI_TITLE_BAR_PADDING = 8;
 static f32 UI_BUTTON_ROUNDNESS = 0.1f;
 static i32 UI_SLIDER_INNER_PADDING = 2;
-static i32 UI_SLIDER_KNOB_SIZE = 0;
 static char UI_THEME[MAX_CONFIG_STRING_SIZE] = "dark";
 static f32 UI_ROUNDNESS = 0.0f;
 

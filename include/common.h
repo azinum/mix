@@ -121,7 +121,7 @@ const char* bool_str[] = { "false", "true" };
 #define PI32 3.14159265359f
 
 #ifndef RANDOM_MAX
-  #define RANDOM_MAX (size_t)((~0-1) >> 1)
+  #define RANDOM_MAX (u32)((~0-1) >> 1)
 #endif
 
 #if defined(__has_builtin) // will not work for gcc versions < 10, even though the builtins may exist

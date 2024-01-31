@@ -78,13 +78,19 @@ Element test_ui_new(void) {
 
   {
     Element e = container_default;
-    ui_set_title(&e, "scissor: on");
+    ui_set_title(&e, "sliders");
     e.sizing = SIZING_PERCENT(50, 50);
     e.scissor = true;
     Element* container = ui_attach_element(&test_ui, &e);
+    static f32 values[ELEMENT_COUNT] = {0.0f};
     for (size_t i = 0; i < ELEMENT_COUNT; ++i) {
-      Element e = button_default;
-      e.box.w = 32 + random_number() % 64;
+      values[i] = random_number() / (f32)(RANDOM_MAX >> 2);
+    }
+    for (size_t i = 0; i < ELEMENT_COUNT; ++i) {
+      Element e = ui_slider_float(&values[i], 0.0f, 1.0f);
+      e.data.slider.vertical = true;
+      e.box.w = 20;
+      e.box.h = 120;
       ui_attach_element(container, &e);
     }
   }

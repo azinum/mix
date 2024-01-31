@@ -445,15 +445,10 @@ void ui_render_elements(UI_state* ui, Element* e) {
       break;
     }
     case ELEMENT_SLIDER: {
-      // TODO(lucas): vertical slider
       Box box = ui_expand_box(e->box, -UI_SLIDER_INNER_PADDING);
       Color line_color = lerp_color(e->background_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f);
       ui_render_rectangle(box, e->roundness, line_color);
       Range range = e->data.slider.range;
-      i32 x = box.x;
-      i32 y = box.y;
-      i32 radius = UI_SLIDER_KNOB_SIZE;
-      i32 h = box.h;
       f32 factor = 0.0f;
       switch (e->data.slider.type) {
         case VALUE_TYPE_FLOAT: {
@@ -470,10 +465,11 @@ void ui_render_elements(UI_state* ui, Element* e) {
             break;
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
-      ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
-      DrawCircle(x + box.w*factor, y + h/2, radius, UI_BUTTON_COLOR);
-      if (e->border_thickness > 0.0f) {
-        DrawCircleLines(x + box.w*factor, y + h/2, radius, e->border_color);
+      if (e->data.slider.vertical) {
+        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
+      }
+      else {
+        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
       }
       break;
     }
@@ -773,8 +769,14 @@ void ui_toggle_onclick(struct Element* e) {
 
 void ui_slider_onclick(UI_state* ui, struct Element* e) {
   Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
-  i32 x_delta = ui->mouse.x - box.x;
-  f32 factor = x_delta / (f32)box.w;
+
+  i32 delta = ui->mouse.x - box.x;
+  f32 factor = delta / (f32)box.w;
+  if (e->data.slider.vertical) {
+    delta = ui->mouse.y - box.y;
+    factor = 1.0f - (delta / (f32)box.h);
+  }
+
   f32 deadzone = e->data.slider.deadzone;
   Range range = e->data.slider.range;
   switch (e->data.slider.type) {
