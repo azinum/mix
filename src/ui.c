@@ -1658,7 +1658,7 @@ void ui_update_input(UI_state* ui, Element* e) {
 }
 
 void ui_render_input(UI_state* ui, Element* e) {
-  i32 cursor = e->data.input.cursor;
+  const i32 cursor = e->data.input.cursor;
   ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, UI_FOCUS_COLOR);
   Box cursor_box = BOX(
     e->box.x + cursor * FONT_SIZE/2,
@@ -1668,7 +1668,7 @@ void ui_render_input(UI_state* ui, Element* e) {
   );
   cursor_box = ui_pad_box(cursor_box, 2);
   cursor_box.w = 1;
-  f32 blink = cosf(ui->blink_timer * 5);
+  const f32 blink = cosf(ui->blink_timer * 5);
   if (blink > 0) {
     ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
   }

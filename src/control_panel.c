@@ -19,16 +19,22 @@ void control_panel_waveform_onrender(Element* e) {
     lerp_color(COLOR_RGB(130, 235, 100), warmer_color(UI_BUTTON_COLOR, 30), 0.1f),
   };
 
-  for (size_t i = 0; i < samples; ++i) {
-    f32 sample = CLAMP(buffer[i], -1.0f, 1.0f);
-    i32 x_pos = x + ((f32)i/samples) * width;
+  DrawLine(x, y, x + width, y, COLOR(255, 255, 255, 50));
+  f32 sample = 0;
+  f32 prev_sample = 0;
+  f32 sample_index = 0;
+  f32 sample_step = samples / (f32)width;
+  for (i32 i = 0; i < width && sample_index < (f32)samples; ++i) {
+    prev_sample = sample;
+    sample = CLAMP(buffer[(size_t)sample_index], -1, 1);
     DrawLine(
-      x_pos,               // x1
-      y,                   // y1
-      x_pos,               // x2
-      y + (height/2 * sample), // y2
-      color_map[(i % 2) == 0]
+      x + i,
+      y + (height/2 * prev_sample),
+      x + i + 1,
+      y + (height/2 * sample),
+      color_map[0]
     );
+    sample_index += sample_step;
   }
   f32 dt = TIMER_END();
   (void)dt;
