@@ -32,7 +32,7 @@ void control_panel_waveform_onrender(Element* e) {
       y + (height/2 * prev_sample),
       x + i + 1,
       y + (height/2 * sample),
-      color_map[0]
+      color_map[i % 2]
     );
     sample_index += sample_step;
   }

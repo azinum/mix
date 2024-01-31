@@ -109,21 +109,23 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     audio->out_buffer[i] = 0;
   }
 
-  if (in) {
-    for (i32 i = 0; i < sample_count; ++i) {
-      audio->in_buffer[i] = ((f32*)in)[i];
+  if (!m->paused) {
+    if (in) {
+      for (i32 i = 0; i < sample_count; ++i) {
+        audio->in_buffer[i] = ((f32*)in)[i];
+      }
     }
-  }
 
-  Instrument* ins = &audio->instrument;
+    Instrument* ins = &audio->instrument;
 
-  if (ins->initialized) {
-    // process instruments and effects
-    instrument_process(ins, m, audio, process_dt);
+    if (ins->initialized) {
+      // process instruments and effects
+      instrument_process(ins, m, audio, process_dt);
 
-    // sum all audio buffers
-    for (i32 i = 0; i < sample_count; ++i) {
-      audio->out_buffer[i] += ins->buffer[i];
+      // sum all audio buffers
+      for (i32 i = 0; i < sample_count; ++i) {
+        audio->out_buffer[i] += ins->buffer[i];
+      }
     }
   }
 

@@ -41,12 +41,12 @@ static f32 delta_buffer[128] = {0};
 Mix mix = {0};
 Assets assets = {0};
 
-Result mix_init(Mix* m);
-void mix_reset(Mix* m);
-void mix_update_and_render(Mix* m);
-void mix_free(Mix* m);
-void mix_ui_new(Mix* m);
-void render_delta_buffer(Mix* m);
+Result mix_init(Mix* mix);
+void mix_reset(Mix* mix);
+void mix_update_and_render(Mix* mix);
+void mix_free(Mix* mix);
+void mix_ui_new(Mix* mix);
+void render_delta_buffer(Mix* mix);
 void assets_load(Assets* a);
 void assets_unload(Assets* a);
 
@@ -99,7 +99,6 @@ i32 mix_main(i32 argc, char** argv) {
     if (mix.dt > DT_MAX) {
       mix.dt = DT_MAX;
     }
-    mix.timer += mix.dt;
     f32 timestamp = mix.timer_start + ((60.0f / mix.bpm) / SUBTICKS);
     if (mix.timer >= timestamp) {
       f32 delta = mix.timer - timestamp;
@@ -107,7 +106,10 @@ i32 mix_main(i32 argc, char** argv) {
       mix.timed_tick += 1;
     }
     mix.fps = 1.0f / mix.dt;
-    mix.tick += 1;
+    if (!mix.paused) {
+      mix.timer += mix.dt;
+      mix.tick += 1;
+    }
   }
   config_free();
   mix_free(&mix);
@@ -124,17 +126,17 @@ Result mix_restart_audio_engine(void) {
   return Ok;
 }
 
-void mix_update_and_render(Mix* m) {
+void mix_update_and_render(Mix* mix) {
   Audio_engine* audio = &audio_engine;
 
-  m->mouse = GetMousePosition();
-  delta_buffer[m->tick % LENGTH(delta_buffer)] = m->dt;
+  mix->mouse = GetMousePosition();
+  delta_buffer[mix->tick % LENGTH(delta_buffer)] = mix->dt;
 
   if (audio->restart) {
     mix_restart_audio_engine();
     ui_free();
     ui_init();
-    mix_ui_new(m);
+    mix_ui_new(mix);
   }
 
   if (!ui_input_interacting()) {
@@ -144,8 +146,11 @@ void mix_update_and_render(Mix* m) {
       }
       ui_free();
       ui_init();
-      mix_reset(m);
-      mix_ui_new(m);
+      mix_reset(mix);
+      mix_ui_new(mix);
+    }
+    if (IsKeyPressed(KEY_SPACE)) {
+      mix->paused = !mix->paused;
     }
     if (IsKeyPressed(KEY_L)) {
       config_load(CONFIG_PATH);
@@ -154,9 +159,9 @@ void mix_update_and_render(Mix* m) {
       memory_print_info(STDOUT_FILENO);
     }
   }
-  instrument_update(&audio->instrument, m);
+  instrument_update(&audio->instrument, mix);
 
-  ui_update(m->dt);
+  ui_update(mix->dt);
   ui_render();
 
 #if 1
@@ -177,7 +182,7 @@ void mix_update_and_render(Mix* m) {
 
   DrawText(debug_text, 4, GetScreenHeight() - (0.5 * UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 3, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 #endif
-  render_delta_buffer(m);
+  render_delta_buffer(mix);
 }
 
 void onclick_test(Element* e) {
@@ -195,7 +200,7 @@ void onclick_test(Element* e) {
   );
 }
 
-Result mix_init(Mix* m) {
+Result mix_init(Mix* mix) {
   log_init(is_terminal(STDOUT_FILENO) && is_terminal(STDERR_FILENO));
   memory_init();
   random_init(time(0));
@@ -204,24 +209,25 @@ Result mix_init(Mix* m) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "config file `%s` does not exist, creating new with default settings\n", CONFIG_PATH);
     config_store(CONFIG_PATH);
   }
-  mix_reset(m);
+  mix_reset(mix);
   ui_init();
   if (audio_engine_start_new(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
-  mix_ui_new(m);
+  mix_ui_new(mix);
   return Ok;
 }
 
-void mix_reset(Mix* m) {
-  m->mouse = (Vector2) {0, 0};
-  m->fps = 0;
-  m->dt = DT_MIN;
-  m->tick = 0;
-  m->timed_tick = 0;
-  m->bpm = BPM;
-  m->timer = 0.0f;
-  m->timer_start = 0.0f;
+void mix_reset(Mix* mix) {
+  mix->mouse = (Vector2) {0, 0};
+  mix->fps = 0;
+  mix->dt = DT_MIN;
+  mix->tick = 0;
+  mix->timed_tick = 0;
+  mix->bpm = BPM;
+  mix->timer = 0.0f;
+  mix->timer_start = 0.0f;
+  mix->paused = false;
 }
 
 void mix_free(Mix* m) {
@@ -277,7 +283,7 @@ void mix_ui_new(Mix* mix) {
 #endif
 }
 
-void render_delta_buffer(Mix* m) {
+void render_delta_buffer(Mix* mix) {
   i32 w = LENGTH(delta_buffer);
   i32 h = 38;
   i32 x = GetScreenWidth() - w - 8;
@@ -308,7 +314,7 @@ void render_delta_buffer(Mix* m) {
       }
     }
     DrawLine(x + i, (y + h) - h*(prev_sample / DT_MAX), x + i + 1, (y + h) - h*(sample / DT_MAX), color);
-    if (i == (m->tick % LENGTH(delta_buffer))) {
+    if (i == (mix->tick % LENGTH(delta_buffer))) {
       color = COLOR(255, 255, 255, 150);
       DrawLine(x + i, y+h, x + i, y, color);
     }
@@ -317,7 +323,7 @@ void render_delta_buffer(Mix* m) {
 
   dt_avg /= window_size;
   static char text[32] = {0};
-  stb_snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)m->fps);
+  stb_snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)mix->fps);
   DrawText(text, x, y - (0.5f*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
 }
 

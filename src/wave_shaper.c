@@ -224,7 +224,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_toggle_ex(&w->mute, "mute");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.tooltip = "mute (SPACEBAR)";
+    e.tooltip = "mute";
     ui_attach_element(container, &e);
   }
   {
@@ -519,9 +519,6 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     }
     if (IsKeyPressed(KEY_F)) {
       w->freeze = !w->freeze;
-    }
-    if (IsKeyPressed(KEY_SPACE)) {
-      w->mute = !w->mute;
     }
     if (IsKeyPressed(KEY_Q)) {
       waveshaper_default(w);
