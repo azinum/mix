@@ -4,9 +4,9 @@ Audio_engine audio_engine = {0};
 extern Result audio_new(Audio_engine* e);
 extern void audio_exit(Audio_engine* e);
 
-#ifdef USE_MINIAUDIO
+#if defined(USE_MINIAUDIO)
   #include "audio_miniaudio.c"
-#elif USE_PORTAUDIO
+#elif defined(USE_PORTAUDIO)
   #include "audio_pa.c"
 #else
   #include "audio_null.c"

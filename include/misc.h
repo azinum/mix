@@ -9,5 +9,6 @@ extern Color warmer_color(Color a, u8 amount);
 extern Color invert_color(Color a);
 extern void print_bits(i32 fd, char byte);
 extern Color hex_string_to_color(char* hex);
+extern f32 get_time(void);
 
 #endif // _MISC_H

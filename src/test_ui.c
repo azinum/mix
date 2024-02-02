@@ -15,7 +15,9 @@ void button_onclick(Element* e) {
 }
 
 Element test_ui_new(void) {
-  random_init(0xbadb011);
+  // random_init(0xbadb011);
+  f32 seed = get_time();
+  random_init(hash_djb2((u8*)&seed, sizeof(seed)));
   Element test_ui = ui_container(NULL);
   test_ui.sizing = SIZING_PERCENT(100, 100);
   test_ui.scissor = false;
@@ -61,6 +63,7 @@ Element test_ui_new(void) {
   Element float_input_default = ui_input_float("some_float", &some_float);
 
   Element some_int_text = ui_text("some_int");
+  some_int_text.box.h = FONT_SIZE;
   some_int_text.sizing = SIZING_PERCENT(100, 0);
   Element some_float_text = ui_text("some_float");
   some_float_text.sizing = SIZING_PERCENT(100, 0);
@@ -68,11 +71,11 @@ Element test_ui_new(void) {
   Element elements[] = {
     some_int_text,
     int_slider_default,
-    some_float_text,
+    //some_float_text,
     float_slider_default,
-    some_int_text,
+    //some_int_text,
     int_input_default,
-    some_float_text,
+    //some_float_text,
     float_input_default,
   };
 
@@ -99,18 +102,11 @@ Element test_ui_new(void) {
     e.sizing = SIZING_PERCENT(50, 50);
     e.scissor = true;
     Element* container = ui_attach_element(&test_ui, &e);
-    for (size_t i = 0; i < 16; ++i) {
-      Element e = button_default;
-      e.box.w = 32 + random_number() % 64;
-      ui_attach_element(container, &e);
-    }
-    Element line_break = ui_line_break(FONT_SIZE);
-    ui_attach_element(container, &line_break);
-    {
-      Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
-      e.sizing = SIZING_PERCENT(100, 0);
-      ui_attach_element(container, &e);
-    }
+    // {
+    //   Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
+    //   e.sizing = SIZING_PERCENT(100, 0);
+    //   ui_attach_element(container, &e);
+    // }
     for (size_t i = 0; i < LENGTH(elements); ++i) {
       Element e = elements[i];
       switch (e.type) {
@@ -128,6 +124,13 @@ Element test_ui_new(void) {
           break;
         }
       }
+      ui_attach_element(container, &e);
+    }
+    Element line_break = ui_line_break(FONT_SIZE);
+    ui_attach_element(container, &line_break);
+    for (size_t i = 0; i < 16; ++i) {
+      Element e = button_default;
+      e.box.w = 32 + random_number() % 64;
       ui_attach_element(container, &e);
     }
   }

@@ -867,6 +867,7 @@ void ui_update(f32 dt) {
 
   ui->element_update_count = 0;
   ui->element_render_count = 0;
+
   ui->prev_mouse = ui->mouse;
   ui->mouse = GetMousePosition();
   ui->hover = NULL;
@@ -1111,6 +1112,9 @@ Element* ui_attach_element(Element* target, Element* e) {
 void ui_detach_elements(Element* e) {
   if (!e) {
     return;
+  }
+  if (e->type == ELEMENT_CONTAINER) {
+    e->data.container.scroll_y = 0;
   }
   UI_state* ui = &ui_state;
   ui_free_elements(ui, e);
