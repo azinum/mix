@@ -17,23 +17,23 @@ inline u32 thread_get_id(void) {
 #elif defined(__x86_64__)
   asm("mov %%fs:0x10, %0" : "=r" (thread_id));
 #else
-  #error "thread_get_id: unsupported architecture."
+  // #error "thread_get_id: unsupported architecture."
 #endif
   return thread_id;
 }
 
-u64 atomic_fetch_add(volatile u64* target, u64 value) {
-  u64 result = __atomic_fetch_add(target, value, __ATOMIC_SEQ_CST); // Fetch value and then add
+size_t atomic_fetch_add(volatile size_t* target, size_t value) {
+  size_t result = __atomic_fetch_add(target, value, __ATOMIC_SEQ_CST); // Fetch value and then add
   return result;
 }
 
-u64 atomic_compare_exchange(volatile u64* target, u64 value, u64 expected) {
-  u64 result = __atomic_compare_exchange(target, &expected, &value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+size_t atomic_compare_exchange(volatile size_t* target, size_t value, size_t expected) {
+  size_t result = __atomic_compare_exchange(target, &expected, &value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
   return result;
 }
 
 inline void ticket_mutex_begin(Ticket_mutex* mutex) {
-  u64 ticket = atomic_fetch_add(&mutex->ticket, 1);
+  size_t ticket = atomic_fetch_add(&mutex->ticket, 1);
   while (ticket != mutex->serving) {
     spin_wait();
   };

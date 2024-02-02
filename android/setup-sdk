@@ -1,0 +1,16 @@
+#!/bin/sh
+
+DEFAULT_SDK_DIR=~/Android/Sdk
+PROPERTIES_FILE=local.properties
+
+if [ ! -f ${PROPERTIES_FILE} ]; then
+	echo "${PROPERTIES_FILE} does not exist."
+	read -p "Path to android SDK [${DEFAULT_SDK_DIR}]: " SDK_PATH
+	if [ ! ${SDK_PATH} ]; then
+		echo "No SDK path was specified; using default: ${DEFAULT_SDK_DIR}"
+		SDK_PATH=${DEFAULT_SDK_DIR}
+	fi
+	echo "Creating properties file ${PROPERTIES_FILE}"
+	echo "sdk.dir=${SDK_PATH}" > ${PROPERTIES_FILE} && echo "Success."
+fi
+

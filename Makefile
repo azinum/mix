@@ -34,10 +34,13 @@ deps:
 test:
 	${CC} src/test.c -o test ${FLAGS}
 
+android:
+	make -C android
+
 run:
 	./${TARGET}
 
 clean:
 	rm -f ${TARGET}
 
-.PHONY: ${TARGET} clean test deps
+.PHONY: ${TARGET} clean test deps android

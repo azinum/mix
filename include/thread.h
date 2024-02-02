@@ -4,14 +4,14 @@
 #define _THREAD_H
 
 typedef struct Ticket_mutex {
-  volatile u64 ticket;
-  volatile u64 serving;
+  volatile size_t ticket;
+  volatile size_t serving;
 } Ticket_mutex;
 
 extern void spin_wait(void);
 extern u32 thread_get_id(void);
-extern u64 atomic_fetch_add(volatile u64* target, u64 value);
-extern u64 atomic_compare_exchange(volatile u64* target, u64 value, u64 expected);
+extern size_t atomic_fetch_add(volatile size_t* target, size_t value);
+extern size_t atomic_compare_exchange(volatile size_t* target, size_t value, size_t expected);
 extern void ticket_mutex_begin(Ticket_mutex* mutex);
 extern void ticket_mutex_end(Ticket_mutex* mutex);
 
