@@ -35,6 +35,14 @@
   #define UI_SCROLLBAR_DECAY 2.0f
 #endif
 
+#ifndef MAX_ALERT_TEXT_SIZE
+  #define MAX_ALERT_TEXT_SIZE 512
+#endif
+
+#ifndef UI_ALERT_DECAY
+  #define UI_ALERT_DECAY 3.0f
+#endif
+
 typedef struct {
   i32 x;
   i32 y;
@@ -264,9 +272,11 @@ typedef struct UI_state {
   f32 timer;
   f32 tooltip_timer;
   f32 blink_timer;
+  f32 alert_timer;
   f32 scrollbar_timer;
   f32 slider_deadzone;
   bool (*connection_filter)(struct Element* e, struct Element* target);
+  char alert_text[512];
 } UI_state;
 
 extern UI_state ui_state;
@@ -285,6 +295,8 @@ void ui_set_title(Element* e, char* title);
 void ui_reset_connection_filter(void);
 // is the user currently interacting with an input element?
 bool ui_input_interacting(void);
+void ui_alert_simple(const char* message);
+void ui_alert(const char* format, ...);
 
 Element* ui_attach_element(Element* target, Element* e);
 void    ui_detach_elements(Element* e); // detach child nodes of this element

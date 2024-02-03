@@ -46,9 +46,11 @@ static bool ui_container_is_scrollable(Element* e);
 static Box  ui_pad_box(Box box, i32 padding);
 static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
 static Box  ui_expand_box(Box box, i32 padding);
+static Box  ui_expand_box_ex(Box box, i32 x_padding, i32 y_padding);
 static void ui_center_of(const Box* box, i32* x, i32* y);
 static void ui_render_tooltip(UI_state* ui, char* tooltip);
 static void ui_render_tooltip_of_element(UI_state* ui, Element* e);
+static void ui_render_alert(UI_state* ui);
 static Hash ui_hash(const u8* data, const size_t size);
 static void ui_onclick(struct Element* e);
 static void ui_toggle_onclick(struct Element* e);
@@ -107,8 +109,10 @@ void ui_state_init(UI_state* ui) {
   ui->tooltip_timer = 0.0f;
   ui->blink_timer = 0.0f;
   ui->scrollbar_timer = 0.0f;
+  ui->alert_timer = 0.0f;
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
+  memset(&ui->alert_text, 0, sizeof(ui->alert_text));
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
@@ -666,6 +670,10 @@ Box ui_expand_box(Box box, i32 padding) {
   return ui_pad_box(box, -padding);
 }
 
+Box ui_expand_box_ex(Box box, i32 x_padding, i32 y_padding) {
+  return ui_pad_box_ex(box, -x_padding, -y_padding);
+}
+
 void ui_center_of(const Box* box, i32* x, i32* y) {
   *x = box->x + box->w / 2;
   *y = box->y + box->h / 2;
@@ -746,6 +754,37 @@ void ui_render_tooltip_of_element(UI_state* ui, Element* e) {
     ui_render_tooltip(ui, tooltip);
   }
   memset(tooltip, 0, sizeof(tooltip));
+}
+
+void ui_render_alert(UI_state* ui) {
+  if (ui->alert_text[0] == 0) {
+    return;
+  }
+
+  char* text = ui->alert_text;
+  Element* root = &ui->root;
+  const Font font = assets.font;
+  const i32 font_size = FONT_SIZE;
+  const i32 spacing = 0;
+  const i32 line_spacing = UI_LINE_SPACING;
+  Box box = BOX(0, 0, root->box.w * 0.2f, 0);
+  ui_measure_text(
+    font,
+    text,
+    &box,
+    false, // allow overflow
+    true,  // text wrapping
+    font_size,
+    spacing,
+    line_spacing
+  );
+  box.x += (root->box.x + root->box.w - box.w - UI_PADDING) - 2 * UI_PADDING;
+  box.y += (root->box.y) + 2 * UI_PADDING;
+
+  Box padded_box = ui_expand_box_ex(box, 2 * UI_PADDING, UI_PADDING);
+  ui_render_rectangle(padded_box, UI_ROUNDNESS, UI_BACKGROUND_COLOR);
+  ui_render_rectangle_lines(padded_box, UI_BORDER_THICKNESS, UI_ROUNDNESS, UI_BORDER_COLOR);
+  ui_render_text(font, ui->alert_text, &box, true, font_size, spacing, UI_LINE_SPACING, UI_TEXT_COLOR);
 }
 
 Hash ui_hash(const u8* data, const size_t size) {
@@ -853,6 +892,10 @@ void ui_update(f32 dt) {
   ui->timer += dt;
   ui->blink_timer += dt;
   ui->scrollbar_timer += dt;
+  ui->alert_timer -= dt;
+  if (ui->alert_timer <= 0.0f) {
+    ui->alert_timer = 0;
+  }
 
   Element* root = &ui->root;
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
@@ -1066,6 +1109,9 @@ void ui_render(void) {
       }
     }
   }
+  if (ui->alert_timer > 0.0f) {
+    ui_render_alert(ui);
+  }
   ui->latency += TIMER_END();
   ui->render_latency = TIMER_END();
 }
@@ -1105,6 +1151,19 @@ void ui_reset_connection_filter(void) {
 bool ui_input_interacting(void) {
   UI_state* ui = &ui_state;
   return ui->input != NULL;
+}
+
+void ui_alert_simple(const char* message) {
+  ui_alert("%s", message);
+}
+
+void ui_alert(const char* format, ...) {
+  UI_state* ui = &ui_state;
+  va_list argp;
+  va_start(argp, format);
+  vsnprintf(ui->alert_text, sizeof(ui->alert_text), format, argp);
+  va_end(argp);
+  ui->alert_timer = UI_ALERT_DECAY;
 }
 
 Element* ui_attach_element(Element* target, Element* e) {

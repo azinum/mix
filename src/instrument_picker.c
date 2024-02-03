@@ -57,7 +57,7 @@ Element instrument_picker_ui_new(struct Mix* mix) {
 
   {
     Element e = ui_button("detach");
-    e.box.h = button_height;
+    e.box.h = button_height * 2;
     e.sizing = SIZING_PERCENT(100, 0);
     e.onclick = picker_detach_current;
     e.background_color = warmer_color(e.background_color, 80);
