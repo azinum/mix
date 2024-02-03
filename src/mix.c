@@ -10,6 +10,11 @@
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
 
+#ifdef TARGET_ANDROID
+  #include "helper.c"
+  #include "features.c"
+#endif
+
 #include "ext/lua/luaone.c"
 
 #include "memory.c"

@@ -119,6 +119,14 @@ void config_init(void) {
   }
   lua_gc(config.l, LUA_GCSTOP);
   lua_open_libs(config.l);
+#ifdef TARGET_ANDROID
+  WINDOW_WIDTH = 0;
+  WINDOW_HEIGHT = 0;
+  WINDOW_FULLSCREEN = true;
+  UI_ROUNDNESS = 0;
+  UI_BUTTON_ROUNDNESS = 0;
+  UI_PADDING = 4;
+#endif
 }
 
 Result config_store(const char* path) {

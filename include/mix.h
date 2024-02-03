@@ -7,6 +7,10 @@ struct Mix;
 
 #include <raylib.h>
 
+#ifdef TARGET_ANDROID
+  #include "raymob.h"
+#endif
+
 #include <time.h>
 #include <math.h>
 #include <fcntl.h>

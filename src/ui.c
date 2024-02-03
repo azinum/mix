@@ -917,6 +917,9 @@ void ui_update(f32 dt) {
         }
         else if (ui->select->type == ELEMENT_INPUT) {
           ui_input_onclick(ui, ui->select);
+#ifdef TARGET_ANDROID
+          ShowSoftKeyboard();
+#endif
         }
         ui->select->onclick(ui->select);
       }
@@ -947,6 +950,14 @@ void ui_update(f32 dt) {
     if (KEY_PRESSED(KEY_UP)) {
       wheel.y += 1;
     }
+
+#ifdef TARGET_ANDROID
+    Vector2 drag = GetGestureDragVector();
+    if (IsGestureDetected(GESTURE_DRAG)) {
+      wheel.y = drag.y;
+    }
+#endif
+
     i32 content_height = e->data.container.content_height;
     if (ui_container_is_scrollable(e)) {
       scroll_y += wheel.y * UI_SCROLL_SPEED;

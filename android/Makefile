@@ -18,3 +18,6 @@ run:
 
 log:
 	adb logcat -c && adb logcat -v tag | grep -e 'I/Debug' --color=auto -i
+
+clean:
+	rm -dr app/build
