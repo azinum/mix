@@ -1,5 +1,11 @@
 // dummy.c
 
+static void dummy_onclick(Element* e);
+
+void dummy_onclick(Element* e) {
+  (void)e;
+}
+
 void dummy_init(Instrument* ins) {
   (void)ins;
 }
@@ -12,6 +18,7 @@ void dummy_ui_new(Instrument* ins, Element* container) {
     Element e = ui_button("dummy");
     e.box.h = button_height;
     e.sizing = SIZING_PERCENT(100, 0);
+    e.onclick = dummy_onclick;
     ui_attach_element(container, &e);
   }
 }

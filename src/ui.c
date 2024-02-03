@@ -987,6 +987,8 @@ void ui_update(f32 dt) {
     Element* e = ui->container;
     Vector2 wheel = GetMouseWheelMoveV();
     i32 scroll_y = e->data.container.scroll_y;
+    i32 content_height = e->data.container.content_height;
+    i32 content_height_delta = content_height - e->box.h;
     if (KEY_PRESSED(KEY_DOWN)) {
       wheel.y -= 1;
     }
@@ -995,16 +997,26 @@ void ui_update(f32 dt) {
     }
 
 #ifdef TARGET_ANDROID
-    Vector2 drag = GetGestureDragVector();
-    if (IsGestureDetected(GESTURE_DRAG)) {
-      wheel.y = drag.y;
+    static Vector2 drag = {0, 0};
+    static Vector2 prev_drag = {0, 0};
+    i32 gesture = GetGestureDetected();
+    if ((gesture & GESTURE_HOLD) || (gesture & GESTURE_DRAG)) {
+      prev_drag = drag;
+      drag = GetGestureDragVector();
+      Vector2 delta = {
+        prev_drag.x - drag.x,
+        prev_drag.y - drag.y,
+      };
+      wheel.x = -delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED;
+      wheel.y = -delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED;
+    }
+    else {
+      prev_drag = drag = (Vector2) {0, 0};
     }
 #endif
 
-    i32 content_height = e->data.container.content_height;
     if (ui_container_is_scrollable(e)) {
       scroll_y += wheel.y * UI_SCROLL_SPEED;
-      i32 content_height_delta = content_height - e->box.h;
       if (-scroll_y > content_height_delta) {
         scroll_y = -content_height_delta;
       }

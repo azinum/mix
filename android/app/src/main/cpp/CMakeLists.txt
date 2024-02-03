@@ -35,7 +35,7 @@ target_compile_definitions(${APP_LIB_NAME} PRIVATE PLATFORM_ANDROID)
 # Apply flags depending on the build type
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_definitions(${APP_LIB_NAME} PRIVATE _DEBUG DEBUG)
-	set(CMAKE_C_FLAGS_DEBUG "-g -fno-limit-debug-info -DUSE_MINIAUDIO -DTARGET_ANDROID -DTEST_UI")
+	set(CMAKE_C_FLAGS_DEBUG "-g -fno-limit-debug-info -DUSE_MINIAUDIO -DTARGET_ANDROID")
 elseif(CMAKE_BUILD_TYPE MATCHES "Release")
     set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG -DUSE_MINIAUDIO -DTARGET_ANDROID")
 endif()
