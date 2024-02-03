@@ -199,9 +199,7 @@ void waveshaper_init(Instrument* ins) {
   MEMORY_TAG("waveshaper: arena");
   *w = (Waveshaper) {
     .arena = arena_new(ARENA_SIZE),
-    .text = NULL,
   };
-  w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   waveshaper_default(w);
 }
@@ -210,14 +208,13 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_set_slider_deadzone(0.01f);
   ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  {
-    Element e = ui_text(w->text);
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(container, &e);
-  }
   Element line_break = ui_line_break(FONT_SIZE);
 
+#ifdef TARGET_ANDROID
+  const i32 button_height = 64;
+#else
   const i32 button_height = 48;
+#endif
   const i32 slider_height = FONT_SIZE;
   const i32 input_height = slider_height;
   {
@@ -382,7 +379,11 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   Element* grid = NULL;
   {
     Element e = ui_grid(DRUMPAD_COLS, true);
+#ifdef TARGET_ANDROID
+    e.box = BOX(0, 0, DRUMPAD_COLS * button_height, DRUMPAD_ROWS * button_height);
+#else
     e.box = BOX(0, 0, DRUMPAD_COLS * button_height/2, DRUMPAD_ROWS * button_height/2);
+#endif
     e.sizing = SIZING_PERCENT(100, 0);
     e.padding = UI_BORDER_THICKNESS + 1;
     grid = ui_attach_element(container, &e);
@@ -485,8 +486,6 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   (void)mix;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_reset(&w->arena);
-  w->text = arena_alloc(&w->arena, INFO_TEXT_SIZE);
-  stb_snprintf(w->text, INFO_TEXT_SIZE, "latency: %g ms\naudio_latency: %g ms", 1000 * ins->latency, 1000 * ins->audio_latency);
 
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);

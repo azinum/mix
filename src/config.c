@@ -120,6 +120,9 @@ void config_init(void) {
   lua_gc(config.l, LUA_GCSTOP);
   lua_open_libs(config.l);
 #ifdef TARGET_ANDROID
+  FONT_SIZE = 36;
+  UI_FONT_BASE_SIZE = FONT_SIZE;
+  UI_LINE_SPACING = FONT_SIZE;
   WINDOW_WIDTH = 0;
   WINDOW_HEIGHT = 0;
   WINDOW_FULLSCREEN = true;
@@ -172,6 +175,7 @@ Result config_load(const char* path) {
   }
   f32 dt = TIMER_END();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "loaded config `%s` in %g ms (%zu hooks)\n", path, 1000 * dt, num_hooks_called);
+  ui_alert("loaded config %s in %g ms (%zu hooks)", path, 1000 * dt, num_hooks_called);
   config.load_count += 1;
   config_free();
   return Ok;

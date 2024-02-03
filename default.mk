@@ -10,6 +10,6 @@ CC=gcc
 LIBS=-lm
 SRC=src/main.c
 INC=include
-FLAGS=-I${INC} -Wall -Wextra -march=native -ggdb -O0 -DMEMORY_ALLOC_STATIC_PRINT_OVERHEAD -DMEMORY_USE_NAMED_TAGS
+FLAGS=-I${INC} -Wall -Wextra -march=native -ggdb -O0
 TARGET=mix
 PREFIX=/usr/local

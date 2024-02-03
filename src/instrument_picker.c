@@ -25,7 +25,7 @@ Element instrument_picker_ui_new(struct Mix* mix) {
   picker.scissor = true;
   picker.placement = PLACEMENT_BLOCK;
   picker.background = true;
-  const i32 button_height = FONT_SIZE;
+  i32 button_height = FONT_SIZE;
   const i32 line_break_height = FONT_SIZE / 2;
   Element line_break = ui_line_break(line_break_height);
 
@@ -55,9 +55,11 @@ Element instrument_picker_ui_new(struct Mix* mix) {
 
   ui_attach_element(&picker, &line_break);
 
+  button_height = FONT_SIZE * 2;
+
   {
     Element e = ui_button("detach");
-    e.box.h = button_height * 2;
+    e.box.h = button_height;
     e.sizing = SIZING_PERCENT(100, 0);
     e.onclick = picker_detach_current;
     e.background_color = warmer_color(e.background_color, 80);

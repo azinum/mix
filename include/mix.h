@@ -37,7 +37,8 @@ struct Mix;
 #define FPS_MAX 10000
 #define DT_MIN (1.0f / FPS_MAX)
 #define DT_MAX (1.0f / FPS_MIN)
-#define CONFIG_PATH "data/init.lua"
+#define DATA_PATH "data"
+#define CONFIG_PATH DATA_PATH "/init.lua"
 #define BPM 80
 #define SUBTICKS 8
 

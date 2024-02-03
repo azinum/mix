@@ -71,4 +71,4 @@ RMBAPI void KeepScreenOn(bool keepOn);
 }
 #endif
 
-#endif //RAYMOB_H
+#endif // RAYMOB_H

@@ -6,6 +6,7 @@ prepare:
 	./setup-sdk
 	cp -r ../src app/src/main/cpp
 	cp -r ../include app/src/main/cpp
+	cp -r ../data app/src/main/assets
 
 build: prepare
 	./gradlew assembleDebug --parallel

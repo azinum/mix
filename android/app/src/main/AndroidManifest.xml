@@ -15,6 +15,9 @@
     <uses-feature android:name="android.hardware.sensor.accelerometer"
         android:required="${FEATURE_ACCELEROMETER}" />
 
+	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <!-- Application config -->
 
     <application
@@ -39,7 +42,5 @@
                 android:name="android.app.lib_name"
                 android:value="${APP_LIB_NAME}" />
         </activity>
-
     </application>
-
 </manifest>

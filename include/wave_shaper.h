@@ -15,8 +15,13 @@ typedef struct Lfo {
 
 #define LFO_NO_CONNECTION "none"
 
-#define DRUMPAD_ROWS 4
-#define DRUMPAD_COLS 32
+#ifdef TARGET_ANDROID
+  #define DRUMPAD_ROWS 4
+  #define DRUMPAD_COLS 16
+#else
+  #define DRUMPAD_ROWS 4
+  #define DRUMPAD_COLS 32
+#endif
 
 struct Waveshaper;
 
@@ -43,7 +48,6 @@ typedef struct Waveshaper {
   i32 distortion;
   f32 gain;
   Arena arena;
-  char* text;
   Lfo lfo;
   char* lfo_connection;
   Drumpad drumpad;

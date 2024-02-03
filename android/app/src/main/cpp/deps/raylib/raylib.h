@@ -1122,6 +1122,7 @@ RLAPI const char *GetDirectoryPath(const char *filePath);         // Get full pa
 RLAPI const char *GetPrevDirectoryPath(const char *dirPath);      // Get previous directory path for a given path (uses static string)
 RLAPI const char *GetWorkingDirectory(void);                      // Get current working directory (uses static string)
 RLAPI const char *GetApplicationDirectory(void);                  // Get the directory of the running application (uses static string)
+RLAPI const char *GetBasePath(void);
 RLAPI bool ChangeDirectory(const char *dir);                      // Change working directory, return true on success
 RLAPI bool IsPathFile(const char *path);                          // Check if a given path is a file or a directory
 RLAPI FilePathList LoadDirectoryFiles(const char *dirPath);       // Load directory filepaths

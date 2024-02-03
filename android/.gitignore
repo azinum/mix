@@ -13,3 +13,4 @@
 /app/build
 /app/src/main/cpp/src
 /app/src/main/cpp/include
+/app/src/main/assets/*
