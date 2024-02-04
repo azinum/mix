@@ -503,7 +503,9 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
     }
   }
 
-  if (!ui_input_interacting()) {
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
+
+  if (!ui_input_interacting() && !mod_key) {
     if (IsKeyPressed(KEY_W)) {
       w->freq_target += 1;
     }

@@ -93,6 +93,7 @@ void ui_state_init(UI_state* ui) {
   ui->marker = NULL;
   ui->container = NULL;
   ui->input = NULL;
+  ui->zoom = NULL;
 #ifdef UI_LOG_HIERARCHY
   ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
@@ -141,9 +142,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
   if (ui_overlap((i32)ui->mouse.x, (i32)ui->mouse.y, e->box)) {
     ui->hover = e;
     if (e->type == ELEMENT_CONTAINER) {
-      if (e->data.container.scrollable && ui_container_is_scrollable(e)) {
-        ui->container = e;
-      }
+      ui->container = e;
     }
   }
 
@@ -579,6 +578,9 @@ void ui_free_elements(UI_state* ui, Element* e) {
   if (ui->input == e) {
     ui->input = NULL;
   }
+  if (ui->zoom == e) {
+    ui->zoom = NULL;
+  }
   for (size_t i = 0; i < e->count; ++i) {
     ui_free_elements(ui, &e->items[i]);
   }
@@ -898,6 +900,9 @@ void ui_update(f32 dt) {
   }
 
   Element* root = &ui->root;
+  if (ui->zoom) {
+    root = ui->zoom;
+  }
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
   arena_reset(&ui->frame_arena);
 
@@ -974,6 +979,26 @@ void ui_update(f32 dt) {
       ui_slider_onclick(ui, ui->active);
     }
   }
+  if (ui->container != NULL) {
+    bool do_zoom = mod_key && IsKeyPressed(KEY_F);
+#ifdef TARGET_ANDROID
+    i32 gesture = GetGestureDetected();
+    do_zoom = gesture & GESTURE_DOUBLETAP;
+#endif
+    if (do_zoom && !ui_input_interacting()) {
+      if (ui->zoom) {
+        ui->zoom->box = ui->zoom_box;
+        ui->zoom->sizing = ui->zoom_sizing;
+        ui->zoom = NULL;
+      }
+      else {
+        ui->zoom = ui->container;
+        ui->zoom_box = ui->zoom->box;
+        ui->zoom_sizing = ui->zoom->sizing;
+        ui->zoom->sizing = SIZING_PERCENT(100, 100);
+      }
+    }
+  }
   if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
     ui->tooltip_timer = 0.0f;
     ui->scrollbar_timer = 0.0f;
@@ -983,49 +1008,50 @@ void ui_update(f32 dt) {
     ui->scrollbar_timer += ui->dt;
   }
   if (ui->container != NULL) {
-    ASSERT(ui->container->type == ELEMENT_CONTAINER);
-    Element* e = ui->container;
-    Vector2 wheel = GetMouseWheelMoveV();
-    i32 scroll_y = e->data.container.scroll_y;
-    i32 content_height = e->data.container.content_height;
-    i32 content_height_delta = content_height - e->box.h;
-    if (KEY_PRESSED(KEY_DOWN)) {
-      wheel.y -= 1;
-    }
-    if (KEY_PRESSED(KEY_UP)) {
-      wheel.y += 1;
-    }
+    if (ui->container->data.container.scrollable && ui_container_is_scrollable(ui->container)) {
+      ASSERT(ui->container->type == ELEMENT_CONTAINER);
+      Element* e = ui->container;
+      Vector2 wheel = GetMouseWheelMoveV();
+      i32 scroll_y = e->data.container.scroll_y;
+      i32 content_height = e->data.container.content_height;
+      i32 content_height_delta = content_height - e->box.h;
+      if (KEY_PRESSED(KEY_DOWN)) {
+        wheel.y -= 1;
+      }
+      if (KEY_PRESSED(KEY_UP)) {
+        wheel.y += 1;
+      }
 
 #ifdef TARGET_ANDROID
-    static Vector2 drag = {0, 0};
-    static Vector2 prev_drag = {0, 0};
-    i32 gesture = GetGestureDetected();
-    if ((gesture & GESTURE_HOLD) || (gesture & GESTURE_DRAG)) {
-      prev_drag = drag;
-      drag = GetGestureDragVector();
-      Vector2 delta = {
-        prev_drag.x - drag.x,
-        prev_drag.y - drag.y,
-      };
-      wheel.x = -delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED;
-      wheel.y = -delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED;
-    }
-    else {
-      prev_drag = drag = (Vector2) {0, 0};
-    }
+      static Vector2 drag = {0, 0};
+      static Vector2 prev_drag = {0, 0};
+      i32 gesture = GetGestureDetected();
+      if ((gesture & GESTURE_HOLD) || (gesture & GESTURE_DRAG)) {
+        prev_drag = drag;
+        drag = GetGestureDragVector();
+        Vector2 delta = {
+          prev_drag.x - drag.x,
+          prev_drag.y - drag.y,
+        };
+        wheel.x = -delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED;
+        wheel.y = -delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED;
+      }
+      else {
+        prev_drag = drag = (Vector2) {0, 0};
+      }
 #endif
-
-    if (ui_container_is_scrollable(e)) {
-      scroll_y += wheel.y * UI_SCROLL_SPEED;
-      if (-scroll_y > content_height_delta) {
-        scroll_y = -content_height_delta;
-      }
-      if (scroll_y > 0) {
-        scroll_y = 0;
-      }
-      e->data.container.scroll_y = scroll_y;
-      if (wheel.y != 0) {
-        ui->scrollbar_timer = 0.0f;
+      if (ui_container_is_scrollable(e)) {
+        scroll_y += wheel.y * UI_SCROLL_SPEED;
+        if (-scroll_y > content_height_delta) {
+          scroll_y = -content_height_delta;
+        }
+        if (scroll_y > 0) {
+          scroll_y = 0;
+        }
+        e->data.container.scroll_y = scroll_y;
+        if (wheel.y != 0) {
+          ui->scrollbar_timer = 0.0f;
+        }
       }
     }
   }
@@ -1065,6 +1091,9 @@ void ui_render(void) {
   TIMER_START();
   UI_state* ui = &ui_state;
   Element* root = &ui->root;
+  if (ui->zoom) {
+    root = ui->zoom;
+  }
   ui_render_elements(ui, root);
 #ifdef UI_DRAW_GUIDES
   if (ui->hover != NULL) {

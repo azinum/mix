@@ -2116,10 +2116,6 @@ const char *GetApplicationDirectory(void)
     return appDir;
 }
 
-const char *GetBasePath(void) {
-    return CORE.Storage.basePath;
-}
-
 // Load directory filepaths
 // NOTE: Base path is prepended to the scanned filepaths
 // WARNING: Directory is scanned twice, first time to get files count

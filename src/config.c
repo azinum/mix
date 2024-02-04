@@ -129,6 +129,7 @@ void config_init(void) {
   UI_ROUNDNESS = 0;
   UI_BUTTON_ROUNDNESS = 0;
   UI_PADDING = 4;
+  FONT_SIZE_SMALLEST = 12;
 #endif
 }
 

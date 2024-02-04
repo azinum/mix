@@ -184,8 +184,9 @@ void mix_update_and_render(Mix* mix) {
     ui_state.element_update_count,
     ui_state.element_count
   );
-
-  DrawText(debug_text, 4, GetScreenHeight() - (0.5 * UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 3, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  SetTextLineSpacing(FONT_SIZE_SMALLEST);
+  DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 3 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  SetTextLineSpacing(UI_LINE_SPACING);
 #endif
   render_delta_buffer(mix);
 }
@@ -291,8 +292,8 @@ void mix_ui_new(Mix* mix) {
 void render_delta_buffer(Mix* mix) {
   i32 w = LENGTH(delta_buffer);
   i32 h = 38;
-  i32 x = GetScreenWidth() - w - 8;
-  i32 y = GetScreenHeight() - h - 8;
+  i32 x = GetScreenWidth() - w - 32;
+  i32 y = GetScreenHeight() - h - 16;
   f32 dt_avg = 0.0f;
   i32 window_size = 0;
   f32 sample = 0;
@@ -329,7 +330,9 @@ void render_delta_buffer(Mix* mix) {
   dt_avg /= window_size;
   static char text[32] = {0};
   stb_snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)mix->fps);
-  DrawText(text, x, y - (0.5f*UI_LINE_SPACING + FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  SetTextLineSpacing(FONT_SIZE_SMALLEST);
+  DrawText(text, x, y - (FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  SetTextLineSpacing(UI_LINE_SPACING);
 }
 
 void assets_load(Assets* a) {

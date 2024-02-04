@@ -18,7 +18,7 @@ run:
 	./adb-run ${APP_PATH}
 
 log:
-	adb logcat -c && adb logcat -v tag | grep -e 'I/Debug' --color=auto -i
+	adb logcat -c && adb logcat -v tag | grep -e 'I/' --color=auto -i
 
 clean:
 	rm -dr app/build
