@@ -938,6 +938,7 @@ void ui_update(f32 dt) {
     }
     else {
       ui->input = NULL;
+      HideSoftKeyboard();
     }
   }
   if (ui->input) {
@@ -1698,7 +1699,19 @@ void ui_render_text(
 void ui_update_input(UI_state* ui, Element* e) {
   Buffer* buffer = &e->data.input.buffer;
   char ch = 0;
-  while ((ch = GetCharPressed()) != 0) {
+  i32 keycode = GetLastSoftKeyCode();
+  for (;;) {
+#ifdef TARGET_ANDROID
+    ch = GetLastSoftKeyChar();
+    if (ch >= ' ' && ch <= '~') {
+      ClearLastSoftKey();
+    }
+#else
+    ch = GetCharPressed();
+#endif
+    if (ch == 0) {
+      break;
+    }
     ui->blink_timer = 0;
     switch (e->data.input.input_type) {
       case INPUT_TEXT: {
@@ -1717,8 +1730,14 @@ void ui_update_input(UI_state* ui, Element* e) {
         break;
     }
     e->oninput(e, ch);
+#ifdef TARGET_ANDROID
+    break;
+#endif
   }
-  if (KEY_PRESSED(KEY_BACKSPACE)) {
+  if (keycode != 0) {
+    ClearLastSoftKey();
+  }
+  if (KEY_PRESSED(KEY_BACKSPACE) || keycode == 67) {
     ui->blink_timer = 0;
     if (e->data.input.cursor > 0) {
       buffer_erase(buffer, e->data.input.cursor - 1);
@@ -1744,7 +1763,7 @@ void ui_update_input(UI_state* ui, Element* e) {
       e->data.input.cursor = buffer->count;
     }
   }
-  if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+  if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || keycode == 66) {
     if (e->data.input.value != NULL) {
       Buffer* buffer = &e->data.input.buffer;
       switch (e->data.input.value_type) {
@@ -1767,6 +1786,7 @@ void ui_update_input(UI_state* ui, Element* e) {
     if (e->data.input.callback) {
       e->data.input.callback(&e->data.input);
     }
+    HideSoftKeyboard();
   }
 }
 
