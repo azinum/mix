@@ -965,9 +965,7 @@ void ui_update(f32 dt) {
         }
         else if (ui->select->type == ELEMENT_INPUT) {
           ui_input_onclick(ui, ui->select);
-#ifdef TARGET_ANDROID
           ShowSoftKeyboard();
-#endif
         }
         ui->select->onclick(ui->select);
       }
@@ -981,9 +979,9 @@ void ui_update(f32 dt) {
   }
   if (ui->container != NULL) {
     bool do_zoom = mod_key && IsKeyPressed(KEY_F);
-#ifdef TARGET_ANDROID
+#if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
     i32 gesture = GetGestureDetected();
-    do_zoom = gesture & GESTURE_DOUBLETAP;
+    do_zoom = do_zoom || (gesture & GESTURE_DOUBLETAP);
 #endif
     if (do_zoom && !ui_input_interacting()) {
       if (ui->zoom) {
@@ -1008,8 +1006,8 @@ void ui_update(f32 dt) {
     ui->scrollbar_timer += ui->dt;
   }
   if (ui->container != NULL) {
+    ASSERT(ui->container->type == ELEMENT_CONTAINER);
     if (ui->container->data.container.scrollable && ui_container_is_scrollable(ui->container)) {
-      ASSERT(ui->container->type == ELEMENT_CONTAINER);
       Element* e = ui->container;
       Vector2 wheel = GetMouseWheelMoveV();
       i32 scroll_y = e->data.container.scroll_y;
@@ -1022,7 +1020,7 @@ void ui_update(f32 dt) {
         wheel.y += 1;
       }
 
-#ifdef TARGET_ANDROID
+#if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
       static Vector2 drag = {0, 0};
       static Vector2 prev_drag = {0, 0};
       i32 gesture = GetGestureDetected();
@@ -1033,8 +1031,8 @@ void ui_update(f32 dt) {
           prev_drag.x - drag.x,
           prev_drag.y - drag.y,
         };
-        wheel.x = -delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED;
-        wheel.y = -delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED;
+        wheel.x = -(delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED);
+        wheel.y = -(delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED);
       }
       else {
         prev_drag = drag = (Vector2) {0, 0};

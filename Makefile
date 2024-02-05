@@ -10,7 +10,10 @@ include platform.mk
 all: ${TARGET}
 
 ${TARGET}: ${SRC}
-	${CC} $< -o $@ ${FLAGS} ${LIBS}
+	${CC} $< -o $@ ${FLAGS} ${LIBS} ${FLAGS_DEBUG}
+
+release:
+	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} ${FLAGS_RELEASE}
 
 install:
 	chmod o+x ${TARGET}

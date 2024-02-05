@@ -6,6 +6,7 @@
 //  UI_LOG_PATH
 //  UI_TOOLTIP_DELAY
 //  UI_SCROLL_SPEED
+//  UI_EMULATE_TOUCH_SCREEN
 
 #ifndef _UI_H
 #define _UI_H

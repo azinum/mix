@@ -17,6 +17,7 @@
 
 #include "ext/lua/luaone.c"
 
+#include "platform.c"
 #include "memory.c"
 #include "thread.c"
 #include "glob.c"

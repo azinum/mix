@@ -44,6 +44,7 @@ struct Mix;
 #define SUBTICKS 8
 
 #include "common.h"
+#include "platform.h"
 #include "memory.h"
 #include "thread.h"
 #include "glob.h"
