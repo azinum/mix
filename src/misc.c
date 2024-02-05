@@ -47,6 +47,108 @@ Color invert_color(Color a) {
   );
 }
 
+// https://www.calculatorology.com/rgb-to-hsv-conversion/
+Hsv rgb_to_hsv(Color color) {
+  const f32 r = color.r / 255.0f;
+  const f32 g = color.g / 255.0f;
+  const f32 b = color.b / 255.0f;
+  const f32 c_min = MIN(MIN(r, g), b);
+  const f32 c_max = MAX(MAX(r, g), b);
+  const f32 dc = c_max - c_min;
+  Hsv hsv = {0, 0, 0};
+
+  if (r == c_max && dc != 0) {
+    hsv.h = 60.0f * fmod((g - b) / dc, 6.0f);
+  }
+  else if (g == c_max && dc != 0) {
+    hsv.h = 60.0f * (((b - r) / dc) + 2);
+  }
+  else if (b == c_max && dc != 0) {
+    hsv.h = 60.0f * (((r - g) / dc) + 4);
+  }
+
+  if (hsv.h < 0) {
+    hsv.h += 360;
+  }
+  hsv.h /= 360.0f; // normalize to be between 0.0-1.0
+
+  if (c_max != 0) {
+    hsv.s = dc / c_max;
+  }
+  else {
+    hsv.s = 0;
+  }
+
+  hsv.v = c_max;
+  return hsv;
+}
+
+// http://www.easyrgb.com/en/math.php
+Color hsv_to_rgb(Hsv hsv) {
+  if (hsv.s == 0) {
+    return COLOR_RGB(
+      (u8)(hsv.v * 255),
+      (u8)(hsv.v * 255),
+      (u8)(hsv.v * 255)
+    );
+  }
+  // h = hue when hue < 1, otherwize h = 0
+  const f32 h = hsv.h * (hsv.h < 1) * 6;
+  const f32 i = (i32)h;
+  const f32 x = hsv.v * (1 - hsv.s);
+  const f32 y = hsv.v * (1 - hsv.s * (h - i));
+  const f32 z = hsv.v * (1 - hsv.s * (1 - (h - i)));
+
+  f32 r = 0;
+  f32 g = 0;
+  f32 b = 0;
+
+  switch ((i32)i) {
+    case 0: {
+      r = hsv.v;
+      g = z;
+      b = x;
+      break;
+    }
+    case 1: {
+      r = y;
+      g = hsv.v;
+      b = x;
+      break;
+    }
+    case 2: {
+      r = x;
+      g = hsv.v;
+      b = z;
+      break;
+    }
+    case 3: {
+      r = x;
+      g = y;
+      b = hsv.v;
+      break;
+    }
+    case 4: {
+      r = z;
+      g = x;
+      b = hsv.v;
+      break;
+    }
+    default: {
+      r = hsv.v;
+      g = x;
+      b = y;
+      break;
+    }
+  }
+
+  return COLOR_RGB(
+    (u8)(r * 255),
+    (u8)(g * 255),
+    (u8)(b * 255)
+  );
+}
+
 void print_bits(i32 fd, char byte) {
   for (i32 bit = 7; bit >= 0; --bit) {
     stb_dprintf(fd, "%d", EXTRACTBIT(bit, byte) != 0);
