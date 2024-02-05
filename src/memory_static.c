@@ -212,6 +212,13 @@ void memory_free(void* p) {
     return;
   }
   Memory* m = &memory;
+#ifndef NO_STDLIB
+  // check if this value was allocated outside the static memory region (i.e. with malloc)
+  if (!((p >= (void*)&memory) && (p <= ((void*)&memory + sizeof(Memory))))) {
+    free(p);
+    return;
+  }
+#endif
   Block_header* header = NULL;
   if (block_header_from_pointer(m, p, &header) != Ok) {
     return;

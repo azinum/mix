@@ -99,7 +99,7 @@ struct {
   .load_count = 0,
 };
 
-void config_init(void) {
+Result config_init(void) {
   ASSERT(MAX_CONFIG_STRING_SIZE >= sizeof(size_t));
 
   // unused functions from lua
@@ -115,7 +115,7 @@ void config_init(void) {
   config.l = luaL_newstate();
   if (!config.l) {
     log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to initialize lua state\n");
-    return;
+    return Error;
   }
   lua_gc(config.l, LUA_GCSTOP);
   lua_open_libs(config.l);
@@ -131,6 +131,7 @@ void config_init(void) {
   UI_PADDING = 4;
   FONT_SIZE_SMALLEST = 12;
 #endif
+  return Ok;
 }
 
 Result config_store(const char* path) {
@@ -153,10 +154,24 @@ Result config_store(const char* path) {
 
 Result config_load(const char* path) {
   TIMER_START();
-  config_init();
+  if (config_init() != Ok) {
+    return Error;
+  }
+#if 0
+  Buffer buffer = buffer_new_from_file(path);
+  if (!buffer.data) {
+    return Error;
+  }
+  if (dostring(config.l, (const char*)buffer.data, "") != LUA_OK) {
+    buffer_free(&buffer);
+    return Error;
+  }
+  buffer_free(&buffer);
+#else
   if (dofile(config.l, path) != LUA_OK) {
     return Error;
   }
+#endif
   char diff_buff[MAX_DIFF_BUFF_SIZE] = {0};
   size_t num_hooks_called = 0;
 

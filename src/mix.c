@@ -131,6 +131,14 @@ Result mix_restart_audio_engine(void) {
   return Ok;
 }
 
+void mix_assets_load(void) {
+  assets_load(&assets);
+}
+
+void mix_assets_unload(void) {
+  assets_unload(&assets);
+}
+
 void mix_update_and_render(Mix* mix) {
   Audio_engine* audio = &audio_engine;
 
@@ -335,11 +343,11 @@ void render_delta_buffer(Mix* mix) {
   SetTextLineSpacing(UI_LINE_SPACING);
 }
 
-void assets_load(Assets* a) {
-  a->font = LoadFontEx(UI_FONT, UI_FONT_BASE_SIZE, NULL, 0);
+void assets_load(Assets* assets) {
+  assets->font = LoadFontEx(UI_FONT, UI_FONT_BASE_SIZE, NULL, 0);
   SetTextLineSpacing(UI_LINE_SPACING);
 }
 
-void assets_unload(Assets* a) {
-  UnloadFont(a->font);
+void assets_unload(Assets* assets) {
+  UnloadFont(assets->font);
 }

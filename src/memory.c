@@ -3,6 +3,9 @@
 #if defined(MEMORY_ALLOC_STATIC)
   #include "memory_static.c"
 #else
+  #ifdef TARGET_ANDROID
+    #define NO_MEMORY_TRACKING
+  #endif
   #include "memory_heap.c"
   #define MEMORY_TAG(name)
 #endif

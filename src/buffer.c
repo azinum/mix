@@ -100,8 +100,10 @@ void buffer_erase(Buffer* buffer, size_t index) {
 }
 
 void buffer_free(Buffer* buffer) {
-  memory_free(buffer->data);
-  buffer->data = NULL;
+  if (buffer->data) {
+    memory_free(buffer->data);
+    buffer->data = NULL;
+  }
   buffer->count = 0;
   buffer->size = 0;
 }
@@ -118,4 +120,33 @@ Buffer buffer_new_from_fd(i32 fd) {
     buffer_free(&buffer);
   }
   return buffer;
+}
+
+Buffer buffer_new_from_file(const char* path) {
+#ifdef TARGET_ANDROID
+  i32 size = 0;
+  u8* data = LoadFileData(path, &size);
+  if (data && size >= 0) {
+    return (Buffer) {
+      .data = data,
+      .count = (u32)size,
+      .size = (u32)size,
+    };
+  }
+  return (Buffer) {
+    .data = NULL,
+    .count = 0,
+    .size = 0,
+  };
+#else
+  i32 fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    return (Buffer) {
+      .data = NULL,
+      .count = 0,
+      .size = 0,
+    };
+  }
+  return buffer_new_from_fd(fd);
+#endif
 }

@@ -21,5 +21,6 @@ void buffer_insert(Buffer* buffer, u8 byte, size_t index);
 void buffer_erase(Buffer* buffer, size_t index);
 void buffer_free(Buffer* buffer);
 Buffer buffer_new_from_fd(i32 fd);
+Buffer buffer_new_from_file(const char* path);
 
 #endif // _BUFFER_H

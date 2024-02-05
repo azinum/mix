@@ -9,6 +9,7 @@ struct Mix;
 
 #ifdef TARGET_ANDROID
   #include "raymob.h"
+  #define open(...) fd_open(__VA_ARGS__)
 #endif
 
 #include <time.h>
@@ -92,5 +93,7 @@ extern Assets assets;
 
 i32 mix_main(i32 argc, char** argv);
 Result mix_restart_audio_engine(void);
+void mix_assets_load(void);
+void mix_assets_unload(void);
 
 #endif // _MIX_H

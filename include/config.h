@@ -41,7 +41,7 @@ static i32 UI_SLIDER_INNER_PADDING = 2;
 static char UI_THEME[MAX_CONFIG_STRING_SIZE] = "dark";
 static f32 UI_ROUNDNESS = 0.0f;
 
-void config_init(void);
+Result config_init(void);
 Result config_store(const char* path);
 Result config_load(const char* path);
 void config_free(void);

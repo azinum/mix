@@ -91,3 +91,20 @@ f32 get_time(void) {
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return ts.tv_sec + ts.tv_nsec / 1000000000.0f;
 }
+
+i32 fd_open(const char* path, i32 flags, ...) {
+  char mode_str[16] = {0};
+  i32 mode_index = 0;
+  if ((flags & O_RDONLY) == O_RDONLY) {
+    mode_index += snprintf(&mode_str[mode_index], sizeof(mode_str) - mode_index, "r");
+  }
+  if ((flags & O_WRONLY) == O_WRONLY) {
+    mode_index += snprintf(&mode_str[mode_index], sizeof(mode_str) - mode_index, "w");
+  }
+  mode_index += snprintf(&mode_str[mode_index], sizeof(mode_str) - mode_index, "b");
+  FILE* fp = fopen(path, mode_str);
+  if (!fp) {
+    return -1;
+  }
+  return fileno(fp);
+}

@@ -10,5 +10,6 @@ extern Color invert_color(Color a);
 extern void print_bits(i32 fd, char byte);
 extern Color hex_string_to_color(char* hex);
 extern f32 get_time(void);
+extern i32 fd_open(const char* path, i32 flags, ...);
 
 #endif // _MISC_H
