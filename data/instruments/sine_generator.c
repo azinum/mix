@@ -23,7 +23,7 @@ void update(Instrument* ins, Mix* mix) {
 
 void process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   for (size_t i = 0; i < ins->samples; ++i) {
-    ins->buffer[i] = ins->volume * sinf((55.0f * i * audio->channel_count * PI32) / audio->sample_rate);
+    ins->out_buffer[i] = ins->volume * sinf((55.0f * i * audio->channel_count * PI32) / audio->sample_rate);
   }
 }
 

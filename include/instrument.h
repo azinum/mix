@@ -9,7 +9,8 @@ struct Mix;
 struct Audio_engine;
 
 typedef struct Instrument {
-  f32* buffer;
+  f32* in_buffer;
+  f32* out_buffer;
   size_t samples;
   f32 volume;
   f32 latency;
@@ -38,6 +39,7 @@ typedef enum {
 
 extern Instrument instruments[MAX_INSTRUMENT_ID];
 
+void instrument_init_default(Instrument* ins);
 Instrument instrument_new(Instrument_id id);
 Instrument instrument_new_from_path(const char* path);
 void instrument_init(Instrument* ins, struct Audio_engine* audio);

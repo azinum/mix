@@ -31,9 +31,14 @@
 #include "module.c"
 #include "ui.c"
 #include "settings.c"
+// instruments
 #include "instrument.c"
 #include "wave_shaper.c"
 #include "dummy.c"
+// effects/filters
+#include "effect.c"
+#include "fx_distortion.c"
+
 #include "instrument_picker.c"
 #include "control_panel.c"
 #include "audio.c"
@@ -91,6 +96,8 @@ i32 mix_main(i32 argc, char** argv) {
 
   f32 dt = TIMER_END();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "startup time was %g ms\n", 1000 * dt);
+
+  mix_ui_new(&mix);
 
   while (!WindowShouldClose()) {
     TIMER_START();
@@ -229,7 +236,6 @@ Result mix_init(Mix* mix) {
   if (audio_engine_start_new(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
   }
-  mix_ui_new(mix);
   return Ok;
 }
 
@@ -254,7 +260,6 @@ void mix_free(Mix* m) {
 }
 
 void mix_ui_new(Mix* mix) {
-
 #ifdef TEST_UI
   {
     Element e = test_ui_new();
@@ -274,7 +279,7 @@ void mix_ui_new(Mix* mix) {
   }
   {
     Element e = ui_container(NULL);
-    e.sizing = SIZING_PERCENT(100, 10);
+    e.sizing = SIZING_PERCENT(100, 12);
     e.scissor = true;
     e.border = true;
     e.placement = PLACEMENT_BLOCK;
@@ -284,7 +289,7 @@ void mix_ui_new(Mix* mix) {
   }
   {
     Element e = ui_container("instrument");
-    e.sizing = SIZING_PERCENT(70, 90);
+    e.sizing = SIZING_PERCENT(70, 88);
     mix->ins_container = ui_attach_element(container, &e);
     if (audio->instrument.initialized) {
       instrument_ui_new(&audio->instrument, mix->ins_container);
@@ -292,7 +297,7 @@ void mix_ui_new(Mix* mix) {
   }
   {
     Element e = instrument_picker_ui_new(mix);
-    e.sizing = SIZING_PERCENT(30, 90);
+    e.sizing = SIZING_PERCENT(30, 88);
     ui_attach_element(container, &e);
   }
 #endif

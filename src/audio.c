@@ -124,7 +124,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
 
       // sum all audio buffers
       for (i32 i = 0; i < sample_count; ++i) {
-        audio->out_buffer[i] += ins->buffer[i];
+        audio->out_buffer[i] += ins->out_buffer[i];
       }
     }
   }

@@ -94,6 +94,9 @@ void ui_state_init(UI_state* ui) {
   ui->container = NULL;
   ui->input = NULL;
   ui->zoom = NULL;
+  ui->zoom_box = BOX(0, 0, 0, 0);
+  ui->zoom_sizing = SIZING_PERCENT(0, 0);
+
 #ifdef UI_LOG_HIERARCHY
   ui->fd = open(UI_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (ui->fd < 0) {
@@ -903,6 +906,7 @@ void ui_update(f32 dt) {
   if (ui->zoom) {
     root = ui->zoom;
   }
+
   root->box = BOX(0, 0, GetScreenWidth(), GetScreenHeight());
   arena_reset(&ui->frame_arena);
 

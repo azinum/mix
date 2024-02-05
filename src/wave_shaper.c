@@ -150,8 +150,7 @@ void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buff
   (void)audio;
   (void)ins;
   (void)buffer;
-  for (size_t i = 0; i < samples; ++i) {
-  }
+  (void)samples;
 }
 
 void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
@@ -540,13 +539,13 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
   if (!w->freeze) {
     for (size_t i = 0; i < ins->samples; ++i) {
-      ins->buffer[i] = 0.0f;
+      ins->out_buffer[i] = 0.0f;
     }
 
     for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
       size_t x = w->drumpad.index;
       if (w->drumpad.pad[x][y]) {
-        w->drumpad.process[y](audio, ins, ins->buffer, ins->samples);
+        w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
       }
     }
 
@@ -557,11 +556,11 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
         *w->lfo.lfo_target = w->lfo.lfo;
       }
 
-      ins->buffer[i] += volume * sinf(
+      ins->out_buffer[i] += volume * sinf(
         (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
-      ins->buffer[i + 1] += volume * cosf(
+      ins->out_buffer[i + 1] += volume * cosf(
         (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
         / (f32)sample_rate
       );
@@ -575,22 +574,20 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       static i32 tmp_index = 0;
       static f32 tmp_buffer[256] = {0};
       for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->samples; ++i) {
-        tmp_buffer[i] = ins->buffer[i];
+        tmp_buffer[i] = ins->out_buffer[i];
       }
       for (size_t i = 0; i < ins->samples; ++i) {
         tmp_index = (tmp_index + 1) % LENGTH(tmp_buffer);
-        ins->buffer[i] = 0.5f * ins->buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
+        ins->out_buffer[i] = 0.5f * ins->out_buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
       }
 #endif
       for (size_t i = 0; i < ins->samples; ++i) {
-        ins->buffer[i] *= 8.0f;
-        ins->buffer[i] = CLAMP(ins->buffer[i], -1.0f, 1.0f);
-        ins->buffer[i] *= 1/4.0f;
+        ins->out_buffer[i] = CLAMP(ins->out_buffer[i] * 8.0f, -1.0f, 1.0f) * 0.25f;
       }
     }
     if (w->gain >= 0.0f) {
       for (size_t i = 0; i < ins->samples; ++i) {
-        ins->buffer[i] *= w->gain;
+        ins->out_buffer[i] *= w->gain;
       }
     }
   }

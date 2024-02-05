@@ -60,9 +60,14 @@ struct Mix;
 #include "module.h"
 #include "ui.h"
 #include "settings.h"
+// instruments
 #include "instrument.h"
 #include "wave_shaper.h"
 #include "dummy.h"
+// effects/filters
+#include "effect.h"
+#include "fx_distortion.h"
+
 #include "instrument_picker.h"
 #include "control_panel.h"
 #include "audio.h"

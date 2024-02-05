@@ -5,10 +5,9 @@ Instrument instruments[MAX_INSTRUMENT_ID] = {
   [INSTRUMENT_DUMMY]       = { .title = "dummy",      .init = dummy_init,      .ui_new = dummy_ui_new,      .update = dummy_update,      .process = dummy_process,      .destroy = dummy_destroy, },
 };
 
-static void instrument_init_default(Instrument* ins);
-
 void instrument_init_default(Instrument* ins) {
-  ins->buffer = NULL;
+  ins->in_buffer = NULL;
+  ins->out_buffer = NULL;
   ins->samples = 0;
   ins->volume = INSTRUMENT_VOLUME_DEFAULT;
   ins->latency = 0;
@@ -38,8 +37,8 @@ Instrument instrument_new_from_path(const char* path) {
 void instrument_init(Instrument* ins, Audio_engine* audio) {
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
   MEMORY_TAG("instrument.instrument_init: audio buffer");
-  ins->buffer = memory_calloc(samples, sizeof(f32));
-  if (ins->buffer) {
+  ins->out_buffer = memory_calloc(samples, sizeof(f32));
+  if (ins->out_buffer) {
     ins->samples = samples;
   }
   ins->init(ins);
@@ -84,8 +83,10 @@ void instrument_destroy(Instrument* ins) {
   }
   ui_detach_elements(ins->ui);
   ins->destroy(ins);
-  memory_free(ins->buffer);
-  ins->buffer = NULL;
+  memory_free(ins->in_buffer);
+  memory_free(ins->out_buffer);
+  ins->in_buffer = NULL;
+  ins->out_buffer = NULL;
   ins->samples = 0;
   memory_free(ins->userdata);
   ins->userdata = NULL;
