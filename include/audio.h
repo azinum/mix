@@ -3,7 +3,8 @@
 #ifndef _AUDIO_H
 #define _AUDIO_H
 
-#define MAX_EFFECTS 16
+// can not add more than INIT_ITEMS_SIZE of effects, because if the list of elements grows pointers to those elements will be invalidated, and there is currently no handling of this
+#define MAX_EFFECTS (INIT_ITEMS_SIZE)
 
 typedef struct Audio_engine {
   i32 sample_rate;

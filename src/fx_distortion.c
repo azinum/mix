@@ -73,27 +73,10 @@ void fx_distortion_process(struct Instrument* ins, struct Mix* mix, struct Audio
 
   Distortion* d = (Distortion*)ins->userdata;
 
-#if 0
-  // input gain
-  for (size_t i = 0; i < ins->samples; ++i) {
-    ins->out_buffer[i] *= d->input_gain;
-  }
-
-  // clipping
-  for (size_t i = 0; i < ins->samples; ++i) {
-    ins->out_buffer[i] = CLAMP(ins->out_buffer[i], -d->clip, d->clip);
-  }
-
-  // output gain
-  for (size_t i = 0; i < ins->samples; ++i) {
-    ins->out_buffer[i] *= d->output_gain;
-  }
-#else
   for (size_t i = 0; i < ins->samples; ++i) {
     f32 sample = ins->out_buffer[i];
     ins->out_buffer[i] = CLAMP(sample * d->input_gain, -d->clip, d->clip) * d->output_gain;
   }
-#endif
 }
 
 void fx_distortion_destroy(struct Instrument* ins) {

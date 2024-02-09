@@ -16,6 +16,7 @@ static void waveshaper_update_lfo(Element* e);
 static bool waveshaper_connection_filter(Element* e, Element* target);
 static void waveshaper_drumpad_init(Drumpad* d);
 static void waveshaper_update_drumpad(Element* e);
+static void drumpad_pad_onclick(Element* e);
 
 static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
@@ -115,11 +116,30 @@ void waveshaper_update_drumpad(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
   Waveshaper* w = (Waveshaper*)ins->userdata;
   Drumpad* d = &w->drumpad;
+
   if ((i32)d->index == e->v.i) {
     e->border_color = UI_FOCUS_COLOR;
     return;
   }
   e->border_color = UI_BORDER_COLOR;
+}
+
+void drumpad_pad_onclick(Element* e) {
+  i32 toggle_value = *e->data.toggle.value;
+  if (toggle_value) {
+    Hsv hsv = rgb_to_hsv(UI_BUTTON_COLOR);
+    hsv.s = CLAMP(hsv.s + 0.2f, 0, 1);
+    hsv.v = CLAMP(hsv.v + 0.5f, 0, 1);
+    e->background_color = hsv_to_rgb(hsv);
+  }
+  else {
+    if (!(e->v.i % 4)) {
+      e->background_color = lerp_color(saturate_color(UI_BUTTON_COLOR, -0.2f), UI_INTERPOLATION_COLOR, 0.1f);
+    }
+    else {
+      e->background_color = UI_BUTTON_COLOR;
+    }
+  }
 }
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
@@ -393,12 +413,13 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       e.userdata = ins;
       e.v.i = x;
       if (!((x + 0) % 4)) {
-        e.background_color = lerp_color(e.background_color, COLOR_RGB(255, 255, 255), 0.1f);
+        e.background_color = lerp_color(saturate_color(UI_BUTTON_COLOR, -0.2f), UI_INTERPOLATION_COLOR, 0.1f);
       }
       else {
-        e.background_color = lerp_color(e.background_color, COLOR_RGB(0, 0, 0), 0.05f);
+        e.background_color = UI_BUTTON_COLOR;
       }
       e.onupdate = waveshaper_update_drumpad;
+      e.onclick = drumpad_pad_onclick;
       ui_attach_element(grid, &e);
     }
   }
