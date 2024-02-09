@@ -1305,7 +1305,7 @@ Element ui_container(char* title) {
     .padding = UI_TITLE_BAR_PADDING,
     .top = true,
   };
-  e.border_thickness = 0;
+  e.border_thickness = 0; //UI_BORDER_THICKNESS;
   if (title) {
     // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
     e.roundness = 0;

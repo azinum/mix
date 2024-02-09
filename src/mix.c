@@ -317,6 +317,9 @@ void mix_ui_new(Mix* mix) {
     e.scissor = true;
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
+#ifdef TARGET_ANDROID
+    e.padding = UI_PADDING * 4;
+#endif
     mix->effect_chain = ui_attach_element(container, &e);
     effect_chain_ui_new(mix, mix->effect_chain);
   }

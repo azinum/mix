@@ -21,7 +21,15 @@ void add_effect(Element* e) {
       e.scissor = false;
       e.placement = PLACEMENT_BLOCK;
       e.background = true;
+      Hsv hsv = rgb_to_hsv(UI_BUTTON_COLOR);
+      hsv.s = 0.4f;
+      hsv.h += 0.05f;
+      e.background_color = lerp_color(e.background_color, hsv_to_rgb(hsv), 0.1f);
+#ifdef TARGET_ANDROID
+      e.sizing = SIZING_PERCENT(100, 50);
+#else
       e.sizing = SIZING_PERCENT(100, 25);
+#endif
       Element* effect_container = ui_attach_element(mix->effect_chain, &e);
       instrument_ui_new(effect, effect_container);
     }
