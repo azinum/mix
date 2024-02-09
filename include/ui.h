@@ -265,6 +265,7 @@ typedef struct UI_state {
   Element* select;
   Element* marker; // a marker element is used to connect two elements together via a callback function
   Element* container; // last container element that was hovered
+  Element* scrollable; // last scrollable container
   Element* input;
 
   Element* zoom;

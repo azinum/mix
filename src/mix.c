@@ -41,6 +41,8 @@
 
 #include "instrument_picker.c"
 #include "control_panel.c"
+#include "effect_chain.c"
+#include "effect_picker.c"
 #include "audio.c"
 
 #ifdef TEST_UI
@@ -49,7 +51,7 @@
 
 static f32 delta_buffer[128] = {0};
 
-Mix mix = {0};
+Mix mix_state = {0};
 Assets assets = {0};
 
 Result mix_init(Mix* mix);
@@ -67,7 +69,9 @@ i32 mix_main(i32 argc, char** argv) {
 
   TIMER_START();
 
-  if (mix_init(&mix) != Ok) {
+  Mix* mix = &mix_state;
+
+  if (mix_init(mix) != Ok) {
     return EXIT_FAILURE;
   }
 
@@ -97,35 +101,35 @@ i32 mix_main(i32 argc, char** argv) {
   f32 dt = TIMER_END();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "startup time was %g ms\n", 1000 * dt);
 
-  mix_ui_new(&mix);
+  mix_ui_new(mix);
 
   while (!WindowShouldClose()) {
     TIMER_START();
     BeginDrawing();
     ClearBackground(MAIN_BACKGROUND_COLOR);
-    mix_update_and_render(&mix);
+    mix_update_and_render(mix);
     EndDrawing();
-    mix.dt = TIMER_END();
-    if (mix.dt < DT_MIN) {
-      mix.dt = DT_MIN;
+    mix->dt = TIMER_END();
+    if (mix->dt < DT_MIN) {
+      mix->dt = DT_MIN;
     }
-    if (mix.dt > DT_MAX) {
-      mix.dt = DT_MAX;
+    if (mix->dt > DT_MAX) {
+      mix->dt = DT_MAX;
     }
-    f32 timestamp = mix.timer_start + ((60.0f / mix.bpm) / SUBTICKS);
-    if (mix.timer >= timestamp) {
-      f32 delta = mix.timer - timestamp;
-      mix.timer_start = mix.timer - delta;
-      mix.timed_tick += 1;
+    f32 timestamp = mix->timer_start + ((60.0f / mix->bpm) / SUBTICKS);
+    if (mix->timer >= timestamp) {
+      f32 delta = mix->timer - timestamp;
+      mix->timer_start = mix->timer - delta;
+      mix->timed_tick += 1;
     }
-    mix.fps = 1.0f / mix.dt;
-    if (!mix.paused) {
-      mix.timer += mix.dt;
-      mix.tick += 1;
+    mix->fps = 1.0f / mix->dt;
+    if (!mix->paused) {
+      mix->timer += mix->dt;
+      mix->tick += 1;
     }
   }
   config_free();
-  mix_free(&mix);
+  mix_free(mix);
   return EXIT_SUCCESS;
 }
 
@@ -203,8 +207,8 @@ void mix_update_and_render(Mix* mix) {
   SetTextLineSpacing(FONT_SIZE_SMALLEST);
   DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 3 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
   SetTextLineSpacing(UI_LINE_SPACING);
-#endif
   render_delta_buffer(mix);
+#endif
 }
 
 void onclick_test(Element* e) {
@@ -232,6 +236,8 @@ Result mix_init(Mix* mix) {
     config_store(CONFIG_PATH);
   }
   mix_reset(mix);
+  mix->ins_container = NULL;
+  mix->effect_chain = NULL;
   ui_init();
   if (audio_engine_start_new(&audio_engine) != Ok) {
     log_print(STDERR_FILENO, LOG_TAG_WARN, "failed to initialize audio engine\n");
@@ -290,6 +296,10 @@ void mix_ui_new(Mix* mix) {
   {
     Element e = ui_container("instrument");
     e.sizing = SIZING_PERCENT(70, 88);
+    e.border = true;
+    e.scissor = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.background = true;
     mix->ins_container = ui_attach_element(container, &e);
     if (audio->instrument.initialized) {
       instrument_ui_new(&audio->instrument, mix->ins_container);
@@ -299,6 +309,26 @@ void mix_ui_new(Mix* mix) {
     Element e = instrument_picker_ui_new(mix);
     e.sizing = SIZING_PERCENT(30, 88);
     ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_container("effect chain");
+    e.sizing = SIZING_PERCENT(70, 100);
+    e.border = true;
+    e.scissor = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.background = true;
+    mix->effect_chain = ui_attach_element(container, &e);
+    effect_chain_ui_new(mix, mix->effect_chain);
+  }
+  {
+    Element e = ui_container("effect picker");
+    e.sizing = SIZING_PERCENT(30, 100);
+    e.border = true;
+    e.scissor = true;
+    e.placement = PLACEMENT_BLOCK;
+    e.background = true;
+    Element* effect_picker = ui_attach_element(container, &e);
+    effect_picker_ui_new(mix, effect_picker);
   }
 #endif
 }

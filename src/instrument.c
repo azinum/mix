@@ -82,6 +82,7 @@ void instrument_destroy(Instrument* ins) {
     spin_wait();
   }
   ui_detach_elements(ins->ui);
+  ui_set_title(ins->ui, "empty");
   ins->destroy(ins);
   memory_free(ins->in_buffer);
   memory_free(ins->out_buffer);

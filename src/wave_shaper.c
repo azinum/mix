@@ -204,7 +204,6 @@ void waveshaper_init(Instrument* ins) {
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
-  ui_set_slider_deadzone(0.01f);
   ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
   Element line_break = ui_line_break(FONT_SIZE);

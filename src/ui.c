@@ -10,6 +10,10 @@
 //  - implement an element `watcher` mechanism that notifies external references
 //      to elements that changes, for instance when reallocating or detaching ui nodes. external
 //      element references must not be invalidated.
+//  - improve scissor
+//  - make layout design more versatile (constraints, vertical+horizontal padding, min/max sizes, e.t.c)
+//  - floating containers
+//  - drop-down menu
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
@@ -146,6 +150,9 @@ void ui_update_elements(UI_state* ui, Element* e) {
     ui->hover = e;
     if (e->type == ELEMENT_CONTAINER) {
       ui->container = e;
+      if (ui_container_is_scrollable(e)) {
+        ui->scrollable = e;
+      }
     }
   }
 
@@ -531,7 +538,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
   }
 
-  if (ui->container == e) {
+  if (ui->scrollable == e) {
     if (ui_container_is_scrollable(e) && ui->scrollbar_timer < UI_SCROLLBAR_DECAY) {
       const i32 content_height = e->data.container.content_height;
       const i32 height = e->box.h;
@@ -577,6 +584,9 @@ void ui_free_elements(UI_state* ui, Element* e) {
   }
   if (ui->container == e) {
     ui->container = NULL;
+  }
+  if (ui->scrollable == e) {
+    ui->scrollable = NULL;
   }
   if (ui->input == e) {
     ui->input = NULL;
@@ -647,6 +657,9 @@ inline bool ui_overlap(i32 x, i32 y, Box box) {
     && (y >= box.y && y <= box.y + box.h);
 }
 
+// check which direction the container is scrollable
+// this is for ignoring scroll on a element, but may allow for scrolling
+// on a parent container for instance
 bool ui_container_is_scrollable(Element* e) {
   i32 content_height = e->data.container.content_height;
   i32 scroll_y = e->data.container.scroll_y;
@@ -926,6 +939,7 @@ void ui_update(f32 dt) {
   ui->active = NULL;
   ui->select = NULL;
   ui->container = NULL;
+  ui->scrollable = NULL;
 
   ui_update_elements(ui, root);
   if (ui->active) {
@@ -1010,10 +1024,10 @@ void ui_update(f32 dt) {
     ui->tooltip_timer += ui->dt;
     ui->scrollbar_timer += ui->dt;
   }
-  if (ui->container != NULL) {
-    ASSERT(ui->container->type == ELEMENT_CONTAINER);
-    if (ui->container->data.container.scrollable && ui_container_is_scrollable(ui->container)) {
-      Element* e = ui->container;
+  if (ui->scrollable != NULL) {
+    ASSERT(ui->scrollable->type == ELEMENT_CONTAINER);
+    if (ui->scrollable->data.container.scrollable) {
+      Element* e = ui->scrollable;
       Vector2 wheel = GetMouseWheelMoveV();
       i32 scroll_y = e->data.container.scroll_y;
       i32 content_height = e->data.container.content_height;
@@ -1180,6 +1194,9 @@ void ui_set_connection_filter(bool (*filter)(struct Element*, struct Element*)) 
 }
 
 void ui_set_title(Element* e, char* title) {
+  if (!e) {
+    return;
+  }
   if (title) {
     e->title_bar.title = title;
     // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
@@ -1288,6 +1305,7 @@ Element ui_container(char* title) {
     .padding = UI_TITLE_BAR_PADDING,
     .top = true,
   };
+  e.border_thickness = 0;
   if (title) {
     // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
     e.roundness = 0;

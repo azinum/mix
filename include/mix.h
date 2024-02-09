@@ -70,6 +70,8 @@ struct Mix;
 
 #include "instrument_picker.h"
 #include "control_panel.h"
+#include "effect_chain.h"
+#include "effect_picker.h"
 #include "audio.h"
 
 #ifdef TEST_UI
@@ -88,13 +90,14 @@ typedef struct Mix {
   i32 paused;
 
   Element* ins_container;
+  Element* effect_chain;
 } Mix;
 
 typedef struct Assets {
   Font font;
 } Assets;
 
-extern Mix mix;
+extern Mix mix_state;
 extern Assets assets;
 
 i32 mix_main(i32 argc, char** argv);

@@ -14,7 +14,6 @@ void dummy_init(Instrument* ins) {
 
 void dummy_ui_new(Instrument* ins, Element* container) {
   (void)ins;
-  ui_set_slider_deadzone(0.0f);
   const i32 button_height = FONT_SIZE * 2;
   {
     Element e = ui_button("dummy");

@@ -25,7 +25,7 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
     .out_buffer        = out_buffer,
     .in_buffer         = in_buffer,
     .dt                = DT_MIN,
-    .instrument        = instrument_new(INSTRUMENT_WAVE_SHAPER),
+    .instrument        = {0},
     .quit              = false,
     .done              = false,
     .restart           = false,
@@ -38,7 +38,6 @@ Result audio_engine_start(Audio_engine* audio) {
 
 Result audio_engine_start_new(Audio_engine* audio) {
   *audio = audio_engine_new(SAMPLE_RATE, FRAMES_PER_BUFFER, CHANNEL_COUNT);
-  instrument_init(&audio->instrument, audio);
   return audio_new(audio);
 }
 
@@ -56,6 +55,25 @@ Instrument* audio_engine_attach_instrument(Instrument* ins) {
   instrument_init(ins, audio);
   audio->instrument = *ins;
   return &audio->instrument;
+}
+
+Effect* audio_engine_attach_effect(Effect* effect) {
+  Audio_engine* audio = &audio_engine;
+  if (audio->effect_count < MAX_EFFECTS) {
+    instrument_init(effect, audio);
+    audio->effect_chain[audio->effect_count] = *effect;
+    return &audio->effect_chain[audio->effect_count++];
+  }
+  return NULL;
+}
+
+void audio_engine_remove_effects(void) {
+  Audio_engine* audio = &audio_engine;
+  for (size_t i = 0; i < audio->effect_count; ++i) {
+    Effect* effect = &audio->effect_chain[i];
+    instrument_destroy(effect);
+  }
+  audio->effect_count = 0;
 }
 
 void audio_engine_restart(void) {
@@ -76,6 +94,7 @@ void audio_engine_exit(Audio_engine* audio) {
   }
 #endif
   instrument_destroy(&audio->instrument);
+  audio_engine_remove_effects();
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
   audio_exit(audio);
@@ -85,7 +104,7 @@ void audio_engine_exit(Audio_engine* audio) {
 
 Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
-  Mix* m = &mix;
+  Mix* mix = &mix_state;
   Audio_engine* audio = &audio_engine;
   if (audio->quit) {
     audio->done = true;
@@ -109,7 +128,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     audio->out_buffer[i] = 0;
   }
 
-  if (!m->paused) {
+  if (!mix->paused) {
     if (in) {
       for (i32 i = 0; i < sample_count; ++i) {
         audio->in_buffer[i] = ((f32*)in)[i];
@@ -120,8 +139,24 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
 
     if (ins->initialized) {
       // process instruments and effects
-      instrument_process(ins, m, audio, process_dt);
+      instrument_process(ins, mix, audio, process_dt);
 
+      Effect* last = NULL;
+      for (size_t i = 0; i < audio->effect_count; ++i) {
+        Effect* effect = &audio->effect_chain[i];
+        if (i == 0) {
+          memcpy(effect->out_buffer, ins->out_buffer, ins->samples * sizeof(f32));
+        }
+        last = effect;
+        instrument_process(effect, mix, audio, process_dt);
+        if (i + 1 < audio->effect_count) {
+          Effect* next = &audio->effect_chain[i + 1];
+          memcpy(next->out_buffer, effect->out_buffer, ins->samples * sizeof(f32));
+        }
+      }
+      if (last) {
+        memcpy(ins->out_buffer, last->out_buffer, ins->samples * sizeof(f32));
+      }
       // sum all audio buffers
       for (i32 i = 0; i < sample_count; ++i) {
         audio->out_buffer[i] += ins->out_buffer[i];

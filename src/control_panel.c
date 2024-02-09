@@ -77,17 +77,6 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     ui_attach_element(rhs_container, &e);
   }
   {
-    Element e = ui_text_ex("tick", false);
-    e.box.h = button_height;
-    ui_attach_element(rhs_container, &e);
-  }
-  {
-    Element e = ui_input_int("tick", (i32*)&mix->tick);
-    e.box.w = FONT_SIZE * 4;
-    e.box.h = button_height;
-    ui_attach_element(rhs_container, &e);
-  }
-  {
     Element e = ui_text_ex("timed tick", false);
     e.box.h = button_height;
     ui_attach_element(rhs_container, &e);

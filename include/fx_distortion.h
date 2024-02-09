@@ -3,6 +3,12 @@
 #ifndef _FX_DISTORTION_H
 #define _FX_DISTORTION_H
 
+typedef struct Distortion {
+  f32 input_gain;
+  f32 output_gain;
+  f32 clip;
+} Distortion;
+
 void fx_distortion_init(Instrument* ins);
 void fx_distortion_ui_new(Instrument* ins, Element* container);
 void fx_distortion_update(Instrument* ins, struct Mix* mix);
