@@ -1,7 +1,5 @@
 // dummy.c
 
-#include <dirent.h>
-
 static void dummy_onclick(Element* e);
 
 void dummy_onclick(Element* e) {

@@ -33,6 +33,7 @@ typedef struct Instrument {
 typedef enum {
   INSTRUMENT_WAVE_SHAPER,
   INSTRUMENT_DUMMY,
+  INSTRUMENT_NOISE,
 
   MAX_INSTRUMENT_ID,
 } Instrument_id;

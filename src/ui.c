@@ -217,11 +217,12 @@ void ui_update_elements(UI_state* ui, Element* e) {
           e->data.input.value_hash = hash;
           switch (e->data.input.value_type) {
             case VALUE_TYPE_FLOAT: {
-              buffer_from_fmt(&e->data.input.buffer, 32, "%g", *(f32*)e->data.input.value);
+              f32 value = *(f32*)e->data.input.value;
+              buffer_from_fmt(&e->data.input.buffer, 24, "%g", value);
               break;
             }
             case VALUE_TYPE_INTEGER: {
-              buffer_from_fmt(&e->data.input.buffer, 32, "%d", *(i32*)e->data.input.value);
+              buffer_from_fmt(&e->data.input.buffer, 24, "%d", *(i32*)e->data.input.value);
               break;
             }
             default:

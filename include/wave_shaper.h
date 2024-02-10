@@ -34,7 +34,7 @@ typedef struct Drumpad {
 } Drumpad;
 
 typedef struct Waveshaper {
-  ssize_t tick;
+  f32 tick;
   f32 volume_target;
   f32 freq;
   f32 freq_target;
@@ -43,7 +43,7 @@ typedef struct Waveshaper {
   f32 interp_speed;
   i32 freeze;
   i32 mute;
-  i32 speed;
+  f32 speed;
   i32 flipflop;
   i32 distortion;
   f32 gain;

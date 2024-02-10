@@ -35,9 +35,11 @@
 #include "instrument.c"
 #include "wave_shaper.c"
 #include "dummy.c"
+#include "noise.c"
 // effects/filters
 #include "effect.c"
 #include "fx_distortion.c"
+#include "fx_filter.c"
 
 #include "instrument_picker.c"
 #include "control_panel.c"

@@ -64,9 +64,11 @@ struct Mix;
 #include "instrument.h"
 #include "wave_shaper.h"
 #include "dummy.h"
+#include "noise.h"
 // effects/filters
 #include "effect.h"
 #include "fx_distortion.h"
+#include "fx_filter.h"
 
 #include "instrument_picker.h"
 #include "control_panel.h"

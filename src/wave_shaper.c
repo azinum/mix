@@ -16,7 +16,6 @@ static void waveshaper_update_lfo(Element* e);
 static bool waveshaper_connection_filter(Element* e, Element* target);
 static void waveshaper_drumpad_init(Drumpad* d);
 static void waveshaper_update_drumpad(Element* e);
-static void drumpad_pad_onclick(Element* e);
 
 static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
@@ -44,7 +43,7 @@ void waveshaper_default(Waveshaper* w) {
   w->interp_speed     = 4.0f;
   w->freeze           = false;
   w->mute             = false;
-  w->speed            = 2;
+  w->speed            = 2.0f;
   w->flipflop         = false;
   w->distortion       = false;
   w->gain             = 1.0f;
@@ -122,24 +121,6 @@ void waveshaper_update_drumpad(Element* e) {
     return;
   }
   e->border_color = UI_BORDER_COLOR;
-}
-
-void drumpad_pad_onclick(Element* e) {
-  i32 toggle_value = *e->data.toggle.value;
-  if (toggle_value) {
-    Hsv hsv = rgb_to_hsv(UI_BUTTON_COLOR);
-    hsv.s = CLAMP(hsv.s + 0.2f, 0, 1);
-    hsv.v = CLAMP(hsv.v + 0.5f, 0, 1);
-    e->background_color = hsv_to_rgb(hsv);
-  }
-  else {
-    if (!(e->v.i % 4)) {
-      e->background_color = lerp_color(saturate_color(UI_BUTTON_COLOR, -0.2f), UI_INTERPOLATION_COLOR, 0.1f);
-    }
-    else {
-      e->background_color = UI_BUTTON_COLOR;
-    }
-  }
 }
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
@@ -361,13 +342,13 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_input_int("speed", &w->speed);
+    Element e = ui_input_float("speed", &w->speed);
     e.box = BOX(0, 0, 0, input_height);
     e.sizing = SIZING_PERCENT(15, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->speed, VALUE_TYPE_INTEGER, RANGE(1, 12));
+    Element e = ui_slider(&w->speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.001f, 10.0f));
     e.name = "speed";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(35, 0);
@@ -419,7 +400,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
         e.background_color = UI_BUTTON_COLOR;
       }
       e.onupdate = waveshaper_update_drumpad;
-      e.onclick = drumpad_pad_onclick;
       ui_attach_element(grid, &e);
     }
   }

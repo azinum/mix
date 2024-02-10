@@ -3,6 +3,7 @@
 Instrument instruments[MAX_INSTRUMENT_ID] = {
   [INSTRUMENT_WAVE_SHAPER] = { .title = "waveshaper", .init = waveshaper_init, .ui_new = waveshaper_ui_new, .update = waveshaper_update, .process = waveshaper_process, .destroy = waveshaper_destroy, },
   [INSTRUMENT_DUMMY]       = { .title = "dummy",      .init = dummy_init,      .ui_new = dummy_ui_new,      .update = dummy_update,      .process = dummy_process,      .destroy = dummy_destroy, },
+  [INSTRUMENT_NOISE]       = { .title = "noise",      .init = noise_init,      .ui_new = noise_ui_new,      .update = noise_update,      .process = noise_process,      .destroy = noise_destroy, },
 };
 
 void instrument_init_default(Instrument* ins) {

@@ -53,7 +53,7 @@ void fx_distortion_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&d->clip, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
+    Element e = ui_slider(&d->clip, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
     e.name = "clipping";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(50, 0);

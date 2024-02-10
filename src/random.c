@@ -23,3 +23,7 @@ Random random_xor_shift(void) {
 Random random_number(void) {
   return random_lc();
 }
+
+f32 random_f32(void) {
+  return random_number() / (f32)UINT32_MAX;
+}
