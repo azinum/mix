@@ -15,8 +15,6 @@
   #include "features.c"
 #endif
 
-#include "ext/lua/luaone.c"
-
 #include "platform.c"
 #include "memory.c"
 #include "thread.c"

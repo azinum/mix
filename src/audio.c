@@ -141,21 +141,32 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
       // process instruments and effects
       instrument_process(ins, mix, audio, process_dt);
 
-      Effect* last = NULL;
+      // check to see if all effects are ready
+      bool effects_ready = true;
       for (size_t i = 0; i < audio->effect_count; ++i) {
         Effect* effect = &audio->effect_chain[i];
-        if (i == 0) {
-          memcpy(effect->out_buffer, ins->out_buffer, ins->samples * sizeof(f32));
-        }
-        last = effect;
-        instrument_process(effect, mix, audio, process_dt);
-        if (i + 1 < audio->effect_count) {
-          Effect* next = &audio->effect_chain[i + 1];
-          memcpy(next->out_buffer, effect->out_buffer, ins->samples * sizeof(f32));
+        if (!effect->initialized) {
+          effects_ready = false;
+          break;
         }
       }
-      if (last) {
-        memcpy(ins->out_buffer, last->out_buffer, ins->samples * sizeof(f32));
+      if (effects_ready) {
+        Effect* last = NULL;
+        for (size_t i = 0; i < audio->effect_count; ++i) {
+          Effect* effect = &audio->effect_chain[i];
+          if (i == 0) {
+            memcpy(effect->out_buffer, ins->out_buffer, ins->samples * sizeof(f32));
+          }
+          last = effect;
+          instrument_process(effect, mix, audio, process_dt);
+          if (i + 1 < audio->effect_count) {
+            Effect* next = &audio->effect_chain[i + 1];
+            memcpy(next->out_buffer, effect->out_buffer, ins->samples * sizeof(f32));
+          }
+        }
+        if (last) {
+          memcpy(ins->out_buffer, last->out_buffer, ins->samples * sizeof(f32));
+        }
       }
       // sum all audio buffers
       for (i32 i = 0; i < sample_count; ++i) {
@@ -169,6 +180,5 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     buffer[i] = audio->out_buffer[i];
   }
   audio->dt = TIMER_END();
-  // stb_printf("dt: %g, max dt: %g\n", 1000 * audio->dt, 1000 * (frames / (f32)audio->sample_rate));
   return Ok;
 }

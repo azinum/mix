@@ -21,11 +21,13 @@ static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
 static void waveshaper_drumpad_event2(Waveshaper* w);
 static void waveshaper_drumpad_event3(Waveshaper* w);
+static void waveshaper_drumpad_event4(Waveshaper* w);
 
 static void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
+static void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
@@ -103,10 +105,12 @@ void waveshaper_drumpad_init(Drumpad* d) {
   d->event[1] = waveshaper_drumpad_event1;
   d->event[2] = waveshaper_drumpad_event2;
   d->event[3] = waveshaper_drumpad_event3;
+  d->event[4] = waveshaper_drumpad_event4;
   d->process[0] = waveshaper_drumpad_process0;
   d->process[1] = waveshaper_drumpad_process1;
   d->process[2] = waveshaper_drumpad_process2;
   d->process[3] = waveshaper_drumpad_process3;
+  d->process[4] = waveshaper_drumpad_process4;
   memset(d->sample_index, 0, sizeof(d->sample_index));
   d->index = 0;
 }
@@ -145,6 +149,11 @@ void waveshaper_drumpad_event2(Waveshaper* w) {
 
 void waveshaper_drumpad_event3(Waveshaper* w) {
   w->drumpad.sample_index[3] = 0;
+}
+
+void waveshaper_drumpad_event4(Waveshaper* w) {
+  w->drumpad.sample_index[4] = 0;
+  w->freeze = !w->freeze;
 }
 
 void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
@@ -188,6 +197,13 @@ void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buff
     }
     buffer[i] += bassdrum[*sample_index % LENGTH(bassdrum)];
   }
+}
+
+void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
+  (void)audio;
+  (void)ins;
+  (void)buffer;
+  (void)samples;
 }
 
 void waveshaper_init(Instrument* ins) {
@@ -541,54 +557,52 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     for (size_t i = 0; i < ins->samples; ++i) {
       ins->out_buffer[i] = 0.0f;
     }
-
-    for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
-      size_t x = w->drumpad.index;
-      if (w->drumpad.pad[x][y]) {
-        w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
-      }
+  }
+  for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
+    size_t x = w->drumpad.index;
+    if (w->drumpad.pad[x][y]) {
+      w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
+    }
+  }
+  for (size_t i = 0; i < ins->samples; i += 2) {
+    w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
+    w->lfo.tick += 1;
+    if (w->lfo.lfo_target != NULL) {
+      *w->lfo.lfo_target = w->lfo.lfo;
     }
 
-    for (size_t i = 0; i < ins->samples; i += 2) {
-      w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
-      w->lfo.tick += 1;
-      if (w->lfo.lfo_target != NULL) {
-        *w->lfo.lfo_target = w->lfo.lfo;
-      }
-
-      ins->out_buffer[i] += volume * sinf(
-        (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
-        / (f32)sample_rate
-      );
-      ins->out_buffer[i + 1] += volume * cosf(
-        (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
-        / (f32)sample_rate
-      );
-      w->tick += w->speed;
-      w->freq = lerp_f32(w->freq, w->freq_target, dt * w->interp_speed);
-      w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, dt * w->interp_speed);
-      ins->volume = lerp_f32(ins->volume, w->volume_target, dt * w->interp_speed);
-    }
-    if (w->distortion) {
+    ins->out_buffer[i] += volume * sinf(
+      (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
+      / (f32)sample_rate
+    );
+    ins->out_buffer[i + 1] += volume * cosf(
+      (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
+      / (f32)sample_rate
+    );
+    w->tick += w->speed;
+    w->freq = lerp_f32(w->freq, w->freq_target, dt * w->interp_speed);
+    w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, dt * w->interp_speed);
+    ins->volume = lerp_f32(ins->volume, w->volume_target, dt * w->interp_speed);
+  }
+  if (w->distortion) {
 #ifdef EXPERIMENTAL
-      static i32 tmp_index = 0;
-      static f32 tmp_buffer[256] = {0};
-      for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->samples; ++i) {
-        tmp_buffer[i] = ins->out_buffer[i];
-      }
-      for (size_t i = 0; i < ins->samples; ++i) {
-        tmp_index = (tmp_index + 1) % LENGTH(tmp_buffer);
-        ins->out_buffer[i] = 0.5f * ins->out_buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
-      }
-#endif
-      for (size_t i = 0; i < ins->samples; ++i) {
-        ins->out_buffer[i] = CLAMP(ins->out_buffer[i] * 8.0f, -1.0f, 1.0f) * 0.25f;
-      }
+    static i32 tmp_index = 0;
+    static f32 tmp_buffer[256] = {0};
+    for (size_t i = 0; i < LENGTH(tmp_buffer) && i < ins->samples; ++i) {
+      tmp_buffer[i] = ins->out_buffer[i];
     }
-    if (w->gain >= 0.0f) {
-      for (size_t i = 0; i < ins->samples; ++i) {
-        ins->out_buffer[i] *= w->gain;
-      }
+    for (size_t i = 0; i < ins->samples; ++i) {
+      tmp_index = (tmp_index + 1) % LENGTH(tmp_buffer);
+      ins->out_buffer[i] = 0.5f * ins->out_buffer[i] + 0.5f * tmp_buffer[(tmp_index & 6) % LENGTH(tmp_buffer)];
+    }
+#endif
+    for (size_t i = 0; i < ins->samples; ++i) {
+      ins->out_buffer[i] = CLAMP(ins->out_buffer[i] * 8.0f, -1.0f, 1.0f) * 0.25f;
+    }
+  }
+  if (w->gain >= 0.0f) {
+    for (size_t i = 0; i < ins->samples; ++i) {
+      ins->out_buffer[i] *= w->gain;
     }
   }
   if (w->flipflop) {

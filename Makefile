@@ -15,7 +15,7 @@ ${TARGET}: ${SRC}
 release:
 	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} ${FLAGS_RELEASE}
 
-install:
+install: release
 	chmod o+x ${TARGET}
 	cp ${TARGET} ${PREFIX}/bin/
 

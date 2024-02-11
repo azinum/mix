@@ -16,10 +16,10 @@ typedef struct Lfo {
 #define LFO_NO_CONNECTION "none"
 
 #ifdef TARGET_ANDROID
-  #define DRUMPAD_ROWS 4
+  #define DRUMPAD_ROWS 5
   #define DRUMPAD_COLS 16
 #else
-  #define DRUMPAD_ROWS 4
+  #define DRUMPAD_ROWS 5
   #define DRUMPAD_COLS 32
 #endif
 

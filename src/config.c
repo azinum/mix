@@ -6,6 +6,8 @@
 // TODO:
 //  - add option to disable lua support
 
+#include "ext/lua/luaone.c"
+
 #define MAX_DIFF_BUFF_SIZE MAX_CONFIG_STRING_SIZE
 
 #define CONFIG_VERBOSE_OUTPUT
