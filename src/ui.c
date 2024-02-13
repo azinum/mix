@@ -47,6 +47,8 @@ static void ui_free_elements(UI_state* ui, Element* e);
 static void ui_element_init(Element* e, Element_type type);
 static bool ui_overlap(i32 x, i32 y, Box box);
 static bool ui_container_is_scrollable(Element* e);
+static bool ui_container_is_scroll_at_top(Element* e);
+static bool ui_container_is_scroll_at_bottom(Element* e);
 static Box  ui_pad_box(Box box, i32 padding);
 static Box  ui_pad_box_ex(Box box, i32 x_padding, i32 y_padding);
 static Box  ui_expand_box(Box box, i32 padding);
@@ -96,6 +98,7 @@ void ui_state_init(UI_state* ui) {
   ui->select = NULL;
   ui->marker = NULL;
   ui->container = NULL;
+  ui->scrollable = NULL;
   ui->input = NULL;
   ui->zoom = NULL;
   ui->zoom_box = BOX(0, 0, 0, 0);
@@ -151,7 +154,13 @@ void ui_update_elements(UI_state* ui, Element* e) {
     if (e->type == ELEMENT_CONTAINER) {
       ui->container = e;
       if (ui_container_is_scrollable(e)) {
-        ui->scrollable = e;
+        if (
+            (!ui_container_is_scroll_at_top(e) && ui->scroll.y > 0)
+            ||
+            (!ui_container_is_scroll_at_bottom(e) && ui->scroll.y < 0)
+        ) {
+          ui->scrollable = e;
+        }
       }
     }
   }
@@ -662,9 +671,20 @@ inline bool ui_overlap(i32 x, i32 y, Box box) {
 // this is for ignoring scroll on a element, but may allow for scrolling
 // on a parent container for instance
 bool ui_container_is_scrollable(Element* e) {
-  i32 content_height = e->data.container.content_height;
-  i32 scroll_y = e->data.container.scroll_y;
+  const i32 content_height = e->data.container.content_height;
+  const i32 scroll_y = e->data.container.scroll_y;
   return (content_height > e->box.h) || (scroll_y < 0);
+}
+
+bool ui_container_is_scroll_at_top(Element* e) {
+  const i32 scroll_y = e->data.container.scroll_y;
+  return scroll_y == 0;
+}
+
+bool ui_container_is_scroll_at_bottom(Element* e) {
+  const i32 content_height = e->data.container.content_height;
+  const i32 scroll_y = e->data.container.scroll_y;
+  return scroll_y == -(content_height - e->box.h);
 }
 
 Box ui_pad_box(Box box, i32 padding) {
@@ -940,7 +960,32 @@ void ui_update(f32 dt) {
   ui->active = NULL;
   ui->select = NULL;
   ui->container = NULL;
-  ui->scrollable = NULL;
+  ui->scroll = GetMouseWheelMoveV();
+  if (KEY_PRESSED(KEY_DOWN)) {
+    ui->scroll.y -= 1;
+  }
+  if (KEY_PRESSED(KEY_UP)) {
+    ui->scroll.y += 1;
+  }
+
+#if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
+  static Vector2 drag = {0, 0};
+  static Vector2 prev_drag = {0, 0};
+  i32 gesture = GetGestureDetected();
+  if ((gesture & GESTURE_HOLD) || (gesture & GESTURE_DRAG)) {
+    prev_drag = drag;
+    drag = GetGestureDragVector();
+    Vector2 delta = {
+      prev_drag.x - drag.x,
+      prev_drag.y - drag.y,
+    };
+    ui->scroll.x = -(delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED);
+    ui->scroll.y = -(delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED);
+  }
+  else {
+    prev_drag = drag = (Vector2) {0, 0};
+  }
+#endif
 
   ui_update_elements(ui, root);
   if (ui->active) {
@@ -1029,35 +1074,11 @@ void ui_update(f32 dt) {
     ASSERT(ui->scrollable->type == ELEMENT_CONTAINER);
     if (ui->scrollable->data.container.scrollable) {
       Element* e = ui->scrollable;
-      Vector2 wheel = GetMouseWheelMoveV();
+      Vector2 wheel = ui->scroll;
       i32 scroll_y = e->data.container.scroll_y;
       i32 content_height = e->data.container.content_height;
       i32 content_height_delta = content_height - e->box.h;
-      if (KEY_PRESSED(KEY_DOWN)) {
-        wheel.y -= 1;
-      }
-      if (KEY_PRESSED(KEY_UP)) {
-        wheel.y += 1;
-      }
 
-#if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
-      static Vector2 drag = {0, 0};
-      static Vector2 prev_drag = {0, 0};
-      i32 gesture = GetGestureDetected();
-      if ((gesture & GESTURE_HOLD) || (gesture & GESTURE_DRAG)) {
-        prev_drag = drag;
-        drag = GetGestureDragVector();
-        Vector2 delta = {
-          prev_drag.x - drag.x,
-          prev_drag.y - drag.y,
-        };
-        wheel.x = -(delta.x * (root->box.w) / (f32)UI_SCROLL_SPEED);
-        wheel.y = -(delta.y * (root->box.h) / (f32)UI_SCROLL_SPEED);
-      }
-      else {
-        prev_drag = drag = (Vector2) {0, 0};
-      }
-#endif
       if (ui_container_is_scrollable(e)) {
         scroll_y += wheel.y * UI_SCROLL_SPEED;
         if (-scroll_y > content_height_delta) {

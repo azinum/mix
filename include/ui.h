@@ -282,6 +282,7 @@ typedef struct UI_state {
   f32 alert_timer;
   f32 scrollbar_timer;
   f32 slider_deadzone;
+  Vector2 scroll;
   bool (*connection_filter)(struct Element* e, struct Element* target);
   char alert_text[512];
 } UI_state;
