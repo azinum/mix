@@ -42,7 +42,7 @@ void waveshaper_default(Waveshaper* w) {
   w->freq_target      = 55;
   w->freq_mod         = 0;
   w->freq_mod_target  = 0;
-  w->interp_speed     = 4.0f;
+  w->interp_speed     = 100.0f;
   w->freeze           = false;
   w->mute             = false;
   w->speed            = 2.0f;
@@ -342,7 +342,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 20.0f));
+    Element e = ui_slider(&w->interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 200.0f));
     e.box = BOX(0, 0, 0, slider_height);
     e.name = "interpolation speed";
     e.sizing = SIZING_PERCENT(35, 0);
@@ -588,6 +588,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   Waveshaper* w = (Waveshaper*)ins->userdata;
   const i32 sample_rate = audio->sample_rate;
   const i32 channel_count = audio->channel_count;
+  const f32 sample_dt = dt / (f32)ins->samples;
   f32 volume = ins->volume;
   if (w->mute) {
     volume = 0.0f;
@@ -604,25 +605,27 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
     }
   }
-  for (size_t i = 0; i < ins->samples; i += 2) {
+  for (size_t i = 0; i < ins->samples; i += channel_count) {
     w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
     w->lfo.tick += 1;
     if (w->lfo.lfo_target != NULL) {
       *w->lfo.lfo_target = w->lfo.lfo;
     }
+    const i32 offsets[2] = {
+      w->left_offset,
+      w->right_offset
+    };
 
-    ins->out_buffer[i] += volume * sinf(
-      ((w->tick + w->left_offset) * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
-      / (f32)sample_rate
-    );
-    ins->out_buffer[i + 1] += volume * sinf(
-      ((w->tick + w->right_offset) * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
-      / (f32)sample_rate
-    );
+    #define SAMPLE_FROM_TABLE(ARR, INDEX) (ARR[(size_t)fmodf(fabs(INDEX), LENGTH(ARR))])
+    for (i32 channel_index = 0; channel_index < channel_count; ++channel_index) {
+      i32 offset = offsets[(channel_index % 2) == 0];
+      ins->out_buffer[i + channel_index] += volume * SAMPLE_FROM_TABLE(sine, (w->tick + offset) * (w->freq + SAMPLE_FROM_TABLE(sine, (w->tick * w->freq_mod))));
+    }
+    #undef SAMPLE_FROM_TABLE
     w->tick += w->speed;
-    w->freq = lerp_f32(w->freq, w->freq_target, dt * w->interp_speed);
-    w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, dt * w->interp_speed);
-    ins->volume = lerp_f32(ins->volume, w->volume_target, dt * w->interp_speed);
+    w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->interp_speed);
+    w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->interp_speed);
+    ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * w->interp_speed);
   }
   if (w->distortion) {
 #ifdef EXPERIMENTAL
