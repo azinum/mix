@@ -49,6 +49,8 @@ void waveshaper_default(Waveshaper* w) {
   w->flipflop         = false;
   w->distortion       = false;
   w->gain             = 1.0f;
+  w->left_offset      = 0;
+  w->right_offset     = 0;
   w->lfo = (Lfo) {
     .lfo_target = NULL,
     .lfo = 0,
@@ -228,7 +230,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 #ifdef TARGET_ANDROID
   const i32 button_height = 64;
 #else
-  const i32 button_height = 48;
+  const i32 button_height = FONT_SIZE * 2;
 #endif
   const i32 slider_height = FONT_SIZE;
   const i32 input_height = slider_height;
@@ -250,7 +252,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_toggle_ex(&w->flipflop, "flipflop");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.tooltip = "flip the counting direction of the internal clock";
+    e.tooltip = "flip the counting direction of the internal\nclock after processing audio buffer";
     ui_attach_element(container, &e);
   }
   {
@@ -364,7 +366,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.001f, 10.0f));
+    Element e = ui_slider_float(&w->speed, 0.001f, 10.0f);
     e.name = "speed";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(35, 0);
@@ -377,8 +379,46 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider(&w->gain, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 5.0f));
+    Element e = ui_slider_float(&w->gain, 0.0f, 5.0f);
     e.name = "gain";
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(container, &e);
+  }
+
+
+  {
+    Element e = ui_text("left offset");
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("right offset");
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_int("left offset", &w->left_offset);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_int(&w->left_offset, 0, 4096);
+    e.name = "left offset";
+    e.box = BOX(0, 0, 0, slider_height);
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_int("right offset", &w->right_offset);
+    e.box = BOX(0, 0, 0, input_height);
+    e.sizing = SIZING_PERCENT(15, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_int(&w->right_offset, 0, 4096);
+    e.name = "right offset";
     e.box = BOX(0, 0, 0, slider_height);
     e.sizing = SIZING_PERCENT(35, 0);
     ui_attach_element(container, &e);
@@ -572,11 +612,11 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     }
 
     ins->out_buffer[i] += volume * sinf(
-      (w->tick * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
+      ((w->tick + w->left_offset) * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
       / (f32)sample_rate
     );
-    ins->out_buffer[i + 1] += volume * cosf(
-      (w->tick * PI32 * channel_count * (w->freq + cosf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
+    ins->out_buffer[i + 1] += volume * sinf(
+      ((w->tick + w->right_offset) * PI32 * channel_count * (w->freq + sinf((w->tick * w->freq_mod * PI32) / (f32)sample_rate)))
       / (f32)sample_rate
     );
     w->tick += w->speed;

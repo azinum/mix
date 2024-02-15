@@ -47,6 +47,8 @@ typedef struct Waveshaper {
   i32 flipflop;
   i32 distortion;
   f32 gain;
+  i32 left_offset;
+  i32 right_offset;
   Arena arena;
   Lfo lfo;
   char* lfo_connection;
