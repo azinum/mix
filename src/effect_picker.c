@@ -40,7 +40,7 @@ void clear_effects(Element* e) {
   (void)e;
   Mix* mix = (Mix*)e->userdata;
   ASSERT(mix != NULL);
-  audio_engine_remove_effects();
+  audio_engine_clear_effects();
   if (!mix->effect_chain) {
     return;
   }

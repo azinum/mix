@@ -108,5 +108,6 @@ i32 mix_main(i32 argc, char** argv);
 Result mix_restart_audio_engine(void);
 void mix_assets_load(void);
 void mix_assets_unload(void);
+void mix_render_curve(const f32* samples, const size_t count, Box box, Color color);
 
 #endif // _MIX_H

@@ -29,7 +29,7 @@ Result audio_engine_start_new(Audio_engine* audio);
 Result audio_engine_detach_instrument(void);
 Instrument* audio_engine_attach_instrument(Instrument* ins);
 Effect* audio_engine_attach_effect(Effect* effect);
-void audio_engine_remove_effects(void);
+void audio_engine_clear_effects(void);
 void audio_engine_restart(void);
 void audio_engine_exit(Audio_engine* audio);
 Result audio_engine_process(const void* in, void* out, i32 frames);

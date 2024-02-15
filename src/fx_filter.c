@@ -1,10 +1,13 @@
 // fx_filter.c
 
-#define FREQ_RANGE (20000.0f)
+#define FREQ_RANGE (SAMPLE_RATE*0.5f)
+
+// #define VERSION2
 
 static void fx_filter_default(Filter* filter);
 static void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt);
 static void smooth(f32* input, f32* output, size_t samples);
+static f32 linear_to_logarithmic(f32 low, f32 high, f32 n);
 
 void fx_filter_default(Filter* filter) {
   filter->cutoff = 2000;
@@ -20,7 +23,28 @@ void fx_filter_init(Instrument* ins) {
   filter->buffer = memory_alloc(sizeof(f32) * ins->samples);
 }
 
+// https://stackoverflow.com/questions/17674654/generating-set-of-n-numbers-in-an-integer-range-at-logarithmic-distance-in-c
+f32 linear_to_logarithmic(f32 low, f32 high, f32 n) {
+  if (UNLIKELY(n <= 0)) {
+    return 0;
+  }
+  f32 gap = (log(high) - log(low)) / n;
+  return n * exp(gap);
+}
+
 void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt) {
+#ifdef VERSION2
+  f32 t = tanf((PI32 * dt_step) / SAMPLE_RATE);
+  f32 a = (t - 1.0f) / (t + 1.0f);
+
+  f32 filter_prev = a * input[0];
+  for (size_t i = 0; i < samples; ++i) {
+    f32 input_sample = input[i];
+    f32 filter_sample = a * input_sample + filter_prev;
+    filter_prev = input_sample - a * filter_sample;
+    output[i] = 0.5f * (input_sample + filter_sample);
+  }
+#else
   if (dt + dt_step <= 0.0001f) {
     return;
   }
@@ -29,6 +53,7 @@ void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt
   for (size_t i = 1; i < samples; ++i) {
     output[i] = output[i - 1] + alpha * (input[i] - output[i - 1]);
   }
+#endif
 }
 
 void smooth(f32* input, f32* output, size_t samples) {
@@ -78,8 +103,13 @@ void fx_filter_update(Instrument* ins, struct Mix* mix) {
 }
 
 void fx_filter_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+  (void)linear_to_logarithmic;
   Filter* filter = (Filter*)ins->userdata;
+#ifdef VERSION2
+  f32 cutoff = filter->cutoff;
+#else
   f32 cutoff = dt * (filter->cutoff / FREQ_RANGE);
+#endif
   lowpass_filter(ins->out_buffer, filter->buffer, ins->samples, cutoff, dt);
   smooth(filter->buffer, ins->out_buffer, ins->samples);
 #if 0

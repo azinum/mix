@@ -3,7 +3,7 @@
 main_background_color   = "171717"
 ui_background_color     = "222222"
 ui_border_color         = "020202"
-ui_button_color         = "485485"
+ui_button_color         = "405075"
 ui_text_color           = "f0f0f0"
 ui_focus_color          = "b0b0b0"
 ui_title_bar_color      = "272727"

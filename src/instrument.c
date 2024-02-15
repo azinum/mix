@@ -13,7 +13,7 @@ void instrument_init_default(Instrument* ins) {
   ins->volume = INSTRUMENT_VOLUME_DEFAULT;
   ins->latency = 0;
   ins->audio_latency = 0;
-  ins->blocking = false;
+  ins->blocking = true;
   ins->initialized = false;
   ins->ui = NULL;
 }
@@ -44,6 +44,7 @@ void instrument_init(Instrument* ins, Audio_engine* audio) {
   }
   ins->init(ins);
   ins->initialized = true;
+  ins->blocking = false;
 }
 
 void instrument_ui_new(Instrument* ins, Element* container) {
@@ -67,6 +68,9 @@ void instrument_update(Instrument* ins, struct Mix* mix) {
 
 void instrument_process(Instrument* ins, struct Mix* mix, Audio_engine* audio, f32 dt) {
   TIMER_START();
+  if (UNLIKELY(ins->blocking)) {
+    return;
+  }
   ins->blocking = true;
   if (LIKELY(ins->initialized)) {
     ins->process(ins, mix, audio, dt);

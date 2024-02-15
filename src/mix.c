@@ -151,6 +151,33 @@ void mix_assets_unload(void) {
   assets_unload(&assets);
 }
 
+void mix_render_curve(const f32* samples, const size_t count, Box box, Color color) {
+  const i32 width = box.w;
+  const i32 height = box.h;
+  const i32 x = box.x;
+  const i32 y = box.y + height / 2;
+  Color colors[2] = {
+    color,
+    saturate_color(color, 0.4f)
+  };
+  DrawLine(x, y, x + width, y, COLOR(255, 255, 255, 50));
+  f32 sample = CLAMP(samples[0], -1, 1);
+  f32 prev_sample = 0;
+  f32 index = 0;
+  f32 step = count / (f32)width;
+  for (i32 i = 0; i < width && index < (f32)count; ++i, index += step) {
+    prev_sample = sample;
+    sample = CLAMP(samples[(size_t)index], -1, 1);
+    DrawLine(
+      x + i,
+      y + (height / 2 * prev_sample),
+      x + i + 1,
+      y + (height / 2 * sample),
+      colors[(i % 2) == 0]
+    );
+  }
+}
+
 void mix_update_and_render(Mix* mix) {
   Audio_engine* audio = &audio_engine;
 
@@ -169,6 +196,7 @@ void mix_update_and_render(Mix* mix) {
       if (IsKeyDown(KEY_LEFT_CONTROL)) {
         mix_restart_audio_engine();
       }
+      audio_engine_clear_effects();
       ui_free();
       ui_init();
       mix_reset(mix);

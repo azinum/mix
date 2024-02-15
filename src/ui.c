@@ -667,9 +667,6 @@ inline bool ui_overlap(i32 x, i32 y, Box box) {
     && (y >= box.y && y <= box.y + box.h);
 }
 
-// check which direction the container is scrollable
-// this is for ignoring scroll on a element, but may allow for scrolling
-// on a parent container for instance
 bool ui_container_is_scrollable(Element* e) {
   const i32 content_height = e->data.container.content_height;
   const i32 scroll_y = e->data.container.scroll_y;
