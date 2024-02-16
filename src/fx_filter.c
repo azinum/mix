@@ -104,6 +104,8 @@ void fx_filter_update(Instrument* ins, struct Mix* mix) {
 
 void fx_filter_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
   (void)linear_to_logarithmic;
+  (void)mix;
+  (void)audio;
   Filter* filter = (Filter*)ins->userdata;
 #ifdef VERSION2
   f32 cutoff = filter->cutoff;

@@ -51,6 +51,22 @@ void waveshaper_default(Waveshaper* w) {
   w->gain             = 1.0f;
   w->left_offset      = 0;
   w->right_offset     = 0;
+  const f32 max_freq_mod = 1.0f;
+  f32 freq_mod_step = 2 * max_freq_mod / MOD_TABLE_LENGTH;
+  f32 freq_mod = freq_mod_step;
+  for (u32 i = 0; i < MOD_TABLE_LENGTH; ++i) {
+    w->mod_table[i] = freq_mod;
+    if (i == MOD_TABLE_LENGTH / 2) {
+      freq_mod_step = -freq_mod_step;
+    }
+    freq_mod += freq_mod_step;
+  }
+  w->mod_index    = 0;
+  w->mod_freq_mod = true;
+  w->mod_freq     = false;
+  w->mod_freq_mod_scale = 1.0f;
+  w->mod_freq_scale = 55.0f;
+
   w->lfo = (Lfo) {
     .lfo_target = NULL,
     .lfo = 0,
@@ -131,14 +147,13 @@ void waveshaper_update_drumpad(Element* e) {
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
   w->drumpad.sample_index[0] = 0;
-  static f32 speed = 0.1f;
-  const f32 min_value = 0.0f;
-  const f32 max_value = 2.0f;
-  w->freq_mod_target += speed;
-  if ((w->freq_mod_target <= min_value) || (w->freq_mod_target >= max_value)) {
-    speed = -speed;
-    w->freq_mod_target = CLAMP(w->freq_mod_target, min_value, max_value);
+  if (w->mod_freq_mod) {
+    w->freq_mod_target = w->mod_freq_mod_scale * w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
   }
+  if (w->mod_freq) {
+    w->freq_target = w->mod_freq_scale * w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
+  }
+  w->mod_index += 1;
 }
 
 void waveshaper_drumpad_event1(Waveshaper* w) {
@@ -229,8 +244,10 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 
 #ifdef TARGET_ANDROID
   const i32 button_height = 64;
+  const i32 small_button_height = 48;
 #else
   const i32 button_height = FONT_SIZE * 2;
+  const i32 small_button_height = FONT_SIZE;
 #endif
   const i32 slider_height = FONT_SIZE;
   const i32 input_height = slider_height;
@@ -425,9 +442,54 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   }
 
   ui_attach_element(container, &line_break);
+  {
+    Element e = ui_text_ex("stepper", true);
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
+    f32* f = &w->mod_table[i];
+    Element e = ui_slider_float(f, 0.0f, 2.0f);
+    e.box.w = 20;
+    e.box.h = 3 * button_height;
+    e.data.slider.vertical = true;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_line_break(1);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->mod_freq_mod, "freq mod");
+    e.sizing = SIZING_PERCENT(20, 0);
+    e.box.h = small_button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("scale", &w->mod_freq_mod_scale);
+    e.box.w = FONT_SIZE * 3;
+    e.box.h = small_button_height;
+    e.tooltip = "scale the frequency modulation by this value";
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->mod_freq, "freq");
+    e.sizing = SIZING_PERCENT(20, 0);
+    e.box.h = small_button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("scale", &w->mod_freq_scale);
+    e.box.w = FONT_SIZE * 3;
+    e.box.h = small_button_height;
+    e.tooltip = "scale the frequency by this value";
+    ui_attach_element(container, &e);
+  }
+
+  ui_attach_element(container, &line_break);
 
   {
-    Element e = ui_text_ex("DRUMPAD", true);
+    Element e = ui_text_ex("drumpad", true);
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }

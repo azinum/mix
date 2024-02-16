@@ -1,10 +1,14 @@
 // audio.h
+// macros:
+// NO_RECORD_BUFFER
 
 #ifndef _AUDIO_H
 #define _AUDIO_H
 
 // can not add more than INIT_ITEMS_SIZE of effects, because if the list of elements grows pointers to those elements will be invalidated, and there is currently no handling of this
 #define MAX_EFFECTS (INIT_ITEMS_SIZE)
+
+#define RECORD_BUFFER_LENGTH_SECS (120)
 
 typedef struct Audio_engine {
   i32 sample_rate;
@@ -19,6 +23,9 @@ typedef struct Audio_engine {
   Instrument instrument;
   Effect effect_chain[MAX_EFFECTS];
   size_t effect_count;
+  i16* record_buffer;
+  size_t record_buffer_size;
+  size_t record_buffer_index;
 } Audio_engine;
 
 extern Audio_engine audio_engine;

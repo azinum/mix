@@ -13,22 +13,38 @@ extern void audio_exit(Audio_engine* e);
 #endif
 
 Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channel_count) {
+  frames_per_buffer = ALIGN(frames_per_buffer, 64);
   MEMORY_TAG("audio engine output buffer");
   f32* out_buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32));
   MEMORY_TAG("audio engine input buffer");
   f32* in_buffer = memory_calloc(frames_per_buffer * channel_count, sizeof(f32));
 
+  i16* record_buffer = NULL;
+  size_t record_buffer_size = 0;
+#ifndef NO_RECORD_BUFFER
+  record_buffer_size = ALIGN(RECORD_BUFFER_LENGTH_SECS * channel_count * sample_rate, frames_per_buffer);
+  MEMORY_TAG("audio engine record buffer");
+  record_buffer = memory_alloc(sizeof(i16) * record_buffer_size);
+  if (!record_buffer) {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate record buffer\n");
+    record_buffer_size = 0;
+  }
+#endif
+
   return (Audio_engine) {
-    .sample_rate       = sample_rate,
-    .frames_per_buffer = frames_per_buffer,
-    .channel_count     = channel_count,
-    .out_buffer        = out_buffer,
-    .in_buffer         = in_buffer,
-    .dt                = DT_MIN,
-    .instrument        = {0},
-    .quit              = false,
-    .done              = false,
-    .restart           = false,
+    .sample_rate          = sample_rate,
+    .frames_per_buffer    = frames_per_buffer,
+    .channel_count        = channel_count,
+    .out_buffer           = out_buffer,
+    .in_buffer            = in_buffer,
+    .dt                   = DT_MIN,
+    .instrument           = {0},
+    .quit                 = false,
+    .done                 = false,
+    .restart              = false,
+    .record_buffer        = record_buffer,
+    .record_buffer_size   = record_buffer_size,
+    .record_buffer_index  = 0,
   };
 }
 
@@ -97,6 +113,17 @@ void audio_engine_exit(Audio_engine* audio) {
   audio_engine_clear_effects();
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
+#ifndef NO_RECORD_BUFFER
+  Wave wave = {
+    .frameCount = audio->record_buffer_size / CHANNEL_COUNT,
+    .sampleRate = SAMPLE_RATE,
+    .sampleSize = 8 * sizeof(i16),
+    .channels   = CHANNEL_COUNT,
+    .data = audio->record_buffer,
+  };
+  ExportWave(wave, "record.wav");
+#endif
+  memory_free(audio->record_buffer);
   audio_exit(audio);
   dt = TIMER_END();
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "shut down audio engine in %g ms\n", 1000 * dt);
@@ -178,6 +205,14 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   for (i32 i = 0; i < sample_count; ++i) {
     buffer[i] = audio->out_buffer[i];
   }
+  // write to record buffer
+#ifndef NO_RECORD_BUFFER
+  for (i32 i = 0; i < sample_count; ++i) {
+    size_t index = audio->record_buffer_index;
+    audio->record_buffer[index] = (i16)(audio->out_buffer[i] * INT16_MAX);
+    audio->record_buffer_index = (audio->record_buffer_index + 1) % audio->record_buffer_size;
+  }
+#endif
   audio->dt = TIMER_END();
   return Ok;
 }

@@ -1316,6 +1316,7 @@ Element ui_container(char* title) {
   e.data.container.scroll_y = 0;
   e.data.container.content_height = 0;
   e.data.container.scrollable = true;
+  e.placement = PLACEMENT_BLOCK;
 
   e.render = true;
   e.scissor = true;

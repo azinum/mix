@@ -18,9 +18,11 @@ typedef struct Lfo {
 #ifdef TARGET_ANDROID
   #define DRUMPAD_ROWS 5
   #define DRUMPAD_COLS 16
+  #define MOD_TABLE_LENGTH 8
 #else
   #define DRUMPAD_ROWS 5
   #define DRUMPAD_COLS 32
+  #define MOD_TABLE_LENGTH 16
 #endif
 
 struct Waveshaper;
@@ -49,6 +51,12 @@ typedef struct Waveshaper {
   f32 gain;
   i32 left_offset;
   i32 right_offset;
+  f32 mod_table[MOD_TABLE_LENGTH];
+  u32 mod_index;
+  i32 mod_freq_mod;
+  i32 mod_freq;
+  f32 mod_freq_mod_scale;
+  f32 mod_freq_scale;
   Arena arena;
   Lfo lfo;
   char* lfo_connection;

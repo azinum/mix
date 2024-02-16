@@ -1,4 +1,5 @@
 :: install_deps.bat
+:: download package manager from https://www.msys2.org/
 
 @echo off
 
@@ -14,5 +15,5 @@ pacman -S mingw-w64-x86_64-cmake
 :: glfw3
 pacman -S mingw-w64-x86_64-glfw
 
-:: portaudio for audio playback
+:: portaudio for audio playback (optional, miniaudio can be used if portaudio is unwanted)
 pacman -S mingw-w64-x86_64-portaudio
