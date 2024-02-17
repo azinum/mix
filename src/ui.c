@@ -504,13 +504,17 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const Font font = assets.font;
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
+      char* text = NULL;
+      Color color = e->text_color;
       if (e->data.input.buffer.count > 0) {
-        ui_render_text(font, (char*)e->data.input.buffer.data, &e->box, false, font_size, spacing, UI_LINE_SPACING, e->text_color);
-        break;
+        text = (char*)e->data.input.buffer.data;
       }
-      char* preview = e->data.input.preview;
-      if (preview) {
-        ui_render_text(font, preview, &e->box, false, font_size, spacing, UI_LINE_SPACING, lerp_color(e->text_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f));
+      else {
+        color = lerp_color(e->text_color, invert_color(UI_INTERPOLATION_COLOR), 0.3f);
+        text = e->data.input.preview;
+      }
+      if (text) {
+        ui_render_text(font, text, &e->box, false, font_size, spacing, UI_LINE_SPACING, color);
       }
       break;
     }
