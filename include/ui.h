@@ -233,6 +233,7 @@ typedef struct Element {
   bool border;
   bool scissor;
   bool hidden;
+  bool readonly;
 
   f32 border_thickness;
   f32 roundness;

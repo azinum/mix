@@ -383,11 +383,14 @@ void ui_render_elements(UI_state* ui, Element* e) {
     factor += 0.4f * (*e->data.toggle.value == true);
   }
 
-  if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE || e->type == ELEMENT_SLIDER) && e == ui->hover) {
+  if ((e->type == ELEMENT_BUTTON || e->type == ELEMENT_TOGGLE || e->type == ELEMENT_SLIDER) && e == ui->hover && !e->readonly) {
     factor += 0.10f;
     if (e == ui->active) {
       factor += 0.20f;
     }
+  }
+  if (e->readonly) {
+    factor = 0.0f;
   }
   background_color = lerp_color(background_color, invert_color(UI_INTERPOLATION_COLOR), factor);
 
@@ -484,15 +487,16 @@ void ui_render_elements(UI_state* ui, Element* e) {
           factor = (*e->data.slider.v.i - range.i_min) / (f32)range_length;
           break;
         }
-        default:
-            break;
+        default: {
+          break;
+        }
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
       if (e->data.slider.vertical) {
-        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
+        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
       }
       else {
-        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e)));
+        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
       }
       break;
     }
@@ -642,6 +646,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->border = false;
   e->scissor = false;
   e->hidden = false;
+  e->readonly = false;
 
   e->border_thickness = UI_BORDER_THICKNESS;
   e->roundness = UI_ROUNDNESS;
@@ -843,6 +848,9 @@ void ui_toggle_onclick(struct Element* e) {
 }
 
 void ui_slider_onclick(UI_state* ui, struct Element* e) {
+  if (e->readonly) {
+    return;
+  }
   Box box = ui_pad_box_ex(e->box, UI_SLIDER_INNER_PADDING, 2 * UI_SLIDER_INNER_PADDING);
 
   i32 delta = ui->mouse.x - box.x;
@@ -1011,7 +1019,7 @@ void ui_update(f32 dt) {
   }
 
   if (ui->hover == ui->select && ui->hover) {
-    if (ui->select->id == ui->active_id) {
+    if (ui->select->id == ui->active_id && !ui->select->readonly) {
       if (mod_key) {
         if (ui->marker && ui->marker != ui->select) {
           ui->marker->onconnect(ui->marker, ui->select);
@@ -1093,23 +1101,25 @@ void ui_update(f32 dt) {
   }
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
-    switch (ui->hover->type) {
-      case ELEMENT_BUTTON:
-      case ELEMENT_TOGGLE:
-      case ELEMENT_SLIDER: {
-        cursor = MOUSE_CURSOR_POINTING_HAND;
-        break;
+    if (!ui->hover->readonly) {
+      switch (ui->hover->type) {
+        case ELEMENT_BUTTON:
+        case ELEMENT_TOGGLE:
+        case ELEMENT_SLIDER: {
+          cursor = MOUSE_CURSOR_POINTING_HAND;
+          break;
+        }
+        case ELEMENT_CANVAS: {
+          cursor = MOUSE_CURSOR_CROSSHAIR;
+          break;
+        }
+        case ELEMENT_INPUT: {
+          cursor = MOUSE_CURSOR_IBEAM;
+          break;
+        }
+        default:
+          break;
       }
-      case ELEMENT_CANVAS: {
-        cursor = MOUSE_CURSOR_CROSSHAIR;
-        break;
-      }
-      case ELEMENT_INPUT: {
-        cursor = MOUSE_CURSOR_IBEAM;
-        break;
-      }
-      default:
-        break;
     }
   }
   SetMouseCursor(cursor);
@@ -1146,13 +1156,7 @@ void ui_render(void) {
   if (ui->marker != NULL) {
     const Color color = lerp_color(marker_color_dim, marker_color_bright, (1 + sinf(12*ui->timer)) * 0.5f);
     Element* e = ui->marker;
-    if (e->roundness > 0) {
-      const i32 segments = 8;
-      DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, 1.1f, color);
-    }
-    else {
-      DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.1f, color);
-    }
+    ui_render_rectangle_lines(e->box, 1.1f, e->roundness, color);
   }
   if (ui->input != NULL) {
     ui_render_input(ui, ui->input);
@@ -1739,6 +1743,9 @@ void ui_render_text(
 }
 
 void ui_update_input(UI_state* ui, Element* e) {
+  if (e->readonly) {
+    return;
+  }
   Buffer* buffer = &e->data.input.buffer;
   char ch = 0;
   i32 keycode = GetLastSoftKeyCode();
@@ -1833,6 +1840,9 @@ void ui_update_input(UI_state* ui, Element* e) {
 }
 
 void ui_render_input(UI_state* ui, Element* e) {
+  if (e->readonly) {
+    return;
+  }
   const i32 cursor = e->data.input.cursor;
   ui_render_rectangle_lines(e->box, e->border_thickness, e->roundness, UI_FOCUS_COLOR);
   Box cursor_box = BOX(
