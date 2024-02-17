@@ -85,4 +85,9 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     ui_attach_element(rhs_container, &e);
   }
 #endif
+  {
+    Element e = ui_toggle_ex2(&mix->paused, "pause", "play");
+    e.box = BOX(0, 0, FONT_SIZE * 7, button_height);
+    ui_attach_element(rhs_container, &e);
+  }
 }
