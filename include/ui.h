@@ -226,6 +226,7 @@ typedef struct Element {
 
   Color text_color;
   Color background_color;
+  Color secondary_color;
   Color border_color;
 
   bool render;

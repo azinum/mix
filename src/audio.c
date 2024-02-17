@@ -45,6 +45,7 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
     .record_buffer        = record_buffer,
     .record_buffer_size   = record_buffer_size,
     .record_buffer_index  = 0,
+    .db                   = 0,
   };
 }
 
@@ -201,10 +202,15 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     }
   }
 
-  // write to output buffer
+  f32 db = 0.0f;
+  // write to output buffer and calculate RMS (root mean square)
   for (i32 i = 0; i < sample_count; ++i) {
-    buffer[i] = audio->out_buffer[i];
+    f32 sample = audio->out_buffer[i];
+    buffer[i] = sample;
+    db += sample * sample;
   }
+  audio->db = sqrt(db / (f32)sample_count);
+
   // write to record buffer
 #ifndef NO_RECORD_BUFFER
   if (audio->recording) {

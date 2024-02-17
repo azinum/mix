@@ -21,6 +21,7 @@ void control_panel_change_audio_setting(Element* e) {
 }
 
 void control_panel_ui_new(Mix* mix, Element* container) {
+  Audio_engine* audio = &audio_engine;
   const i32 button_height = FONT_SIZE;
   {
     Element e = ui_canvas(true);
@@ -30,10 +31,18 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(0, 0, 0), 0.1f);
     ui_attach_element(container, &e);
   }
+  {
+    Element e = ui_slider_float(&audio->db, 0, 1);
+    e.data.slider.vertical = true;
+    e.sizing = SIZING_PERCENT(4, 100);
+    e.secondary_color = COLOR_RGB(70, 170, 60);
+    e.readonly = true;
+    ui_attach_element(container, &e);
+  }
   Element* rhs_container = NULL;
   {
     Element e = ui_container(NULL);
-    e.sizing = SIZING_PERCENT(80, 100);
+    e.sizing = SIZING_PERCENT(76, 100);
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
     e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);

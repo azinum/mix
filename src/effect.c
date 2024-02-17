@@ -1,8 +1,10 @@
 // effect.c
 
+#define DEFINE_EFFECT(ID, NAME, TITLE) [ID] = { .title = TITLE, .init = NAME##_init, .ui_new = NAME##_ui_new, .update = NAME##_update, .process = NAME##_process, .destroy = NAME##_destroy, }
+
 Effect effects[MAX_EFFECT_ID] = {
-  [EFFECT_DISTORTION] = { .title = "distortion", .init = fx_distortion_init, .ui_new = fx_distortion_ui_new, .update = fx_distortion_update, .process = fx_distortion_process, .destroy = fx_distortion_destroy, },
-  [EFFECT_FILTER]     = { .title = "filter", .init = fx_filter_init, .ui_new = fx_filter_ui_new, .update = fx_filter_update, .process = fx_filter_process, .destroy = fx_filter_destroy, },
+  DEFINE_EFFECT(EFFECT_DISTORTION, fx_distortion, "distortion"),
+  DEFINE_EFFECT(EFFECT_FILTER, fx_filter, "filter"),
 };
 
 Effect effect_new(Effect_id id) {

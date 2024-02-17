@@ -493,10 +493,10 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
       if (e->data.slider.vertical) {
-        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
       }
       else {
-        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(UI_BUTTON_COLOR, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
       }
       break;
     }
@@ -639,6 +639,7 @@ void ui_element_init(Element* e, Element_type type) {
 
   e->text_color = UI_TEXT_COLOR;
   e->background_color = UI_BACKGROUND_COLOR;
+  e->secondary_color = UI_BACKGROUND_COLOR;
   e->border_color = UI_BORDER_COLOR;
 
   e->render = true;
@@ -1448,6 +1449,7 @@ Element ui_slider(void* value, Value_type type, Range range) {
   e.border = true;
   e.roundness = UI_BUTTON_ROUNDNESS;
   e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
+  e.secondary_color = UI_BUTTON_COLOR;
   return e;
 }
 
