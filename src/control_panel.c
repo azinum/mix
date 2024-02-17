@@ -75,4 +75,14 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.onenter = control_panel_change_audio_setting;
     ui_attach_element(rhs_container, &e);
   }
+#ifndef NO_RECORD_BUFFER
+  {
+    Audio_engine* audio = &audio_engine;
+    Element e = ui_toggle_ex2(&audio->recording, "record", "recording");
+    e.box.w = FONT_SIZE * 7;
+    e.box.h = button_height;
+    e.background_color = COLOR_RGB(175, 80, 85);
+    ui_attach_element(rhs_container, &e);
+  }
+#endif
 }

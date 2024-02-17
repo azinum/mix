@@ -207,10 +207,12 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   }
   // write to record buffer
 #ifndef NO_RECORD_BUFFER
-  for (i32 i = 0; i < sample_count; ++i) {
-    size_t index = audio->record_buffer_index;
-    audio->record_buffer[index] = (i16)(audio->out_buffer[i] * INT16_MAX);
-    audio->record_buffer_index = (audio->record_buffer_index + 1) % audio->record_buffer_size;
+  if (audio->recording) {
+    for (i32 i = 0; i < sample_count; ++i) {
+      size_t index = audio->record_buffer_index;
+      audio->record_buffer[index] = (i16)(audio->out_buffer[i] * INT16_MAX);
+      audio->record_buffer_index = (audio->record_buffer_index + 1) % audio->record_buffer_size;
+    }
   }
 #endif
   audio->dt = TIMER_END();

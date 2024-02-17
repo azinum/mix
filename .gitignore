@@ -15,3 +15,4 @@ config.mk
 test
 data/init.lua
 dump.txt
+record.wav

@@ -26,6 +26,7 @@ typedef struct Audio_engine {
   i16* record_buffer;
   size_t record_buffer_size;
   size_t record_buffer_index;
+  i32 recording;
 } Audio_engine;
 
 extern Audio_engine audio_engine;
