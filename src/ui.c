@@ -74,7 +74,7 @@ static void ui_render_rectangle(Box box, f32 roundness, Color color);
 static void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color);
 // returns true if box was mutated
 static bool ui_measure_text(Font, char* text, Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing);
-static void ui_render_text(Font font, char* text, const Box* box, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
+static void ui_render_text(Font font, char* text, const Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
 static void ui_update_input(UI_state* ui, Element* e);
 static void ui_render_input(UI_state* ui, Element* e);
 
@@ -416,7 +416,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
       const bool text_wrapping = e->data.text.text_wrapping;
-      ui_render_text(font, text, &e->box, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
+      ui_render_text(font, text, &e->box, true, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
 #ifdef UI_DRAW_GUIDES
       ui_render_rectangle_lines(e->box, 1, 0, GUIDE_COLOR2);
 #endif
@@ -514,7 +514,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
         text = e->data.input.preview;
       }
       if (text) {
-        ui_render_text(font, text, &e->box, false, font_size, spacing, UI_LINE_SPACING, color);
+        Box box = ui_expand_box_ex(e->box, 0, -(e->box.h*0.5f - FONT_SIZE*0.5f));
+        ui_render_text(font, text, &box, false, false, font_size, spacing, UI_LINE_SPACING, color);
       }
       break;
     }
@@ -830,7 +831,7 @@ void ui_render_alert(UI_state* ui) {
   Box padded_box = ui_expand_box_ex(box, 2 * UI_PADDING, UI_PADDING);
   ui_render_rectangle(padded_box, UI_ROUNDNESS, UI_BACKGROUND_COLOR);
   ui_render_rectangle_lines(padded_box, UI_BORDER_THICKNESS, UI_ROUNDNESS, UI_BORDER_COLOR);
-  ui_render_text(font, ui->alert_text, &box, true, font_size, spacing, UI_LINE_SPACING, UI_TEXT_COLOR);
+  ui_render_text(font, ui->alert_text, &box, false, true, font_size, spacing, UI_LINE_SPACING, UI_TEXT_COLOR);
 }
 
 Hash ui_hash(const u8* data, const size_t size) {
@@ -1687,6 +1688,7 @@ void ui_render_text(
     char* text,
     const Box* box,
     bool text_wrapping,
+    bool allow_overflow,
     i32 font_size,
     i32 spacing,
     i32 line_spacing,
@@ -1707,7 +1709,7 @@ void ui_render_text(
   f32 scale_factor = font_size / (f32)font.baseSize;
 
   i32 max_line_width = 0;
-  if (text_wrapping) {
+  if (text_wrapping || !allow_overflow) {
     max_line_width = box->w;
   }
 
@@ -1725,6 +1727,9 @@ void ui_render_text(
     }
 
     if (x_offset + advance >= max_line_width && max_line_width > 0) {
+      if (!allow_overflow) {
+        return;
+      }
       x_offset = 0.0f;
       y_offset += line_spacing;
     }
@@ -1857,9 +1862,12 @@ void ui_render_input(UI_state* ui, Element* e) {
     1,
     e->box.h
   );
-  cursor_box = ui_pad_box(cursor_box, 2);
+  cursor_box = ui_pad_box_ex(cursor_box, 0, e->box.h*0.5f - FONT_SIZE*0.5f);
   cursor_box.w = 1;
   const f32 blink = cosf(ui->blink_timer * 5);
+  if (!ui_overlap(cursor_box.x, cursor_box.y, e->box)) {
+    return;
+  }
   if (blink > 0) {
     ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
   }
