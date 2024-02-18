@@ -1761,6 +1761,7 @@ void ui_update_input(UI_state* ui, Element* e) {
   }
   Buffer* buffer = &e->data.input.buffer;
   char ch = 0;
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
   i32 keycode = GetLastSoftKeyCode();
   for (;;) {
 #ifdef TARGET_ANDROID
@@ -1771,33 +1772,63 @@ void ui_update_input(UI_state* ui, Element* e) {
 #else
     ch = GetCharPressed();
 #endif
+    const char* clipboard = NULL;
+    bool paste = mod_key && IsKeyPressed(KEY_V);
+    size_t num_keys_pressed = 1;
+    if (paste) {
+      clipboard = GetClipboardText();
+      if (!clipboard) {
+        break;
+      }
+      num_keys_pressed = strlen(clipboard);
+      ch = clipboard[0];
+    }
     if (ch == 0) {
       break;
     }
+
     ui->blink_timer = 0;
-    switch (e->data.input.input_type) {
-      case INPUT_TEXT: {
-        buffer_insert(buffer, ch, e->data.input.cursor);
-        e->data.input.cursor += 1;
-        break;
+    for (size_t i = 0; i < num_keys_pressed; ++i) {
+      if (paste) {
+        if (!clipboard) {
+          break;
+        }
+        if (clipboard[i] == 0) {
+          break;
+        }
+        ch = clipboard[i];
       }
-      case INPUT_NUMBER: {
-        if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+      switch (e->data.input.input_type) {
+        case INPUT_TEXT: {
           buffer_insert(buffer, ch, e->data.input.cursor);
           e->data.input.cursor += 1;
+          break;
         }
-        break;
+        case INPUT_NUMBER: {
+          if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+            buffer_insert(buffer, ch, e->data.input.cursor);
+            e->data.input.cursor += 1;
+          }
+          break;
+        }
+        default:
+          break;
       }
-      default:
-        break;
     }
+
     e->oninput(e, ch);
+    if (paste) {
+      break;
+    }
 #ifdef TARGET_ANDROID
     break;
 #endif
   }
   if (keycode != 0) {
     ClearLastSoftKey();
+  }
+  if (mod_key && KEY_PRESSED(KEY_C) && buffer->data) {
+    SetClipboardText((const char*)buffer->data);
   }
   if (KEY_PRESSED(KEY_BACKSPACE) || keycode == 67) {
     ui->blink_timer = 0;

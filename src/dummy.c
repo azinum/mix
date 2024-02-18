@@ -1,6 +1,6 @@
 // dummy.c
 
-#define FEEDBACK_BUFFER_SIZE (16*256)
+#define FEEDBACK_BUFFER_SIZE (64*256)
 
 typedef struct Dummy {
   i32 pluck;

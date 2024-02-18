@@ -238,16 +238,16 @@ void waveshaper_init(Instrument* ins) {
 void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  Element line_break = ui_line_break(FONT_SIZE);
+  Element line_break = ui_line_break(FONT_SIZE / 2);
 
 #ifdef TARGET_ANDROID
   const i32 button_height = 64;
   const i32 small_button_height = 48;
 #else
   const i32 button_height = FONT_SIZE * 2;
-  const i32 small_button_height = FONT_SIZE;
+  const i32 small_button_height = FONT_SIZE * 1.2f;
 #endif
-  const i32 slider_height = FONT_SIZE;
+  const i32 slider_height = FONT_SIZE * 1.2f;
   const i32 input_height = slider_height;
   {
     Element e = ui_toggle_ex(&w->mute, "mute");
@@ -454,7 +454,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_line_break(1);
+    Element e = ui_line_break(0);
     ui_attach_element(container, &e);
   }
   {
@@ -468,6 +468,10 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.box.w = FONT_SIZE * 3;
     e.box.h = small_button_height;
     e.tooltip = "scale the frequency modulation by this value";
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_line_break(0);
     ui_attach_element(container, &e);
   }
   {

@@ -84,6 +84,11 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.onenter = control_panel_change_audio_setting;
     ui_attach_element(rhs_container, &e);
   }
+  {
+    Element e = ui_toggle_ex2(&mix->paused, "pause", "play");
+    e.box = BOX(0, 0, FONT_SIZE * 7, button_height);
+    ui_attach_element(rhs_container, &e);
+  }
 #ifndef NO_RECORD_BUFFER
   {
     Audio_engine* audio = &audio_engine;
@@ -94,9 +99,4 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     ui_attach_element(rhs_container, &e);
   }
 #endif
-  {
-    Element e = ui_toggle_ex2(&mix->paused, "pause", "play");
-    e.box = BOX(0, 0, FONT_SIZE * 7, button_height);
-    ui_attach_element(rhs_container, &e);
-  }
 }
