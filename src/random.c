@@ -25,5 +25,5 @@ Random random_number(void) {
 }
 
 f32 random_f32(void) {
-  return random_number() / (f32)UINT32_MAX;
+  return random_number() / (f32)INT32_MAX;
 }

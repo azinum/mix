@@ -224,10 +224,8 @@ void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buff
 }
 
 void waveshaper_init(Instrument* ins) {
-  MEMORY_TAG("waveshaper");
   Waveshaper* w = memory_alloc(sizeof(Waveshaper));
   ASSERT(w != NULL);
-
   ins->userdata = w;
   MEMORY_TAG("waveshaper: arena");
   *w = (Waveshaper) {

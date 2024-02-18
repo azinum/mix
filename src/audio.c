@@ -209,7 +209,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     buffer[i] = sample;
     db += sample * sample;
   }
-  audio->db = sqrt(db / (f32)sample_count);
+  audio->db = sqrtf(db / (f32)sample_count);
 
   // write to record buffer
 #ifndef NO_RECORD_BUFFER

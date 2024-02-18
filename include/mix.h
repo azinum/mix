@@ -88,6 +88,7 @@ typedef struct Mix {
   f32 dt;
   size_t tick;
   size_t timed_tick;
+  f32 tick_delta;
   i32 bpm;
   f32 timer;
   f32 timer_start;

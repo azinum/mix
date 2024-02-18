@@ -44,6 +44,7 @@ void instrument_init(Instrument* ins, Audio_engine* audio) {
   if (ins->out_buffer) {
     ins->samples = samples;
   }
+  MEMORY_TAG("instrument userdata");
   ins->init(ins);
   ins->initialized = true;
   ins->blocking = false;

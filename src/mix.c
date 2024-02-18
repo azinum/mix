@@ -121,6 +121,7 @@ i32 mix_main(i32 argc, char** argv) {
       f32 delta = mix->timer - timestamp;
       mix->timer_start = mix->timer - delta;
       mix->timed_tick += 1;
+      mix->tick_delta = delta;
     }
     mix->fps = 1.0f / mix->dt;
     if (!mix->paused) {

@@ -2,7 +2,8 @@
 // TODO:
 //  - use a free-list
 
-#define BLOCK_HEADER_ALIGNMENT sizeof(size_t)
+#define BLOCK_HEADER_ALIGNMENT (sizeof(size_t))
+
 // don't care to split a free block if the difference is less than this
 #define FREE_BLOCK_DIFF_DONT_CARE 1
 
@@ -62,11 +63,11 @@ Result block_header_from_pointer(Memory* const m, void* p, Block_header** header
 
 // linear search, but good enough for now
 void* allocate_block(Memory* const m, const size_t size, Block_tag tag, Block_header** block_header) {
-  const size_t aligned_size = ALIGN(size, BLOCK_HEADER_ALIGNMENT); // always align to block header size
-  if (m->size < aligned_size) {
+  if (size == 0) {
     return NULL;
   }
-  if (size == 0) {
+  const size_t aligned_size = ALIGN(size, BLOCK_HEADER_ALIGNMENT); // always align to block header size
+  if (m->size < aligned_size) {
     return NULL;
   }
   ASSERT(aligned_size != 0);
