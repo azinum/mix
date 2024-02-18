@@ -416,7 +416,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 font_size = FONT_SIZE;
       const i32 spacing = 0;
       const bool text_wrapping = e->data.text.text_wrapping;
-      ui_render_text(font, text, &e->box, true, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
+      ui_render_text(font, text, &e->box, false, text_wrapping, font_size, spacing, UI_LINE_SPACING, e->text_color);
 #ifdef UI_DRAW_GUIDES
       ui_render_rectangle_lines(e->box, 1, 0, GUIDE_COLOR2);
 #endif
@@ -1726,12 +1726,14 @@ void ui_render_text(
       advance = ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
     }
 
-    if (x_offset + advance >= max_line_width && max_line_width > 0) {
+    if (x_offset + advance > max_line_width && max_line_width > 0) {
       if (!allow_overflow) {
         return;
       }
-      x_offset = 0.0f;
-      y_offset += line_spacing;
+      else {
+        x_offset = 0.0f;
+        y_offset += line_spacing;
+      }
     }
     if (codepoint == '\n') {
       y_offset += line_spacing;
