@@ -1,7 +1,5 @@
 // dummy.c
 
-#define FEEDBACK_BUFFER_SIZE (64*256)
-
 typedef struct Dummy {
   i32 pluck;
   f32 velocity;
@@ -9,6 +7,7 @@ typedef struct Dummy {
   f32 frequency;
   size_t tick;
   f32* feedback_buffer;
+  size_t feedback_buffer_size;
   i32 feedback;
   f32 feedback_amount;
   i32 feedback_offset;
@@ -26,7 +25,11 @@ void dummy_default(Dummy* dummy) {
   dummy->frequency = 55.0f;
   dummy->tick = 0;
   MEMORY_TAG("dummy feedback buffer");
-  dummy->feedback_buffer = memory_calloc(sizeof(f32), FEEDBACK_BUFFER_SIZE);
+  size_t feedback_buffer_size = SAMPLE_RATE / (0.4f * CHANNEL_COUNT); // 400 ms
+  dummy->feedback_buffer = memory_calloc(sizeof(f32), feedback_buffer_size);
+  if (dummy->feedback_buffer) {
+    dummy->feedback_buffer_size = feedback_buffer_size;
+  }
   dummy->feedback = false;
   dummy->feedback_amount = 0.1f;
   dummy->feedback_offset = 0;
@@ -40,7 +43,7 @@ void dummy_randomize_settings(Element* e) {
   dummy->frequency = freq_table[random_number() % (LENGTH(freq_table) / 2)];
   dummy->tick = random_number() % 10000;
   dummy->feedback_amount = random_f32() * 0.99f;
-  dummy->feedback_offset = random_number() % FEEDBACK_BUFFER_SIZE;
+  dummy->feedback_offset = random_number() % dummy->feedback_buffer_size;
   dummy->noise_amount = random_f32();
 
   dummy->pluck = true;
@@ -138,7 +141,7 @@ void dummy_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_slider_int(&dummy->feedback_offset, 0, FEEDBACK_BUFFER_SIZE);
+    Element e = ui_slider_int(&dummy->feedback_offset, 0, dummy->feedback_buffer_size);
     e.sizing = SIZING_PERCENT(80, 0);
     e.box.h = button_height;
     ui_attach_element(container, &e);
@@ -241,9 +244,9 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
     dummy->velocity = lerp_f32(dummy->velocity, 0, dummy->decay * sample_dt);
     ins->out_buffer[i] = sample;
     if (dummy->feedback) {
-      ins->out_buffer[i] += dummy->feedback_buffer[dummy->tick % FEEDBACK_BUFFER_SIZE];
+      ins->out_buffer[i] += dummy->feedback_buffer[dummy->tick % dummy->feedback_buffer_size];
       f32 feedback_sample = dummy->feedback_amount * ins->out_buffer[i];
-      dummy->feedback_buffer[(dummy->tick + abs(dummy->feedback_offset)) % FEEDBACK_BUFFER_SIZE] = feedback_sample;
+      dummy->feedback_buffer[(dummy->tick + abs(dummy->feedback_offset)) % dummy->feedback_buffer_size] = feedback_sample;
     }
   }
 }
