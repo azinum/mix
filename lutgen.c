@@ -1,7 +1,9 @@
-#!/usr/bin/env -S tcc -run -Iinclude -Wall -lm
+// lutgen.c
+// cc lutgen.c -o lutgen -Wall -Iinclude -lm -lraylib -lpthread -ldl
 
 #include <math.h>
 #include <fcntl.h>
+#include <raylib.h>
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define USE_STB_SPRINTF
@@ -23,6 +25,10 @@ static void print_wave_file(i32 fd, const char* path, const char* name);
 
 i32 main(void) {
   memory_init();
+  SetTraceLogLevel(LOG_WARNING);
+  print_wave_file(STDOUT_FILENO, "data/audio/kick.wav", "kick");
+  print_wave_file(STDOUT_FILENO, "data/audio/snare.wav", "snare");
+  print_wave_file(STDOUT_FILENO, "data/audio/hihat.wav", "hihat");
   print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
   return EXIT_SUCCESS;
 }
@@ -50,18 +56,22 @@ void print_wave_file(i32 fd, const char* path, const char* name) {
   }
 #define WAVE_HEADER_SIZE 44
   Buffer buffer = buffer_new_from_fd(wave_fd);
-  size_t sample_count = (buffer.count - WAVE_HEADER_SIZE) / sizeof(i16);
-  print_header(fd, name, "f32", sample_count);
-  if (buffer.count > WAVE_HEADER_SIZE) {
-    i16* sample = (i16*)&buffer.data[WAVE_HEADER_SIZE];
-    for (size_t i = WAVE_HEADER_SIZE; i < buffer.count; i += sizeof(i16), sample += 1) {
-      stb_dprintf(fd, "%.6ff,", *sample / (f32)INT16_MAX);
+  close(wave_fd);
+
+  Wave wave = LoadWaveFromMemory(".wav", buffer.data, buffer.count);
+  if (wave.data) {
+    size_t sample_count = wave.frameCount * wave.channels;
+    print_header(fd, name, "f32", sample_count);
+    i16* data = (i16*)wave.data;
+    for (size_t i = 0; i < sample_count; ++i) {
+      f32 sample = data[i] / (f32)INT16_MAX;
+      dprintf(fd, "%.6ff,", sample);
       if (!((i+1) % WIDTH)) {
-        stb_dprintf(fd, "\n");
+        dprintf(fd, "\n");
       }
     }
-    stb_dprintf(fd, "};\n");
+    dprintf(fd, "};\n");
   }
+  UnloadWave(wave);
   buffer_free(&buffer);
-  close(wave_fd);
 }

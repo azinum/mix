@@ -209,10 +209,10 @@ void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buff
   Waveshaper* w = (Waveshaper*)ins->userdata;
   size_t* sample_index = &w->drumpad.sample_index[3];
   for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
-    if (*sample_index >= LENGTH(bassdrum)) {
+    if (*sample_index >= LENGTH(kick)) {
       return;
     }
-    buffer[i] += bassdrum[*sample_index % LENGTH(bassdrum)];
+    buffer[i] += kick[*sample_index % LENGTH(kick)];
   }
 }
 
