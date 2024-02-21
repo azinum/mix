@@ -6,7 +6,6 @@
 //  - container tabs
 //  - drag and drop (from external file browser)
 //  - multiple ui states to switch between
-//  - fix input text wrapping
 //  - implement an element `watcher` mechanism that notifies external references
 //      to elements that changes, for instance when reallocating or detaching ui nodes. external
 //      element references must not be invalidated.

@@ -19,7 +19,7 @@ void noise_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   (void)audio;
   (void)dt;
   for (size_t i = 0; i < ins->samples; ++i) {
-    f32 sample = ins->volume * (random_f32() - random_f32());
+    f32 sample = ins->volume * (2.0f * (random_f32() - 0.5f));
     ins->out_buffer[i] = sample;
   }
 }

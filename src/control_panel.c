@@ -60,6 +60,7 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.box.h = button_height;
     ui_attach_element(rhs_container, &e);
   }
+#ifndef TARGET_ANDROID
   {
     Element e = ui_text_ex("timed tick", false);
     e.box.h = button_height;
@@ -84,6 +85,7 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.onenter = control_panel_change_audio_setting;
     ui_attach_element(rhs_container, &e);
   }
+#endif
   {
     Element e = ui_toggle_ex2(&mix->paused, "pause", "play");
     e.box = BOX(0, 0, FONT_SIZE * 7, button_height);

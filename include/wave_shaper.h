@@ -21,7 +21,7 @@ typedef struct Lfo {
   #define MOD_TABLE_LENGTH 8
 #else
   #define DRUMPAD_ROWS 5
-  #define DRUMPAD_COLS 32
+  #define DRUMPAD_COLS 16
   #define MOD_TABLE_LENGTH 16
 #endif
 

@@ -239,7 +239,7 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
       dummy->tick = 0;
     }
     f32 sine_sample = sine[(size_t)(dummy->tick * dummy->frequency) % LENGTH(sine)];
-    f32 noise = random_f32() - random_f32();
+    f32 noise = 2 * (random_f32() - 0.5f);
     f32 sample = volume * dummy->velocity * (dummy->noise_amount * noise + (1 - dummy->noise_amount) * sine_sample);
     dummy->velocity = lerp_f32(dummy->velocity, 0, dummy->decay * sample_dt);
     ins->out_buffer[i] = sample;

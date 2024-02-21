@@ -238,7 +238,7 @@ void waveshaper_init(Instrument* ins) {
 void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  Element line_break = ui_line_break(FONT_SIZE / 2);
+  Element line_break = ui_line_break(FONT_SIZE / 4);
 
 #ifdef TARGET_ANDROID
   const i32 button_height = 64;
@@ -501,7 +501,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 #ifdef TARGET_ANDROID
     e.box = BOX(0, 0, DRUMPAD_COLS * button_height, DRUMPAD_ROWS * button_height);
 #else
-    e.box = BOX(0, 0, DRUMPAD_COLS * button_height/2, DRUMPAD_ROWS * button_height/2);
+    e.box = BOX(0, 0, DRUMPAD_COLS * button_height, DRUMPAD_ROWS * button_height);
 #endif
     e.sizing = SIZING_PERCENT(100, 0);
     e.padding = UI_BORDER_THICKNESS + 1;

@@ -11,6 +11,9 @@ prepare:
 build: prepare
 	./gradlew assembleDebug --parallel
 
+release: prepare
+	./gradlew assembleRelease --parallel
+
 install:
 	adb -d install -r ${APP_PATH}
 

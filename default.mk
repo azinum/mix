@@ -12,7 +12,7 @@ CC=cc
 LIBS=-lm
 SRC=src/main.c
 INC=include
-FLAGS=-I${INC} -Wall -Wextra -march=native -ffast-math
+FLAGS=-I${INC} -Wall -Wextra -march=native
 FLAGS_DEBUG=-ggdb -O0
 FLAGS_RELEASE=-DNO_ASSERT -O2 
 TARGET=mix
