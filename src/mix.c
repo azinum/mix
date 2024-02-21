@@ -10,6 +10,9 @@
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
 
+#define THREAD_IMPLEMENTATION
+#include "thread.h"
+
 #ifdef TARGET_ANDROID
   #include "helper.c"
   #include "features.c"
@@ -17,7 +20,6 @@
 
 #include "platform.c"
 #include "memory.c"
-#include "thread.c"
 #include "glob.c"
 #include "hash.c"
 #include "random.c"
