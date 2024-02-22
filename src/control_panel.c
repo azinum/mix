@@ -1,4 +1,7 @@
 // control_panel.c
+// TODO:
+//  - add time elapsed
+//  - add recorded time elapsed
 
 static void control_panel_render_waveform(Element* e);
 static void control_panel_change_audio_setting(Element* e);

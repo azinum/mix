@@ -9,7 +9,7 @@
 #define FREE_BLOCK_DIFF_DONT_CARE 1
 
 #ifndef MEMORY_ALLOC_STATIC_SIZE
-  #define MEMORY_ALLOC_STATIC_SIZE ALIGN(Mb(64), BLOCK_HEADER_ALIGNMENT)
+  #define MEMORY_ALLOC_STATIC_SIZE ALIGN(Mb(256), BLOCK_HEADER_ALIGNMENT)
 #endif
 
 // number of times to sweep the memory after a free

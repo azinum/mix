@@ -813,7 +813,7 @@ void ui_render_alert(UI_state* ui) {
   const i32 font_size = FONT_SIZE;
   const i32 spacing = 0;
   const i32 line_spacing = UI_LINE_SPACING;
-  Box box = BOX(0, 0, root->box.w * 0.2f, 0);
+  Box box = BOX(0, 0, root->box.w * 0.3f, 0);
   ui_measure_text(
     font,
     text,

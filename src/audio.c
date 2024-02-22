@@ -139,6 +139,7 @@ Audio_source audio_load_audio(const char* path) {
     .samples = 0,
     .channel_count = 0,
     .ready = false,
+    .internal = false,
   };
   Buffer buffer = buffer_new_from_file(path);
   if (!buffer.data) {
@@ -180,6 +181,9 @@ Audio_source audio_load_audio(const char* path) {
 void audio_unload_audio(Audio_source* source) {
   ASSERT(source);
   if (!source->buffer) {
+    return;
+  }
+  if (source->internal) {
     return;
   }
   memory_free(source->buffer);

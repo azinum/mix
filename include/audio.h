@@ -15,6 +15,7 @@ typedef struct Audio_source {
   size_t samples;
   u32 channel_count;
   bool ready;
+  bool internal;
 } Audio_source;
 
 typedef struct Audio_engine {

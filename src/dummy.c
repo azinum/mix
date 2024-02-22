@@ -12,6 +12,7 @@ typedef struct Dummy {
   f32 feedback_amount;
   i32 feedback_offset;
   f32 noise_amount;
+  Audio_source source;
 } Dummy;
 
 static void dummy_default(Dummy* dummy);
@@ -34,6 +35,14 @@ void dummy_default(Dummy* dummy) {
   dummy->feedback_amount = 0.1f;
   dummy->feedback_offset = 0;
   dummy->noise_amount = 0.5f;
+  Audio_source source = {
+    .buffer = (f32*)&sine[0],
+    .samples = LENGTH(sine),
+    .channel_count = 2,
+    .ready = true,
+    .internal = true,
+  };
+  dummy->source = source;
 }
 
 void dummy_randomize_settings(Element* e) {
@@ -213,6 +222,21 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
       dummy->pluck = true;
     }
   }
+  if (IsFileDropped()) {
+    FilePathList files = LoadDroppedFiles();
+    if (files.count > 0) {
+      char* path = files.paths[0];
+      Audio_source loaded_source = audio_load_audio(path);
+      if (loaded_source.buffer != NULL) {
+        audio_unload_audio(&dummy->source);
+        dummy->source = loaded_source;
+      }
+      else {
+        ui_alert("failed to load audio file\n%s", path);
+      }
+    }
+    UnloadDroppedFiles(files);
+  }
 }
 
 void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
@@ -238,9 +262,9 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
       dummy->velocity = 1.0f;
       dummy->tick = 0;
     }
-    f32 sine_sample = sine[(size_t)(dummy->tick * dummy->frequency) % LENGTH(sine)];
+    f32 source_sample = dummy->source.buffer[(size_t)(dummy->tick * dummy->frequency) % dummy->source.samples];
     f32 noise = 2 * (random_f32() - 0.5f);
-    f32 sample = volume * dummy->velocity * (dummy->noise_amount * noise + (1 - dummy->noise_amount) * sine_sample);
+    f32 sample = volume * dummy->velocity * (dummy->noise_amount * noise + (1 - dummy->noise_amount) * source_sample);
     dummy->velocity = lerp_f32(dummy->velocity, 0, dummy->decay * sample_dt);
     ins->out_buffer[i] = sample;
     if (dummy->feedback) {
@@ -254,4 +278,5 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
 void dummy_destroy(struct Instrument* ins) {
   Dummy* dummy = (Dummy*)ins->userdata;
   memory_free(dummy->feedback_buffer);
+  audio_unload_audio(&dummy->source);
 }
