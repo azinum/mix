@@ -4,11 +4,13 @@ Audio_engine audio_engine = {0};
 extern Result audio_new(Audio_engine* e);
 extern void audio_exit(Audio_engine* e);
 
+// TODO(lucas): change audio engine `backends` at runtime (shared library loading)
 #if defined(USE_MINIAUDIO)
   #include "audio_miniaudio.c"
 #elif defined(USE_PORTAUDIO)
   #include "audio_pa.c"
 #else
+  // TODO(lucas): null audio driver should process audio
   #include "audio_null.c"
 #endif
 
@@ -130,8 +132,69 @@ void audio_engine_exit(Audio_engine* audio) {
   log_print(STDOUT_FILENO, LOG_TAG_INFO, "shut down audio engine in %g ms\n", 1000 * dt);
 }
 
+// TODO(lucas): queue files to be loaded in seperate thread(s)
+Audio_source audio_load_audio(const char* path) {
+  Audio_source source = {
+    .buffer = NULL,
+    .samples = 0,
+    .channel_count = 0,
+    .ready = false,
+  };
+  Buffer buffer = buffer_new_from_file(path);
+  if (!buffer.data) {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to load audio file `%s`, because file does not exist or you do not have permissions to read it\n", path);
+    return source;
+  }
+  char* ext = file_extension(path);
+  Wave wave = LoadWaveFromMemory(ext, buffer.data, buffer.count);
+  buffer_free(&buffer);
+  if (wave.data) {
+    log_print(STDOUT_FILENO, LOG_TAG_SUCCESS, "loaded file `%s`\n", path);
+    if (wave.sampleSize != 16) {
+      log_print(STDOUT_FILENO, LOG_TAG_WARN, "loading audio file `%s` with %u-bit sample size, this is not supported yet\n", path, wave.sampleSize);
+    }
+    size_t samples = wave.frameCount * wave.channels;
+    u32 channel_count = (u32)wave.channels;
+    f32* audio_buffer = memory_alloc(sizeof(f32) * samples);
+    if (audio_buffer) {
+      i16* data = (i16*)wave.data;
+      for (size_t i = 0; i < samples; ++i) {
+        audio_buffer[i] = data[i] / (f32)INT16_MAX;
+      }
+      source.buffer = audio_buffer;
+      source.samples = samples;
+      source.channel_count = channel_count;
+      source.ready = true;
+    }
+    else {
+      log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate memory for audio source (from file `%s`)\n", path);
+    }
+    UnloadWave(wave);
+  }
+  else {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to load audio file `%s`\n", path);
+  }
+  return source;
+}
+
+void audio_unload_audio(Audio_source* source) {
+  ASSERT(source);
+  if (!source->buffer) {
+    return;
+  }
+  memory_free(source->buffer);
+  source->buffer = NULL;
+  source->samples = 0;
+  source->channel_count = 0;
+  source->ready = false;
+}
+
 Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
+  // TODO(lucas): measure latency of instruments and effects/plugins for
+  // limiting cpu usage so that there will be no audio glitches/lag i.e. disable
+  // or limit the amount of instruments/effects and/or use lower quality audio processing
+
   Mix* mix = &mix_state;
   Audio_engine* audio = &audio_engine;
   if (audio->quit) {

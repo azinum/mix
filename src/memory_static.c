@@ -1,6 +1,7 @@
 // memory_static.c
 // TODO:
 //  - use a free-list
+//  - make thread safe
 
 #define BLOCK_HEADER_ALIGNMENT (sizeof(size_t))
 

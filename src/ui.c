@@ -1334,7 +1334,7 @@ Element ui_container(char* title) {
     .padding = UI_TITLE_BAR_PADDING,
     .top = true,
   };
-  e.border_thickness = 0; //UI_BORDER_THICKNESS;
+  e.border_thickness = UI_BORDER_THICKNESS;
   if (title) {
     // NOTE(lucas): set roundness to 0 when using title bars because rounded titlebars are not supported yet
     e.roundness = 0;
@@ -1507,12 +1507,12 @@ Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_ty
   e.data.input.value = value;
   switch (value_type) {
     case VALUE_TYPE_FLOAT: {
-      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt (VALUE_TYPE_FLOAT)");
+      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt");
       e.data.input.buffer = buffer_new_from_fmt(32, "%g", *(f32*)value);
       break;
     }
     case VALUE_TYPE_INTEGER: {
-      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt (VALUE_TYPE_INTEGER)");
+      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt");
       e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i32*)value);
       break;
     }

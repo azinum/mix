@@ -147,6 +147,8 @@ Buffer buffer_new_from_file(const char* path) {
       .size = 0,
     };
   }
-  return buffer_new_from_fd(fd);
+  Buffer result = buffer_new_from_fd(fd);
+  close(fd);
+  return result;
 #endif
 }

@@ -216,3 +216,17 @@ i32 fd_open(const char* path, i32 flags, ...) {
   }
   return fileno(fp);
 }
+
+char* file_extension(const char* path) {
+  char* result = (char*)path;
+  for (;;) {
+    char ch = *path++;
+    if (ch == 0) {
+      return result;
+    }
+    if (ch == '.') {
+      return (char*)path - 1;
+    }
+  }
+  return result;
+}

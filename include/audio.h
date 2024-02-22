@@ -10,6 +10,13 @@
 
 #define RECORD_BUFFER_LENGTH_SECS (120)
 
+typedef struct Audio_source {
+  f32* buffer;
+  size_t samples;
+  u32 channel_count;
+  bool ready;
+} Audio_source;
+
 typedef struct Audio_engine {
   i32 sample_rate;
   i32 frames_per_buffer;
@@ -41,6 +48,8 @@ Effect* audio_engine_attach_effect(Effect* effect);
 void audio_engine_clear_effects(void);
 void audio_engine_restart(void);
 void audio_engine_exit(Audio_engine* audio);
+Audio_source audio_load_audio(const char* path);
+void audio_unload_audio(Audio_source* source);
 Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H

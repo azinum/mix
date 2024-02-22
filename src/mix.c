@@ -4,6 +4,11 @@
 #define USE_STB_SPRINTF
 #include "ext/stb/stb_sprintf.h"
 
+#ifdef TARGET_ANDROID
+  #include "helper.c"
+  #include "features.c"
+#endif
+
 #define COMMON_IMPLEMENTATION
 #include "common.h"
 #include "mix.h"
@@ -12,11 +17,6 @@
 
 #define THREAD_IMPLEMENTATION
 #include "thread.h"
-
-#ifdef TARGET_ANDROID
-  #include "helper.c"
-  #include "features.c"
-#endif
 
 #include "platform.c"
 #include "memory.c"
