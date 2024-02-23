@@ -1,5 +1,11 @@
 // fx_distortion.c
 
+typedef struct Distortion {
+  f32 input_gain;
+  f32 output_gain;
+  f32 clip;
+} Distortion;
+
 static void fx_distortion_default(Distortion* d);
 
 void fx_distortion_default(Distortion* d) {

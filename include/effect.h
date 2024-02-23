@@ -6,6 +6,7 @@
 typedef enum {
   EFFECT_DISTORTION,
   EFFECT_FILTER,
+  EFFECT_DELAY,
 
   MAX_EFFECT_ID,
 } Effect_id;

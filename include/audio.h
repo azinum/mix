@@ -10,6 +10,10 @@
 
 #define RECORD_BUFFER_LENGTH_SECS (120)
 
+// convert from milliseconds to number of samples, based on the channel rate and channel count
+#define MS_TO_SAMPLES(sample_rate, channels, ms) (size_t)((sample_rate) / ((ms / 1000.0f) * channels))
+#define SECS_TO_SAMPLES(sample_rate, channels, seconds) (MS_TO_SAMPLES(sample_rate, channels, seconds * 1000.0f))
+
 typedef struct Audio_source {
   f32* buffer;
   size_t samples;
@@ -51,6 +55,7 @@ void audio_engine_restart(void);
 void audio_engine_exit(Audio_engine* audio);
 Audio_source audio_load_audio(const char* path);
 void audio_unload_audio(Audio_source* source);
+void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples);
 Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H

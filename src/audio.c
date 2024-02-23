@@ -193,6 +193,15 @@ void audio_unload_audio(Audio_source* source) {
   source->ready = false;
 }
 
+void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples) {
+  ASSERT(input && left_output && right_output && !(samples % 2));
+  size_t index = 0;
+  for (size_t i = 0; i < samples; i += 2, index += 1) {
+    left_output[index]  = input[i + 0];
+    right_output[index] = input[i + 1];
+  }
+}
+
 Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
   // TODO(lucas): measure latency of instruments and effects/plugins for
