@@ -309,6 +309,7 @@ void ui_alert_simple(const char* message);
 void ui_alert(const char* format, ...);
 
 Element* ui_attach_element(Element* target, Element* e);
+Element* ui_attach_element_v2(Element* target, Element e);
 void    ui_detach_elements(Element* e); // detach child nodes of this element
 void    ui_detach(Element* e, u32 index);
 void    ui_detach_last(Element* e);

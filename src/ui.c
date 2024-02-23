@@ -1268,6 +1268,10 @@ Element* ui_attach_element(Element* target, Element* e) {
   return &target->items[index];
 }
 
+Element* ui_attach_element_v2(Element* target, Element e) {
+  return ui_attach_element(target, &e);
+}
+
 void ui_detach_elements(Element* e) {
   if (!e) {
     return;

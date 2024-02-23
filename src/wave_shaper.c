@@ -495,22 +495,26 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
-  Element* grid = NULL;
-  {
-    Element e = ui_grid(DRUMPAD_COLS, true);
-#ifdef TARGET_ANDROID
-    e.box = BOX(0, 0, DRUMPAD_COLS * button_height, DRUMPAD_ROWS * button_height);
-#else
-    e.box = BOX(0, 0, DRUMPAD_COLS * button_height, DRUMPAD_ROWS * button_height);
-#endif
-    e.sizing = SIZING_PERCENT(100, 0);
-    e.padding = UI_BORDER_THICKNESS + 1;
-    grid = ui_attach_element(container, &e);
-  }
+
+  const char* descriptions[DRUMPAD_ROWS] = {
+    "stepper",
+    "hihat  ",
+    "snare  ",
+    "kick   ",
+    "freeze ",
+  };
+  const i32 pad_height = (i32)(button_height * 0.75f);
   for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
+    {
+      Element e = ui_text((char*)descriptions[y]);
+      e.box = BOX(0, 0, 4 * FONT_SIZE, pad_height);
+      e.text_color = lerp_color(UI_TEXT_COLOR, invert_color(UI_INTERPOLATION_COLOR), 0.4f);
+      ui_attach_element(container, &e);
+    }
     for (size_t x = 0; x < DRUMPAD_COLS; ++x) {
       i32* value = &w->drumpad.pad[x][y];
       Element e = ui_toggle(value);
+      e.box = BOX(0, 0, pad_height, pad_height);
       e.userdata = ins;
       e.v.i = x;
       if (!((x + 0) % 4)) {
@@ -520,8 +524,9 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
         e.background_color = UI_BUTTON_COLOR;
       }
       e.onupdate = waveshaper_update_drumpad;
-      ui_attach_element(grid, &e);
+      ui_attach_element(container, &e);
     }
+    ui_attach_element_v2(container, ui_line_break(0));
   }
 
   ui_attach_element(container, &line_break);

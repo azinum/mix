@@ -122,7 +122,7 @@ void audio_engine_exit(Audio_engine* audio) {
     .sampleRate = SAMPLE_RATE,
     .sampleSize = 8 * sizeof(i16),
     .channels   = CHANNEL_COUNT,
-    .data = audio->record_buffer,
+    .data       = audio->record_buffer,
   };
   ExportWave(wave, "record.wav");
 #endif
