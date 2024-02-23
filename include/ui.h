@@ -24,7 +24,7 @@
 
 // delay, in seconds, until showing tooltip
 #ifndef UI_TOOLTIP_DELAY
-  #define UI_TOOLTIP_DELAY 0.5f
+  #define UI_TOOLTIP_DELAY 0.2f
 #endif
 
 #ifndef UI_SCROLL_SPEED

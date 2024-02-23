@@ -47,12 +47,12 @@ void fx_delay_ui_new(Instrument* ins, Element* container) {
   Delay* delay = (Delay*)ins->userdata;
 
   {
-    Element e = ui_text("feedback (left channel)");
+    Element e = ui_text("feedback - left channel");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_text("feedback (right channel)");
+    Element e = ui_text("feedback - right channel");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
@@ -84,12 +84,12 @@ void fx_delay_ui_new(Instrument* ins, Element* container) {
   }
 
   {
-    Element e = ui_text("offset (left channel)");
+    Element e = ui_text("offset - left channel");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_text("offset (right channel)");
+    Element e = ui_text("offset - right channel");
     e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
@@ -126,6 +126,9 @@ void fx_delay_update(Instrument* ins, struct Mix* mix) {
 }
 
 void fx_delay_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+  (void)dt;
+  (void)audio;
+  (void)mix;
   Delay* delay = (Delay*)ins->userdata;
 
   for (size_t i = 0; i < ins->samples; i += 2) {

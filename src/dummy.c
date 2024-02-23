@@ -2,6 +2,7 @@
 
 typedef struct Dummy {
   i32 pluck;
+  i32 trigger;
   f32 velocity;
   f32 decay;
   f32 frequency;
@@ -12,6 +13,8 @@ typedef struct Dummy {
   f32 feedback_amount;
   i32 feedback_offset;
   f32 noise_amount;
+  i32 trigger_interval;
+  size_t trigger_tick;
   Audio_source source;
 } Dummy;
 
@@ -22,6 +25,7 @@ static void pluck(Element* e);
 
 void dummy_default(Dummy* dummy) {
   dummy->pluck = false;
+  dummy->trigger = false;
   dummy->velocity = 0.0f;
   dummy->decay = 10;
   dummy->frequency = 55.0f;
@@ -36,6 +40,8 @@ void dummy_default(Dummy* dummy) {
   dummy->feedback_amount = 0.1f;
   dummy->feedback_offset = 0;
   dummy->noise_amount = 0.5f;
+  dummy->trigger_interval = 16;
+  dummy->trigger_tick = 0;
   Audio_source source = {
     .buffer = (f32*)&sine[0],
     .samples = LENGTH(sine),
@@ -55,7 +61,7 @@ void dummy_randomize_settings(Element* e) {
   dummy->feedback_amount = random_f32() * 0.99f;
   dummy->feedback_offset = random_number() % dummy->feedback_buffer_size;
   dummy->noise_amount = random_f32();
-
+  dummy->trigger_interval = random_number() % 128;
   dummy->pluck = true;
 }
 
@@ -107,6 +113,13 @@ void dummy_ui_new(Instrument* ins, Element* container) {
     e.tooltip = "randomize settings and pluck the instrument";
     e.onclick = dummy_randomize_settings;
     e.userdata = dummy;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&dummy->trigger, "trigger");
+    e.box.h = button_height;
+    e.sizing = SIZING_PERCENT(50, 0);
+    e.tooltip = "trigger note based on the trigger interval";
     ui_attach_element(container, &e);
   }
 
@@ -219,6 +232,25 @@ void dummy_ui_new(Instrument* ins, Element* container) {
     e.box.h = button_height;
     ui_attach_element(container, &e);
   }
+
+  {
+    Element e = ui_text("trigger interval");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_int("trigger interval", &dummy->trigger_interval);
+    e.sizing = SIZING_PERCENT(20, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_int(&dummy->trigger_interval, 0, 128);
+    e.sizing = SIZING_PERCENT(80, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+
   {
     Element e = ui_text("sample");
     e.sizing = SIZING_PERCENT(100, 0);
@@ -259,6 +291,11 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
       }
       UnloadDroppedFiles(files);
     }
+  }
+  size_t prev_tick = dummy->trigger_tick;
+  dummy->trigger_tick = mix->timed_tick;
+  if ((dummy->trigger_tick != prev_tick) && dummy->trigger && dummy->trigger_interval > 0) {
+    dummy->pluck = !(dummy->trigger_tick % (size_t)dummy->trigger_interval);
   }
 }
 
