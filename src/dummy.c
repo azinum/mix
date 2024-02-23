@@ -17,6 +17,7 @@ typedef struct Dummy {
 
 static void dummy_default(Dummy* dummy);
 static void dummy_randomize_settings(Element* e);
+static void dummy_render_sample(Element* e);
 static void pluck(Element* e);
 
 void dummy_default(Dummy* dummy) {
@@ -56,6 +57,15 @@ void dummy_randomize_settings(Element* e) {
   dummy->noise_amount = random_f32();
 
   dummy->pluck = true;
+}
+
+void dummy_render_sample(Element* e) {
+  Dummy* dummy = (Dummy*)e->userdata;
+  Audio_source* source = &dummy->source;
+  if (!source->buffer) {
+    return;
+  }
+  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
 }
 
 void pluck(Element* e) {
@@ -209,6 +219,19 @@ void dummy_ui_new(Instrument* ins, Element* container) {
     e.box.h = button_height;
     ui_attach_element(container, &e);
   }
+  {
+    Element e = ui_text("sample");
+    e.sizing = SIZING_PERCENT(100, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_canvas(true);
+    e.box = BOX(0, 0, 256, button_height);
+    e.userdata = dummy;
+    e.onrender = dummy_render_sample;
+    e.tooltip = "drag and drop audio file";
+    ui_attach_element(container, &e);
+  }
 }
 
 void dummy_update(Instrument* ins, struct Mix* mix) {
@@ -234,8 +257,8 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
       else {
         ui_alert("failed to load audio file\n%s", path);
       }
+      UnloadDroppedFiles(files);
     }
-    UnloadDroppedFiles(files);
   }
 }
 
@@ -246,8 +269,6 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   (void)dt;
 
   Dummy* dummy = (Dummy*)ins->userdata;
-  const i32 sample_rate = audio->sample_rate;
-  const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
   f32 volume = ins->volume;
 
