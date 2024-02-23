@@ -514,7 +514,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       }
       if (text) {
         Box box = ui_expand_box_ex(e->box, 0, -(e->box.h*0.5f - FONT_SIZE*0.5f));
-        ui_render_text(font, text, &box, false, false, font_size, spacing, UI_LINE_SPACING, color);
+        ui_render_text(font, text, &box, true, false, font_size, spacing, UI_LINE_SPACING, color);
       }
       break;
     }
@@ -830,7 +830,7 @@ void ui_render_alert(UI_state* ui) {
   Box padded_box = ui_expand_box_ex(box, 2 * UI_PADDING, UI_PADDING);
   ui_render_rectangle(padded_box, UI_ROUNDNESS, UI_BACKGROUND_COLOR);
   ui_render_rectangle_lines(padded_box, UI_BORDER_THICKNESS, UI_ROUNDNESS, UI_BORDER_COLOR);
-  ui_render_text(font, ui->alert_text, &box, false, true, font_size, spacing, UI_LINE_SPACING, UI_TEXT_COLOR);
+  ui_render_text(font, ui->alert_text, &box, false, true, font_size, spacing, line_spacing, UI_TEXT_COLOR);
 }
 
 Hash ui_hash(const u8* data, const size_t size) {
@@ -1655,8 +1655,13 @@ bool ui_measure_text(
     }
 
     if (x_offset + advance >= max_line_width && max_line_width > 0) {
-      x_offset = 0.0f;
-      y_offset += line_spacing;
+      if (allow_overflow) {
+        return false;
+      }
+      else {
+        x_offset = 0.0f;
+        y_offset += line_spacing;
+      }
     }
     if (codepoint == '\n') {
       x_offset = 0.0f;
@@ -1686,8 +1691,8 @@ void ui_render_text(
     Font font,
     char* text,
     const Box* box,
-    bool text_wrapping,
     bool allow_overflow,
+    bool text_wrapping,
     i32 font_size,
     i32 spacing,
     i32 line_spacing,
@@ -1708,7 +1713,7 @@ void ui_render_text(
   f32 scale_factor = font_size / (f32)font.baseSize;
 
   i32 max_line_width = 0;
-  if (text_wrapping || !allow_overflow) {
+  if (text_wrapping || allow_overflow) {
     max_line_width = box->w;
   }
 
@@ -1725,8 +1730,8 @@ void ui_render_text(
       advance = ((f32)font.glyphs[glyph_index].advanceX * scale_factor + spacing);
     }
 
-    if (x_offset + advance > max_line_width && max_line_width > 0) {
-      if (!allow_overflow) {
+    if (((x_offset + advance) > max_line_width) && max_line_width > 0) {
+      if (allow_overflow) {
         return;
       }
       else {
