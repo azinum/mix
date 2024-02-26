@@ -210,6 +210,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
 
   Mix* mix = &mix_state;
   Audio_engine* audio = &audio_engine;
+
   if (audio->quit) {
     audio->done = true;
     return Error;

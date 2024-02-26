@@ -183,25 +183,28 @@ const char* placement_str[] = {
 };
 
 typedef enum Size_mode {
-  SIZE_MODE_PIXELS = 0,
-  SIZE_MODE_PERCENT,
+  SIZE_MODE_NONE = 0,
+  SIZE_MODE_PIXELS,
+  SIZE_MODE_PERCENT, // percent in relation to the parent element
 
   MAX_SIZE_MODE,
 } Size_mode;
 
 const char* size_mode_str[] = {
+  "none",
   "pixels",
   "percent",
 };
 
-// TODO(lucas): size mode per axis
 typedef struct Sizing {
-  Size_mode mode;
+  Size_mode x_mode;
+  Size_mode y_mode;
   i32 x;
   i32 y;
 } Sizing;
 
-#define SIZING_PERCENT(X, Y) ((Sizing) { .mode = SIZE_MODE_PERCENT, .x = X, .y = Y, })
+#define SIZING_PIXELS(X, Y) ((Sizing) { .x_mode = SIZE_MODE_PIXELS, .y_mode = SIZE_MODE_PIXELS, .x = X, .y = Y, })
+#define SIZING_PERCENT(X, Y) ((Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PERCENT, .x = X, .y = Y, })
 
 typedef struct Element {
   struct Element* items;

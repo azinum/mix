@@ -9,7 +9,7 @@
 //  - implement an element `watcher` mechanism that notifies external references
 //      to elements that changes, for instance when reallocating or detaching ui nodes. external
 //      element references must not be invalidated.
-//  - improve scissor
+//  - improve scissor (implement a scissor stack)
 //  - make layout design more versatile (constraints, vertical+horizontal padding, min/max sizes, e.t.c)
 //  - floating containers
 //  - drop-down menu
@@ -286,13 +286,37 @@ void ui_update_container(UI_state* ui, Element* e) {
         const Sizing sizing = item->sizing;
         i32 w = item->box.w;
         i32 h = item->box.h;
-        if (sizing.mode == SIZE_MODE_PERCENT) {
-          if (sizing.x != 0) {
-            w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+        switch (sizing.x_mode) {
+          case SIZE_MODE_PIXELS: {
+            if (sizing.x != 0) {
+              w = sizing.x - 2 * e->padding;
+            }
+            break;
           }
-          if (sizing.y != 0) {
-            h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+          case SIZE_MODE_PERCENT: {
+            if (sizing.x != 0) {
+              w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+            }
+            break;
           }
+          default:
+            break;
+        }
+        switch (sizing.y_mode) {
+          case SIZE_MODE_PIXELS: {
+            if (sizing.y != 0) {
+              h = sizing.y - 2 * e->padding;
+            }
+            break;
+          }
+          case SIZE_MODE_PERCENT: {
+            if (sizing.y != 0) {
+              h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+            }
+            break;
+          }
+          default:
+            break;
         }
         item->box = BOX(
           e->box.x + e->padding + px,
@@ -307,13 +331,37 @@ void ui_update_container(UI_state* ui, Element* e) {
         const Sizing sizing = item->sizing;
         i32 w = item->box.w;
         i32 h = item->box.h;
-        if (sizing.mode == SIZE_MODE_PERCENT) {
-          if (sizing.x != 0) {
-            w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+        switch (sizing.x_mode) {
+          case SIZE_MODE_PIXELS: {
+            if (sizing.x != 0) {
+              w = sizing.x - 2 * e->padding;
+            }
+            break;
           }
-          if (sizing.y != 0) {
-            h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+          case SIZE_MODE_PERCENT: {
+            if (sizing.x != 0) {
+              w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+            }
+            break;
           }
+          default:
+            break;
+        }
+        switch (sizing.y_mode) {
+          case SIZE_MODE_PIXELS: {
+            if (sizing.y != 0) {
+              h = sizing.y - 2 * e->padding;
+            }
+            break;
+          }
+          case SIZE_MODE_PERCENT: {
+            if (sizing.y != 0) {
+              h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+            }
+            break;
+          }
+          default:
+            break;
         }
 
         if (px + w + e->padding >= e->box.w) {
@@ -658,7 +706,8 @@ void ui_element_init(Element* e, Element_type type) {
 
   e->placement = PLACEMENT_NONE;
   e->sizing = (Sizing) {
-    .mode = SIZE_MODE_PIXELS,
+    .x_mode = SIZE_MODE_PIXELS,
+    .y_mode = SIZE_MODE_PIXELS,
     .x = 0,
     .y = 0,
   };
@@ -1585,7 +1634,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
   tabs(fd, level); stb_dprintf(fd, "scissor: %s\n", bool_str[e->scissor == true]);
   tabs(fd, level); stb_dprintf(fd, "hidden: %s\n", bool_str[e->hidden == true]);
   tabs(fd, level); stb_dprintf(fd, "placement: %s\n", placement_str[e->placement]);
-  tabs(fd, level); stb_dprintf(fd, "sizing: { mode: %s, x: %d, y: %d }\n", size_mode_str[e->sizing.mode], e->sizing.x, e->sizing.y);
+  tabs(fd, level); stb_dprintf(fd, "sizing: { x_mode: %s, y_mode: %s, x: %d, y: %d }\n", size_mode_str[e->sizing.x_mode], size_mode_str[e->sizing.y_mode], e->sizing.x, e->sizing.y);
 
   for (size_t i = 0; i < e->count; ++i) {
     tabs(fd, level);

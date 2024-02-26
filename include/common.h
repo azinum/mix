@@ -194,6 +194,7 @@ i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
   #include <io.h>
   #define read _read
   #define write _write
+  #define sleep(n) Sleep(n * 1000)
 #elif defined(TARGET_WASM)
   extern i32 write(i32 fd, const void* buf, size_t size);
 #endif

@@ -102,11 +102,7 @@ Element test_ui_new(void) {
     e.sizing = SIZING_PERCENT(50, 50);
     e.scissor = true;
     Element* container = ui_attach_element(&test_ui, &e);
-    // {
-    //   Element e = ui_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
-    //   e.sizing = SIZING_PERCENT(100, 0);
-    //   ui_attach_element(container, &e);
-    // }
+
     for (size_t i = 0; i < LENGTH(elements); ++i) {
       Element e = elements[i];
       switch (e.type) {
@@ -152,7 +148,12 @@ Element test_ui_new(void) {
     Element* container = ui_attach_element(&test_ui, &e);
     for (size_t i = 0; i < 32; ++i) {
       Element e = button_default;
-      e.sizing = SIZING_PERCENT(100, 0);
+      e.sizing = (Sizing) {
+        .x_mode = SIZE_MODE_PERCENT,
+        .y_mode = SIZE_MODE_PIXELS,
+        .x = 100,
+        .y = button_height,
+      };
       ui_attach_element(container, &e);
     }
   }
