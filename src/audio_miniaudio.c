@@ -1,5 +1,7 @@
 // audio_miniaudio.c
 
+#ifdef NO_RAYLIB_AUDIO
+
 #define MINIAUDIO_IMPLEMENTATION
 #define MA_SOUND_FLAG_NO_PITCH
 #define MA_SOUND_FLAG_NO_SPATIALIZATION
@@ -11,6 +13,9 @@
 #define MA_MALLOC memory_alloc
 #define MA_REALLOC memory_realloc
 #define MA_FREE memory_free
+
+#endif
+
 #include "miniaudio.h"
 
 static ma_device device = {0};

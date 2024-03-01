@@ -6,6 +6,34 @@
 
 // #define EXPERIMENTAL
 
+typedef struct Waveshaper {
+  f32 tick;
+  f32 volume_target;
+  f32 freq;
+  f32 freq_target;
+  f32 freq_mod;
+  f32 freq_mod_target;
+  f32 interp_speed;
+  i32 freeze;
+  i32 mute;
+  f32 speed;
+  i32 flipflop;
+  i32 distortion;
+  f32 gain;
+  i32 left_offset;
+  i32 right_offset;
+  f32 mod_table[MOD_TABLE_LENGTH];
+  u32 mod_index;
+  i32 mod_freq_mod;
+  i32 mod_freq;
+  f32 mod_freq_mod_scale;
+  f32 mod_freq_scale;
+  Arena arena;
+  Lfo lfo;
+  char* lfo_connection;
+  Drumpad drumpad;
+} Waveshaper;
+
 static Color color_connected = COLOR_RGB(40, 140, 40);
 static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
@@ -542,8 +570,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.scissor = false;
     e.background = true;
     e.placement = PLACEMENT_BLOCK;
-    // e.border = true;
-    e.background = true;
     e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);
     e.sizing = SIZING_PERCENT(100, 0);
     e.box.h = 4 * button_height;

@@ -164,10 +164,10 @@ void ui_update_elements(UI_state* ui, Element* e) {
     }
   }
 
-  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && e == ui->hover) {
     ui->active = e;
   }
-  if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && e == ui->hover) {
+  if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && e == ui->hover) {
     ui->select = e;
   }
 

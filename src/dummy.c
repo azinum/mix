@@ -16,6 +16,7 @@ typedef struct Dummy {
   i32 trigger_interval;
   size_t trigger_tick;
   Audio_source source;
+  Ticket source_mutex;
 } Dummy;
 
 static void dummy_default(Dummy* dummy);
@@ -85,6 +86,7 @@ void dummy_init(Instrument* ins) {
   ASSERT(dummy != NULL);
   ins->userdata = dummy;
   dummy_default(dummy);
+  dummy->source_mutex = ticket_mutex_new();
 }
 
 void dummy_ui_new(Instrument* ins, Element* container) {
@@ -258,7 +260,12 @@ void dummy_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_canvas(true);
-    e.box = BOX(0, 0, 256, button_height);
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x      = 50,
+      .y      = button_height * 2,
+    };
     e.userdata = dummy;
     e.onrender = dummy_render_sample;
     e.tooltip = "drag and drop audio file";
@@ -277,25 +284,27 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
       dummy->pluck = true;
     }
   }
+  size_t prev_tick = dummy->trigger_tick;
+  dummy->trigger_tick = mix->timed_tick;
+  if ((dummy->trigger_tick != prev_tick) && dummy->trigger && dummy->trigger_interval > 0) {
+    dummy->pluck = !(dummy->trigger_tick % (size_t)dummy->trigger_interval);
+  }
   if (IsFileDropped()) {
     FilePathList files = LoadDroppedFiles();
     if (files.count > 0) {
       char* path = files.paths[0];
       Audio_source loaded_source = audio_load_audio(path);
       if (loaded_source.buffer != NULL) {
+        ticket_mutex_begin(&dummy->source_mutex);
         audio_unload_audio(&dummy->source);
         dummy->source = loaded_source;
+        ticket_mutex_end(&dummy->source_mutex);
       }
       else {
         ui_alert("failed to load audio file\n%s", path);
       }
       UnloadDroppedFiles(files);
     }
-  }
-  size_t prev_tick = dummy->trigger_tick;
-  dummy->trigger_tick = mix->timed_tick;
-  if ((dummy->trigger_tick != prev_tick) && dummy->trigger && dummy->trigger_interval > 0) {
-    dummy->pluck = !(dummy->trigger_tick % (size_t)dummy->trigger_interval);
   }
 }
 
@@ -306,6 +315,9 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   (void)dt;
 
   Dummy* dummy = (Dummy*)ins->userdata;
+
+  ticket_mutex_begin(&dummy->source_mutex);
+
   const f32 sample_dt = dt / (f32)ins->samples;
   f32 volume = ins->volume;
 
@@ -331,6 +343,7 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
       dummy->feedback_buffer[(dummy->tick + abs(dummy->feedback_offset)) % dummy->feedback_buffer_size] = feedback_sample;
     }
   }
+  ticket_mutex_end(&dummy->source_mutex);
 }
 
 void dummy_destroy(struct Instrument* ins) {
