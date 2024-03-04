@@ -118,13 +118,15 @@ void audio_engine_exit(Audio_engine* audio) {
   memory_free(audio->in_buffer);
 #ifndef NO_RECORD_BUFFER
   Wave wave = {
-    .frameCount = audio->record_buffer_size / CHANNEL_COUNT,
+    .frameCount = audio->record_buffer_index / CHANNEL_COUNT,
     .sampleRate = SAMPLE_RATE,
     .sampleSize = 8 * sizeof(i16),
     .channels   = CHANNEL_COUNT,
     .data       = audio->record_buffer,
   };
-  ExportWave(wave, "record.wav");
+  if (wave.frameCount > 0) {
+    ExportWave(wave, "record.wav");
+  }
 #endif
   memory_free(audio->record_buffer);
   audio_exit(audio);

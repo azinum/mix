@@ -8,7 +8,7 @@
 // can not add more than INIT_ITEMS_SIZE of effects, because if the list of elements grows pointers to those elements will be invalidated, and there is currently no handling of this
 #define MAX_EFFECTS (INIT_ITEMS_SIZE)
 
-#define RECORD_BUFFER_LENGTH_SECS (120)
+#define RECORD_BUFFER_LENGTH_SECS (180)
 
 // convert from milliseconds to number of samples, based on the channel rate and channel count
 #define MS_TO_SAMPLES(sample_rate, channels, ms) (size_t)((sample_rate) / ((ms / 1000.0f) * channels))
@@ -36,8 +36,8 @@ typedef struct Audio_engine {
   Effect effect_chain[MAX_EFFECTS];
   size_t effect_count;
   i16* record_buffer;
-  size_t record_buffer_size;
-  size_t record_buffer_index;
+  i32 record_buffer_size;
+  i32 record_buffer_index;
   i32 recording;
   f32 db;
 } Audio_engine;

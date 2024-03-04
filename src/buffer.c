@@ -139,7 +139,11 @@ Buffer buffer_new_from_file(const char* path) {
     .size = 0,
   };
 #else
-  i32 fd = open(path, O_RDONLY | O_BINARY);
+  i32 flags = O_RDONLY;
+#if TARGET_WINDOWS
+  flags |= O_BINARY;
+#endif
+  i32 fd = open(path, flags);
   if (fd < 0) {
     return (Buffer) {
       .data = NULL,

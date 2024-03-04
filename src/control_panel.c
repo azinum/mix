@@ -40,12 +40,22 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.sizing = SIZING_PERCENT(4, 100);
     e.secondary_color = COLOR_RGB(70, 170, 60);
     e.readonly = true;
+    e.tooltip = "volume (RMS)";
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_int(&audio->record_buffer_index, 0, audio->record_buffer_size);
+    e.data.slider.vertical = true;
+    e.sizing = SIZING_PERCENT(2, 100);
+    e.secondary_color = COLOR_RGB(175, 80, 85);
+    e.readonly = true;
+    e.tooltip = "record buffer";
     ui_attach_element(container, &e);
   }
   Element* rhs_container = NULL;
   {
     Element e = ui_container(NULL);
-    e.sizing = SIZING_PERCENT(76, 100);
+    e.sizing = SIZING_PERCENT(74, 100);
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
     e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);
