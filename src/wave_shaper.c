@@ -822,14 +822,14 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     if (w->lfo.lfo_target != NULL) {
       *w->lfo.lfo_target = w->lfo.lfo;
     }
-    const i32 offsets[2] = {
+    i32 offsets[2] = {
       w->left_offset,
       w->right_offset
     };
 
     for (i32 channel_index = 0; channel_index < channel_count; ++channel_index) {
       i32 offset = offsets[(channel_index % 2) == 0];
-      size_t mod_sample_index = (size_t)(w->mod_tick * w->freq_mod + offset);
+      size_t mod_sample_index = (size_t)((w->mod_tick + offset) * w->freq_mod);
       f32 mod_sample = w->mod_source.buffer[mod_sample_index % w->mod_source.samples];
       size_t sample_index = (size_t)((w->tick + offset) * (w->freq + mod_sample));
       f32 sample = volume * w->source.buffer[sample_index % w->source.samples];
