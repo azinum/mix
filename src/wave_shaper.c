@@ -8,6 +8,7 @@
 
 typedef struct Waveshaper {
   f32 tick;
+  size_t mod_tick;
   f32 volume_target;
   f32 freq;
   f32 freq_target;
@@ -32,11 +33,19 @@ typedef struct Waveshaper {
   Lfo lfo;
   char* lfo_connection;
   Drumpad drumpad;
+  Audio_source source;
+  Audio_source mod_source;
+  Ticket source_mutex;
 } Waveshaper;
 
 static Color color_connected = COLOR_RGB(40, 140, 40);
 static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
+static void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source);
+static void waveshaper_render_source(Element* e);
+static void waveshaper_render_mod_source(Element* e);
+static void waveshaper_hover_source(Element* e);
+static void waveshaper_hover_mod_source(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
 static void waveshaper_bind_lfo(Element* e, Element* target);
@@ -57,6 +66,63 @@ static void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f3
 static void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 static void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
 
+void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source) {
+  Audio_source loaded_source = audio_load_audio(path);
+  if (loaded_source.buffer != NULL) {
+    ticket_mutex_begin(&w->source_mutex);
+    audio_unload_audio(source);
+    *source = loaded_source;
+    ticket_mutex_end(&w->source_mutex);
+  }
+  else {
+    ui_alert("failed to load audio file\n%s", path);
+  }
+}
+
+void waveshaper_render_source(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  Audio_source* source = &w->source;
+  if (!source->buffer) {
+    return;
+  }
+  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
+}
+
+void waveshaper_render_mod_source(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  Audio_source* source = &w->mod_source;
+  if (!source->buffer) {
+    return;
+  }
+  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
+}
+
+void waveshaper_hover_source(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  char* path = NULL;
+  if (IsFileDropped()) {
+    FilePathList files = LoadDroppedFiles();
+    if (files.count > 0) {
+      path = files.paths[0];
+    }
+    waveshaper_load_sample(w, path, &w->source);
+    UnloadDroppedFiles(files);
+  }
+}
+
+void waveshaper_hover_mod_source(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  char* path = NULL;
+  if (IsFileDropped()) {
+    FilePathList files = LoadDroppedFiles();
+    if (files.count > 0) {
+      path = files.paths[0];
+    }
+    waveshaper_load_sample(w, path, &w->mod_source);
+    UnloadDroppedFiles(files);
+  }
+}
+
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
   Waveshaper* w = (Waveshaper*)ins->userdata;
@@ -64,7 +130,8 @@ void waveshaper_reset_onclick(Element* e) {
 }
 
 void waveshaper_default(Waveshaper* w) {
-  w->tick             = 0;
+  w->tick             = 0.0f;
+  w->mod_tick         = 0;
   w->volume_target    = 0.1f;
   w->freq             = 55;
   w->freq_target      = 55;
@@ -261,6 +328,21 @@ void waveshaper_init(Instrument* ins) {
   };
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   waveshaper_default(w);
+  w->source = (Audio_source) {
+    .buffer = (f32*)&sine[0],
+    .samples = LENGTH(sine),
+    .channel_count = 2,
+    .ready = true,
+    .internal = true,
+  };
+  w->mod_source = (Audio_source) {
+    .buffer = (f32*)&sine[0],
+    .samples = LENGTH(sine),
+    .channel_count = 2,
+    .ready = true,
+    .internal = true,
+  };
+  w->source_mutex = ticket_mutex_new();
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
@@ -313,6 +395,40 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.onclick = waveshaper_reset_onclick;
     e.userdata = ins;
     e.tooltip = "reset instrument parameters (Q)";
+    ui_attach_element(container, &e);
+  }
+
+  ui_attach_element(container, &line_break);
+
+  {
+    Element e = ui_canvas(true);
+    ui_set_title(&e, "source");
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x      = 50,
+      .y      = button_height * 3,
+    };
+    e.userdata = w;
+    e.onrender = waveshaper_render_source;
+    e.onhover = waveshaper_hover_source;
+    e.tooltip = "drag and drop audio file here";
+    ui_attach_element(container, &e);
+  }
+
+  {
+    Element e = ui_canvas(true);
+    ui_set_title(&e, "mod source");
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x      = 50,
+      .y      = button_height * 3,
+    };
+    e.userdata = w;
+    e.onrender = waveshaper_render_mod_source;
+    e.onhover = waveshaper_hover_mod_source;
+    e.tooltip = "drag and drop audio file here";
     ui_attach_element(container, &e);
   }
 
@@ -711,13 +827,23 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       w->right_offset
     };
 
-    #define SAMPLE_FROM_TABLE(ARR, INDEX) (ARR[(size_t)fmodf(fabs(INDEX), LENGTH(ARR))])
     for (i32 channel_index = 0; channel_index < channel_count; ++channel_index) {
       i32 offset = offsets[(channel_index % 2) == 0];
-      ins->out_buffer[i + channel_index] += volume * SAMPLE_FROM_TABLE(sine, (w->tick + offset) * (w->freq + SAMPLE_FROM_TABLE(sine, (w->tick * w->freq_mod))));
+      size_t mod_sample_index = (size_t)(w->mod_tick * w->freq_mod + offset);
+      f32 mod_sample = w->mod_source.buffer[mod_sample_index % w->mod_source.samples];
+      size_t sample_index = (size_t)((w->tick + offset) * (w->freq + mod_sample));
+      f32 sample = volume * w->source.buffer[sample_index % w->source.samples];
+      if (sample_index >= w->source.samples) {
+        w->tick = 0;
+      }
+      if (mod_sample_index >= w->mod_source.samples) {
+        w->mod_tick = 0;
+      }
+      ins->out_buffer[i + channel_index] += sample;
     }
-    #undef SAMPLE_FROM_TABLE
+
     w->tick += w->speed;
+    w->mod_tick += w->speed;
     w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->interp_speed);
     w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->interp_speed);
     ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * w->interp_speed);
@@ -751,6 +877,8 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 void waveshaper_destroy(struct Instrument* ins) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   arena_free(&w->arena);
+  audio_unload_audio(&w->source);
+  audio_unload_audio(&w->mod_source);
 }
 
 #undef ARENA_SIZE

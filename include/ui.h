@@ -253,6 +253,7 @@ typedef struct Element {
   void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
   void (*oninput)(struct Element* e, char ch);
   void (*onenter)(struct Element* e);
+  void (*onhover)(struct Element* e);
 } __attribute__((aligned(sizeof(size_t)))) Element;
 
 typedef struct UI_state {

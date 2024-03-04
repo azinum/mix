@@ -66,6 +66,7 @@ static void ui_onrender(struct Element* e);
 static void ui_onconnect(struct Element* e, struct Element* target);
 static void ui_oninput(struct Element* e, char ch);
 static void ui_onenter(struct Element* e);
+static void ui_onhover(struct Element* e);
 static bool ui_connection_filter(struct Element* e, struct Element* target);
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
 static void tabs(i32 fd, const u32 count);
@@ -719,6 +720,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->onconnect = ui_onconnect;
   e->oninput = ui_oninput;
   e->onenter = ui_onenter;
+  e->onhover = ui_onhover;
 }
 
 inline bool ui_overlap(i32 x, i32 y, Box box) {
@@ -973,6 +975,10 @@ void ui_onenter(struct Element* e) {
   (void)e;
 }
 
+void ui_onhover(struct Element* e) {
+  (void)e;
+}
+
 bool ui_connection_filter(struct Element* e, struct Element* target) {
   return (e != NULL) && (target != NULL);
 }
@@ -1128,6 +1134,7 @@ void ui_update(f32 dt) {
   if (ui->hover != NULL) {
     ui->tooltip_timer += ui->dt;
     ui->scrollbar_timer += ui->dt;
+    ui->hover->onhover(ui->hover);
   }
   if (ui->scrollable != NULL) {
     ASSERT(ui->scrollable->type == ELEMENT_CONTAINER);

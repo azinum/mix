@@ -156,6 +156,7 @@ void mix_assets_unload(void) {
 }
 
 void mix_render_curve(const f32* samples, const size_t count, Box box, Color color) {
+  box = ui_pad_box_ex(box, 1, 2);
   const i32 width = box.w;
   const i32 height = box.h;
   const i32 x = box.x;
@@ -165,18 +166,18 @@ void mix_render_curve(const f32* samples, const size_t count, Box box, Color col
     saturate_color(color, 0.4f)
   };
   DrawLine(x, y, x + width, y, COLOR(255, 255, 255, 50));
-  f32 sample = CLAMP(samples[0], -1, 1);
+  f32 sample = CLAMP(samples[0], -1.0f, 1.0f);
   f32 prev_sample = 0;
   f32 index = 0;
   f32 step = count / (f32)width;
   for (i32 i = 0; i < width && index < (f32)count; ++i, index += step) {
     prev_sample = sample;
-    sample = CLAMP(samples[(size_t)index], -1, 1);
+    sample = CLAMP(samples[(size_t)index], -1.0f, 1.0f);
     DrawLine(
       x + i,
-      y + (height / 2 * prev_sample),
+      y + (height / 2.0f * prev_sample),
       x + i + 1,
-      y + (height / 2 * sample),
+      y + (height / 2.0f * sample),
       colors[(i % 2) == 0]
     );
   }

@@ -22,6 +22,7 @@ typedef struct Dummy {
 static void dummy_default(Dummy* dummy);
 static void dummy_randomize_settings(Element* e);
 static void dummy_render_sample(Element* e);
+static void dummy_hover_sample(Element* e);
 static void pluck(Element* e);
 
 void dummy_default(Dummy* dummy) {
@@ -43,14 +44,6 @@ void dummy_default(Dummy* dummy) {
   dummy->noise_amount = 0.5f;
   dummy->trigger_interval = 16;
   dummy->trigger_tick = 0;
-  Audio_source source = {
-    .buffer = (f32*)&sine[0],
-    .samples = LENGTH(sine),
-    .channel_count = 2,
-    .ready = true,
-    .internal = true,
-  };
-  dummy->source = source;
 }
 
 void dummy_randomize_settings(Element* e) {
@@ -75,6 +68,27 @@ void dummy_render_sample(Element* e) {
   mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
 }
 
+void dummy_hover_sample(Element* e) {
+  Dummy* dummy = (Dummy*)e->userdata;
+  if (IsFileDropped()) {
+    FilePathList files = LoadDroppedFiles();
+    if (files.count > 0) {
+      char* path = files.paths[0];
+      Audio_source loaded_source = audio_load_audio(path);
+      if (loaded_source.buffer != NULL) {
+        ticket_mutex_begin(&dummy->source_mutex);
+        audio_unload_audio(&dummy->source);
+        dummy->source = loaded_source;
+        ticket_mutex_end(&dummy->source_mutex);
+      }
+      else {
+        ui_alert("failed to load audio file\n%s", path);
+      }
+      UnloadDroppedFiles(files);
+    }
+  }
+}
+
 void pluck(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
   Dummy* dummy = (Dummy*)ins->userdata;
@@ -86,6 +100,13 @@ void dummy_init(Instrument* ins) {
   ASSERT(dummy != NULL);
   ins->userdata = dummy;
   dummy_default(dummy);
+  dummy->source = (Audio_source) {
+    .buffer = (f32*)&sine[0],
+    .samples = LENGTH(sine),
+    .channel_count = 2,
+    .ready = true,
+    .internal = true,
+  };
   dummy->source_mutex = ticket_mutex_new();
 }
 
@@ -254,21 +275,18 @@ void dummy_ui_new(Instrument* ins, Element* container) {
   }
 
   {
-    Element e = ui_text("sample");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(container, &e);
-  }
-  {
     Element e = ui_canvas(true);
+    ui_set_title(&e, "sample");
     e.sizing = (Sizing) {
       .x_mode = SIZE_MODE_PERCENT,
       .y_mode = SIZE_MODE_PIXELS,
       .x      = 50,
-      .y      = button_height * 2,
+      .y      = button_height * 3,
     };
     e.userdata = dummy;
     e.onrender = dummy_render_sample;
-    e.tooltip = "drag and drop audio file";
+    e.onhover = dummy_hover_sample;
+    e.tooltip = "drag and drop audio file here";
     ui_attach_element(container, &e);
   }
 }
@@ -288,23 +306,6 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
   dummy->trigger_tick = mix->timed_tick;
   if ((dummy->trigger_tick != prev_tick) && dummy->trigger && dummy->trigger_interval > 0) {
     dummy->pluck = !(dummy->trigger_tick % (size_t)dummy->trigger_interval);
-  }
-  if (IsFileDropped()) {
-    FilePathList files = LoadDroppedFiles();
-    if (files.count > 0) {
-      char* path = files.paths[0];
-      Audio_source loaded_source = audio_load_audio(path);
-      if (loaded_source.buffer != NULL) {
-        ticket_mutex_begin(&dummy->source_mutex);
-        audio_unload_audio(&dummy->source);
-        dummy->source = loaded_source;
-        ticket_mutex_end(&dummy->source_mutex);
-      }
-      else {
-        ui_alert("failed to load audio file\n%s", path);
-      }
-      UnloadDroppedFiles(files);
-    }
   }
 }
 
