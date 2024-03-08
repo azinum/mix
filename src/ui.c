@@ -290,7 +290,7 @@ void ui_update_container(UI_state* ui, Element* e) {
         switch (sizing.x_mode) {
           case SIZE_MODE_PIXELS: {
             if (sizing.x != 0) {
-              w = sizing.x - 2 * e->padding;
+              w = sizing.x;
             }
             break;
           }
@@ -306,7 +306,7 @@ void ui_update_container(UI_state* ui, Element* e) {
         switch (sizing.y_mode) {
           case SIZE_MODE_PIXELS: {
             if (sizing.y != 0) {
-              h = sizing.y - 2 * e->padding;
+              h = sizing.y;
             }
             break;
           }
@@ -335,7 +335,7 @@ void ui_update_container(UI_state* ui, Element* e) {
         switch (sizing.x_mode) {
           case SIZE_MODE_PIXELS: {
             if (sizing.x != 0) {
-              w = sizing.x - 2 * e->padding;
+              w = sizing.x;
             }
             break;
           }
@@ -351,7 +351,7 @@ void ui_update_container(UI_state* ui, Element* e) {
         switch (sizing.y_mode) {
           case SIZE_MODE_PIXELS: {
             if (sizing.y != 0) {
-              h = sizing.y - 2 * e->padding;
+              h = sizing.y;
             }
             break;
           }

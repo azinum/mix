@@ -166,13 +166,14 @@ void mix_render_curve(const f32* samples, const size_t count, Box box, Color col
     saturate_color(color, 0.4f)
   };
   DrawLine(x, y, x + width, y, COLOR(255, 255, 255, 50));
-  f32 sample = CLAMP(samples[0], -1.0f, 1.0f);
+  // invert samples so that negative values are in the bottom, and positive at top
+  f32 sample = -CLAMP(samples[0], -1.0f, 1.0f);
   f32 prev_sample = 0;
   f32 index = 0;
   f32 step = count / (f32)width;
   for (i32 i = 0; i < width && index < (f32)count; ++i, index += step) {
     prev_sample = sample;
-    sample = CLAMP(samples[(size_t)index], -1.0f, 1.0f);
+    sample = -CLAMP(samples[(size_t)index], -1.0f, 1.0f);
     DrawLine(
       x + i,
       y + (height / 2.0f * prev_sample),

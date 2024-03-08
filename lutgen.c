@@ -4,6 +4,7 @@
 #include <math.h>
 #include <fcntl.h>
 #include <raylib.h>
+#include <float.h>
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define USE_STB_SPRINTF
@@ -17,8 +18,25 @@
 #include "src/memory.c"
 #include "src/buffer.c"
 
+#define SAMPLE_RATE 44100
+#define CHANNEL_COUNT 2
 #define WIDTH 7
 
+typedef enum Shape {
+  SHAPE_SINE,
+  SHAPE_NOISY,
+  SHAPE_SAW,
+
+  MAX_SHAPE,
+} Shape;
+
+typedef struct Sound_source {
+  f32 buffer[SAMPLE_RATE * CHANNEL_COUNT];
+} Sound_source;
+
+static void sound_init(Sound_source* sound);
+static void generate(Sound_source* sound, Shape shape, f32 amplitude);
+static void export(Sound_source* sound, const char* path);
 static void print_header(i32 fd, const char* name, const char* type, size_t size);
 static void print_sine_table(i32 fd, const char* name, const char* type, size_t size);
 static void print_wave_file(i32 fd, const char* path, const char* name);
@@ -26,11 +44,102 @@ static void print_wave_file(i32 fd, const char* path, const char* name);
 i32 main(void) {
   memory_init();
   SetTraceLogLevel(LOG_WARNING);
-  print_wave_file(STDOUT_FILENO, "data/audio/kick.wav", "kick");
-  print_wave_file(STDOUT_FILENO, "data/audio/snare.wav", "snare");
-  print_wave_file(STDOUT_FILENO, "data/audio/hihat.wav", "hihat");
-  print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
+
+  Sound_source sound;
+  {
+    sound_init(&sound);
+    generate(&sound, SHAPE_SINE, 1.0f);
+    export(&sound, "data/audio/shapes/sine.wav");
+  }
+  {
+    sound_init(&sound);
+    generate(&sound, SHAPE_NOISY, 1.0f);
+    export(&sound, "data/audio/shapes/noisy.wav");
+  }
+  {
+    sound_init(&sound);
+    generate(&sound, SHAPE_SAW, 1.0f);
+    export(&sound, "data/audio/shapes/saw.wav");
+  }
+  {
+    sound_init(&sound);
+    generate(&sound, SHAPE_SAW, 0.5f);
+    generate(&sound, SHAPE_SINE, 0.5f);
+    export(&sound, "data/audio/shapes/saw_and_sine.wav");
+  }
+  {
+    sound_init(&sound);
+    generate(&sound, SHAPE_SAW, 0.2f);
+    generate(&sound, SHAPE_SINE, 0.2f);
+    generate(&sound, SHAPE_SAW, 0.2f);
+    generate(&sound, SHAPE_NOISY, 0.2f);
+    generate(&sound, SHAPE_SINE, 0.2f);
+    export(&sound, "data/audio/shapes/combined.wav");
+  }
+  // print_wave_file(STDOUT_FILENO, "data/audio/drums/kick.wav", "kick");
+  // print_wave_file(STDOUT_FILENO, "data/audio/drums/snare.wav", "snare");
+  // print_wave_file(STDOUT_FILENO, "data/audio/drums/hihat.wav", "hihat");
+  // print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
   return EXIT_SUCCESS;
+}
+
+void sound_init(Sound_source* sound) {
+  memset(sound->buffer, 0, sizeof(sound->buffer));
+}
+
+void generate(Sound_source* sound, Shape shape, f32 amplitude) {
+  const size_t samples = SAMPLE_RATE * CHANNEL_COUNT;
+  switch (shape) {
+    case SHAPE_SINE: {
+      for (size_t i = 0; i < samples; ++i) {
+        f32 sample = amplitude * sinf((i * PI32 * CHANNEL_COUNT) / ((f32)samples / CHANNEL_COUNT));
+        sound->buffer[i] += sample;
+      }
+      break;
+    }
+    case SHAPE_NOISY: {
+      for (size_t i = 1; i < samples; ++i) {
+        f32 sample = amplitude * sinf((i * PI32 * CHANNEL_COUNT) / ((f32)samples / CHANNEL_COUNT));
+        f32 prev = sound->buffer[i - 1];
+        if (fabs(prev) < FLT_EPSILON) {
+          prev = 1.0f;
+        }
+        sample += (sample * sample * sample) / prev;
+        sound->buffer[i] += sample;
+      }
+      break;
+    }
+    case SHAPE_SAW: {
+      f32 step = 2.0f / ((f32)samples / CHANNEL_COUNT);
+      f32 sample = -1.0f;
+      for (size_t i = 0; i < samples; ++i) {
+        sound->buffer[i] += sample;
+        sample += step;
+      }
+      break;
+    }
+    default: {
+      ASSERT(0);
+      break;
+    }
+  }
+}
+
+void export(Sound_source* sound, const char* path) {
+  const size_t samples = SAMPLE_RATE * CHANNEL_COUNT;
+  i16* buffer = memory_alloc(sizeof(i16) * samples);
+  ASSERT(buffer != NULL);
+  for (size_t i = 0; i < samples; ++i) {
+    buffer[i] = (i16)(sound->buffer[i] * INT16_MAX);
+  }
+  Wave wave = (Wave) {
+    .frameCount = SAMPLE_RATE / CHANNEL_COUNT,
+    .sampleRate = SAMPLE_RATE,
+    .sampleSize = 8 * sizeof(i16),
+    .channels   = CHANNEL_COUNT,
+    .data       = buffer,
+  };
+  ExportWave(wave, path);
 }
 
 void print_header(i32 fd, const char* name, const char* type, size_t size) {

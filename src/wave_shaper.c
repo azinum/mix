@@ -53,6 +53,7 @@ static void waveshaper_update_lfo(Element* e);
 static bool waveshaper_connection_filter(Element* e, Element* target);
 static void waveshaper_drumpad_init(Drumpad* d);
 static void waveshaper_update_drumpad(Element* e);
+static void waveshaper_randomize_stepper(Element* e);
 
 static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
@@ -238,6 +239,13 @@ void waveshaper_update_drumpad(Element* e) {
     return;
   }
   e->border_color = UI_BORDER_COLOR;
+}
+
+void waveshaper_randomize_stepper(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
+    w->mod_table[i] = random_f32() * 2;
+  }
 }
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
@@ -545,7 +553,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
 
-
   {
     Element e = ui_text("left offset");
     e.sizing = SIZING_PERCENT(50, 0);
@@ -629,6 +636,23 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.box.w = FONT_SIZE * 3;
     e.box.h = small_button_height;
     e.tooltip = "scale the frequency by this value";
+    ui_attach_element(container, &e);
+  }
+
+  {
+    Element e = ui_line_break(0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_button("randomize");
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 20,
+      .y = small_button_height,
+    };
+    e.userdata = w;
+    e.onclick = waveshaper_randomize_stepper;
     ui_attach_element(container, &e);
   }
 
