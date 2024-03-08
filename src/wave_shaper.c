@@ -870,6 +870,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
     w->tick += w->speed;
     w->mod_tick += w->speed;
+
     w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->interp_speed);
     w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->interp_speed);
     ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * w->interp_speed);
@@ -903,9 +904,11 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
 void waveshaper_destroy(struct Instrument* ins) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
+  ticket_mutex_begin(&w->source_mutex);
   arena_free(&w->arena);
   audio_unload_audio(&w->source);
   audio_unload_audio(&w->mod_source);
+  ticket_mutex_end(&w->source_mutex);
 }
 
 #undef ARENA_SIZE
