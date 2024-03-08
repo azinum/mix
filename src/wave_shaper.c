@@ -601,7 +601,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_slider_float(f, 0.0f, 2.0f);
     e.box.w = 20;
     e.box.h = 3 * button_height;
-    e.data.slider.vertical = true;
+    e.data.slider.slider_type = SLIDER_VERTICAL;
     ui_attach_element(container, &e);
   }
   {

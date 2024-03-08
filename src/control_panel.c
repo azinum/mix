@@ -36,22 +36,24 @@ void control_panel_ui_new(Mix* mix, Element* container) {
   }
   {
     Element e = ui_slider_float(&audio->db, 0, 1);
-    e.data.slider.vertical = true;
+    e.data.slider.slider_type = SLIDER_VERTICAL;
     e.sizing = SIZING_PERCENT(4, 100);
     e.secondary_color = COLOR_RGB(70, 170, 60);
     e.readonly = true;
     e.tooltip = "volume (RMS)";
     ui_attach_element(container, &e);
   }
+#ifndef NO_RECORD_BUFFER
   {
     Element e = ui_slider_int(&audio->record_buffer_index, 0, audio->record_buffer_size);
-    e.data.slider.vertical = true;
+    e.data.slider.slider_type = SLIDER_VERTICAL;
     e.sizing = SIZING_PERCENT(2, 100);
     e.secondary_color = COLOR_RGB(175, 80, 85);
     e.readonly = true;
     e.tooltip = "record buffer";
     ui_attach_element(container, &e);
   }
+#endif
   Element* rhs_container = NULL;
   {
     Element e = ui_container(NULL);

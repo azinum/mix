@@ -521,7 +521,14 @@ void ui_render_elements(UI_state* ui, Element* e) {
     case ELEMENT_SLIDER: {
       Box box = ui_expand_box(e->box, -UI_SLIDER_INNER_PADDING);
       Color line_color = lerp_color(e->background_color, invert_color(UI_INTERPOLATION_COLOR), 0.2f);
-      ui_render_rectangle(box, e->roundness, line_color);
+      if (e->data.slider.slider_type == SLIDER_ROUNDED) {
+        i32 x = 0, y = 0;
+        ui_center_of(&box, &x, &y);
+        DrawCircle(x, y, box.h/2.0f, line_color);
+      }
+      else {
+        ui_render_rectangle(box, e->roundness, line_color);
+      }
       Range range = e->data.slider.range;
       f32 factor = 0.0f;
       switch (e->data.slider.type) {
@@ -540,11 +547,27 @@ void ui_render_elements(UI_state* ui, Element* e) {
         }
       }
       factor = CLAMP(factor, 0.0f, 1.0f);
-      if (e->data.slider.vertical) {
-        ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
-      }
-      else {
-        ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+      switch (e->data.slider.slider_type) {
+        case SLIDER_VERTICAL: {
+          ui_render_rectangle(BOX(box.x, box.y + box.h - box.h * factor, box.w, box.h * factor), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+          break;
+        }
+        case SLIDER_HORIZONTAL: {
+          ui_render_rectangle(BOX(box.x, box.y, box.w * factor, box.h), e->roundness, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+          break;
+        }
+        case SLIDER_ROUNDED: {
+          i32 x = 0, y = 0;
+          ui_center_of(&box, &x, &y);
+          f32 start_angle = -225;
+          f32 end_angle = 360 - fabs(start_angle) - 90;
+          DrawCircleSector((Vector2) { x, y }, box.h/2.0f, start_angle, lerp_f32(start_angle, end_angle, factor), 16, lerp_color(e->secondary_color, warmer_color(UI_INTERPOLATION_COLOR, 22), factor * 0.3f + 0.2f * (ui->active == e && !e->readonly)));
+          break;
+        }
+        default: {
+          NOT_IMPLEMENTED();
+          break;
+        }
       }
       break;
     }
@@ -911,7 +934,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
 
   i32 delta = ui->mouse.x - box.x;
   f32 factor = delta / (f32)box.w;
-  if (e->data.slider.vertical) {
+  if (e->data.slider.slider_type != SLIDER_HORIZONTAL) {
     delta = ui->mouse.y - box.y;
     factor = 1.0f - (delta / (f32)box.h);
   }
@@ -1506,7 +1529,7 @@ Element ui_slider(void* value, Value_type type, Range range) {
   }
   e.data.slider.type = type;
   e.data.slider.range = range;
-  e.data.slider.vertical = false;
+  e.data.slider.slider_type = SLIDER_HORIZONTAL;
   e.data.slider.deadzone = ui->slider_deadzone;
   e.scissor = false;
   e.background = true;

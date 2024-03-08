@@ -119,6 +119,14 @@ typedef struct Input {
   void (*callback)(struct Input*);
 } Input;
 
+typedef enum Slider_type {
+  SLIDER_HORIZONTAL,
+  SLIDER_VERTICAL,
+  SLIDER_ROUNDED,
+
+  MAX_SLIDER_TYPE,
+} Slider_type;
+
 typedef union Element_data {
   struct {
     u32 rows;
@@ -154,7 +162,7 @@ typedef union Element_data {
     } v;
     Value_type type;
     Range range;
-    bool vertical;
+    Slider_type slider_type;
     f32 deadzone;
   } slider;
   Input input;
