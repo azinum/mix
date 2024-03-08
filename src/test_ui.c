@@ -91,7 +91,7 @@ Element test_ui_new(void) {
     }
     for (size_t i = 0; i < ELEMENT_COUNT; ++i) {
       Element e = ui_slider_float(&values[i], 0.0f, 1.0f);
-      e.data.slider.vertical = true;
+      e.data.slider.slider_type = SLIDER_VERTICAL;
       e.box.w = 20;
       e.box.h = 120;
       ui_attach_element(container, &e);

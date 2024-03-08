@@ -204,6 +204,23 @@ void audio_copy_split(const f32* input, f32* left_output, f32* right_output, con
   }
 }
 
+Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, const u32 channel_count) {
+  Audio_source source = (Audio_source) {
+    .buffer = memory_alloc(sizeof(f32) * samples),
+    .samples = samples,
+    .channel_count = channel_count,
+    .ready = true,
+    .internal = false,
+  };
+  if (!source.buffer) {
+    source.samples = 0;
+    source.ready = false;
+    return source;
+  }
+  memcpy(source.buffer, input, samples * sizeof(f32));
+  return source;
+}
+
 Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
   // TODO(lucas): measure latency of instruments and effects/plugins for

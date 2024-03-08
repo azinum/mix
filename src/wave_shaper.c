@@ -42,6 +42,7 @@ static Color color_connected = COLOR_RGB(40, 140, 40);
 static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
 static void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source);
+static void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source);
 static void waveshaper_render_source(Element* e);
 static void waveshaper_render_mod_source(Element* e);
 static void waveshaper_hover_source(Element* e);
@@ -80,6 +81,29 @@ void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* sourc
   }
 }
 
+void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source) {
+  ASSERT(source != NULL);
+  (void)w; // unused for now
+
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !ui_input_interacting() && width > 0 && height > 0 && source->ready && !source->internal) {
+    f32 x = mouse_x / (f32)width;
+    f32 sample = -(mouse_y / (f32)height - 0.5f) * 2.0f;
+    i32 sample_index = x * source->samples;
+    i32 window_size = ((source->channel_count * source->samples) / width) * 4;
+    sample_index = CLAMP(sample_index - (window_size / 2), 0, source->samples - window_size);
+    if (window_size > 0) {
+      const f32 step = 2.0f / window_size;
+      f32 interpolator = 0;
+      for (i32 i = 0; i < window_size; ++i) {
+        interpolator += step;
+        f32 factor = sinf((interpolator * PI32) / 2.0f);
+        f32 current_sample = source->buffer[(sample_index + i) % source->samples];
+        source->buffer[(sample_index + i) % source->samples] = lerp_f32(current_sample, sample, factor);
+      }
+    }
+  }
+}
+
 void waveshaper_render_source(Element* e) {
   Waveshaper* w = (Waveshaper*)e->userdata;
   Audio_source* source = &w->source;
@@ -109,6 +133,8 @@ void waveshaper_hover_source(Element* e) {
     waveshaper_load_sample(w, path, &w->source);
     UnloadDroppedFiles(files);
   }
+
+  waveshaper_draw_sample(w, e->data.canvas.mouse_x, e->data.canvas.mouse_y, e->box.w, e->box.h, &w->source);
 }
 
 void waveshaper_hover_mod_source(Element* e) {
@@ -122,6 +148,7 @@ void waveshaper_hover_mod_source(Element* e) {
     waveshaper_load_sample(w, path, &w->mod_source);
     UnloadDroppedFiles(files);
   }
+  waveshaper_draw_sample(w, e->data.canvas.mouse_x, e->data.canvas.mouse_y, e->box.w, e->box.h, &w->mod_source);
 }
 
 void waveshaper_reset_onclick(Element* e) {
@@ -336,20 +363,8 @@ void waveshaper_init(Instrument* ins) {
   };
   w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   waveshaper_default(w);
-  w->source = (Audio_source) {
-    .buffer = (f32*)&sine[0],
-    .samples = LENGTH(sine),
-    .channel_count = 2,
-    .ready = true,
-    .internal = true,
-  };
-  w->mod_source = (Audio_source) {
-    .buffer = (f32*)&sine[0],
-    .samples = LENGTH(sine),
-    .channel_count = 2,
-    .ready = true,
-    .internal = true,
-  };
+  w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
+  w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
   w->source_mutex = ticket_mutex_new();
 }
 
