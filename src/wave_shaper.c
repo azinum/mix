@@ -821,6 +821,8 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   (void)mix;
 
   Waveshaper* w = (Waveshaper*)ins->userdata;
+  ticket_mutex_begin(&w->source_mutex);
+
   const i32 sample_rate = audio->sample_rate;
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
@@ -896,6 +898,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   if (w->flipflop) {
     w->speed = -w->speed;
   }
+  ticket_mutex_end(&w->source_mutex);
 }
 
 void waveshaper_destroy(struct Instrument* ins) {
