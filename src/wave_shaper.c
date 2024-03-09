@@ -1,4 +1,7 @@
 // wave_shaper.c
+// TODO:
+//  - fix the drumpad, it's a mess
+//  - well, all of this is a mess on purpose of course
 
 #define ARENA_SIZE 1024
 #define INFO_TEXT_SIZE 256

@@ -45,6 +45,7 @@ i32 main(void) {
   memory_init();
   SetTraceLogLevel(LOG_WARNING);
 
+#if 0
   Sound_source sound;
   {
     sound_init(&sound);
@@ -76,10 +77,12 @@ i32 main(void) {
     generate(&sound, SHAPE_SINE, 0.2f);
     export(&sound, "data/audio/shapes/combined.wav");
   }
-  // print_wave_file(STDOUT_FILENO, "data/audio/drums/kick.wav", "kick");
-  // print_wave_file(STDOUT_FILENO, "data/audio/drums/snare.wav", "snare");
-  // print_wave_file(STDOUT_FILENO, "data/audio/drums/hihat.wav", "hihat");
-  // print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
+#else
+  print_wave_file(STDOUT_FILENO, "data/audio/drums/kick.wav", "kick");
+  print_wave_file(STDOUT_FILENO, "data/audio/drums/snare.wav", "snare");
+  print_wave_file(STDOUT_FILENO, "data/audio/drums/hihat.wav", "hihat");
+  print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
+#endif
   return EXIT_SUCCESS;
 }
 
@@ -170,6 +173,7 @@ void print_wave_file(i32 fd, const char* path, const char* name) {
   Wave wave = LoadWaveFromMemory(".wav", buffer.data, buffer.count);
   if (wave.data) {
     size_t sample_count = wave.frameCount * wave.channels;
+    dprintf(fd, "// frames: %u, channels: %u\n", wave.frameCount, wave.channels);
     print_header(fd, name, "f32", sample_count);
     i16* data = (i16*)wave.data;
     for (size_t i = 0; i < sample_count; ++i) {
