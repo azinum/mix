@@ -25,11 +25,13 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
   size_t record_buffer_size = 0;
 #ifndef NO_RECORD_BUFFER
   record_buffer_size = ALIGN(RECORD_BUFFER_LENGTH_SECS * channel_count * sample_rate, frames_per_buffer);
-  MEMORY_TAG("audio engine record buffer");
-  record_buffer = memory_alloc(sizeof(i16) * record_buffer_size);
-  if (!record_buffer) {
-    log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate record buffer\n");
-    record_buffer_size = 0;
+  if (record_buffer_size != 0) {
+    MEMORY_TAG("audio engine record buffer");
+    record_buffer = memory_alloc(sizeof(i16) * record_buffer_size);
+    if (!record_buffer) {
+      log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate record buffer\n");
+      record_buffer_size = 0;
+    }
   }
 #endif
 
@@ -117,15 +119,21 @@ void audio_engine_exit(Audio_engine* audio) {
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
 #ifndef NO_RECORD_BUFFER
-  Wave wave = {
-    .frameCount = audio->record_buffer_index / CHANNEL_COUNT,
-    .sampleRate = SAMPLE_RATE,
-    .sampleSize = 8 * sizeof(i16),
-    .channels   = CHANNEL_COUNT,
-    .data       = audio->record_buffer,
-  };
-  if (wave.frameCount > 0) {
-    ExportWave(wave, "record.wav");
+  if (audio->record_buffer) {
+    Wave wave = {
+      .frameCount = audio->record_buffer_index / CHANNEL_COUNT,
+      .sampleRate = SAMPLE_RATE,
+      .sampleSize = 8 * sizeof(i16),
+      .channels   = CHANNEL_COUNT,
+      .data       = audio->record_buffer,
+    };
+    if (wave.frameCount > 0) {
+      time_t current_time = time(0);
+      struct tm t = *localtime(&current_time);
+      char record_path[MAX_PATH_LENGTH] = {0};
+      snprintf(record_path, sizeof(record_path), "record-%d-%02d-%02d-%02d-%02d-%02d.wav", 1900 + t.tm_year, 1 + t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+      ExportWave(wave, record_path);
+    }
   }
 #endif
   memory_free(audio->record_buffer);
@@ -309,7 +317,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
 
   // write to record buffer
 #ifndef NO_RECORD_BUFFER
-  if (audio->recording) {
+  if (audio->recording && audio->record_buffer) {
     for (i32 i = 0; i < sample_count; ++i) {
       size_t index = audio->record_buffer_index;
       audio->record_buffer[index] = (i16)(audio->out_buffer[i] * INT16_MAX);
