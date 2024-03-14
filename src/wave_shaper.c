@@ -73,7 +73,7 @@ static void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f3
 
 void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source) {
   Audio_source loaded_source = audio_load_audio(path);
-  if (loaded_source.buffer != NULL) {
+  if (loaded_source.buffer != NULL && loaded_source.samples > 0) {
     ticket_mutex_begin(&w->source_mutex);
     audio_unload_audio(source);
     *source = loaded_source;

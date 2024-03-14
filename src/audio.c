@@ -164,21 +164,24 @@ Audio_source audio_load_audio(const char* path) {
     if (wave.sampleSize != 16) {
       log_print(STDOUT_FILENO, LOG_TAG_WARN, "loading audio file `%s` with %u-bit sample size, this is not supported yet\n", path, wave.sampleSize);
     }
-    size_t samples = wave.frameCount * wave.channels;
-    u32 channel_count = (u32)wave.channels;
-    f32* audio_buffer = memory_alloc(sizeof(f32) * samples);
-    if (audio_buffer) {
-      i16* data = (i16*)wave.data;
-      for (size_t i = 0; i < samples; ++i) {
-        audio_buffer[i] = data[i] / (f32)INT16_MAX;
+    if (wave.frameCount > 0) {
+      size_t samples = wave.frameCount * wave.channels;
+      u32 channel_count = (u32)wave.channels;
+      f32* audio_buffer = memory_alloc(sizeof(f32) * samples);
+      printf("frameCount = %d, channels = %d\n", (i32)wave.frameCount, (i32)wave.channels);
+      if (audio_buffer) {
+        i16* data = (i16*)wave.data;
+        for (size_t i = 0; i < samples; ++i) {
+          audio_buffer[i] = data[i] / (f32)INT16_MAX;
+        }
+        source.buffer = audio_buffer;
+        source.samples = samples;
+        source.channel_count = channel_count;
+        source.ready = true;
       }
-      source.buffer = audio_buffer;
-      source.samples = samples;
-      source.channel_count = channel_count;
-      source.ready = true;
-    }
-    else {
-      log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate memory for audio source (from file `%s`)\n", path);
+      else {
+        log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate memory for audio source (from file `%s`)\n", path);
+      }
     }
     UnloadWave(wave);
   }
