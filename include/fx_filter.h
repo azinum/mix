@@ -3,11 +3,6 @@
 #ifndef _FX_FILTER_H
 #define _FX_FILTER_H
 
-typedef struct Filter {
-  f32 cutoff;
-  f32* buffer;
-} Filter;
-
 void fx_filter_init(Instrument* ins);
 void fx_filter_ui_new(Instrument* ins, Element* container);
 void fx_filter_update(Instrument* ins, struct Mix* mix);

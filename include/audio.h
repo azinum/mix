@@ -14,7 +14,7 @@
 #define RECORD_BUFFER_LENGTH_SECS (MINUTES(10))
 
 // convert from milliseconds to number of samples, based on the channel rate and channel count
-#define MS_TO_SAMPLES(sample_rate, channels, ms) (size_t)((sample_rate) / ((ms / 1000.0f) * channels))
+#define MS_TO_SAMPLES(sample_rate, channels, ms) ((sample_rate) * ((ms / 1000.0f) * channels))
 #define SECS_TO_SAMPLES(sample_rate, channels, seconds) (MS_TO_SAMPLES(sample_rate, channels, seconds * 1000.0f))
 
 typedef struct Audio_source {

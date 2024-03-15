@@ -4,6 +4,11 @@
 
 // #define VERSION2
 
+typedef struct Filter {
+  f32 cutoff;
+  f32* buffer;
+} Filter;
+
 static void fx_filter_default(Filter* filter);
 static void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt);
 static void smooth(f32* input, f32* output, size_t samples);
@@ -36,12 +41,11 @@ void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt
 #ifdef VERSION2
   f32 t = tanf((PI32 * dt_step) / SAMPLE_RATE);
   f32 a = (t - 1.0f) / (t + 1.0f);
-
-  f32 filter_prev = a * input[0];
+  f32 prev = 0;
   for (size_t i = 0; i < samples; ++i) {
     f32 input_sample = input[i];
-    f32 filter_sample = a * input_sample + filter_prev;
-    filter_prev = input_sample - a * filter_sample;
+    f32 filter_sample = a * input_sample + prev;
+    prev = input_sample - a * filter_sample;
     output[i] = 0.5f * (input_sample + filter_sample);
   }
 #else
@@ -49,9 +53,11 @@ void lowpass_filter(f32* input, f32* output, size_t samples, f32 dt_step, f32 dt
     return;
   }
   const f32 alpha = dt_step / (dt + dt_step);
+  f32 prev = 0;
   output[0] = alpha * input[0];
   for (size_t i = 1; i < samples; ++i) {
-    output[i] = output[i - 1] + alpha * (input[i] - output[i - 1]);
+    prev = output[i - 1];
+    output[i] = prev + alpha * (input[i] - prev);
   }
 #endif
 }
@@ -97,12 +103,12 @@ void fx_filter_ui_new(Instrument* ins, Element* container) {
   }
 }
 
-void fx_filter_update(Instrument* ins, struct Mix* mix) {
+void fx_filter_update(Instrument* ins, Mix* mix) {
   (void)ins;
   (void)mix;
 }
 
-void fx_filter_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+void fx_filter_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   (void)linear_to_logarithmic;
   (void)mix;
   (void)audio;
@@ -144,7 +150,7 @@ void fx_filter_process(struct Instrument* ins, struct Mix* mix, struct Audio_eng
 #endif
 }
 
-void fx_filter_destroy(struct Instrument* ins) {
+void fx_filter_destroy(Instrument* ins) {
   Filter* filter = (Filter*)ins->userdata;
   memory_free(filter->buffer);
   filter->buffer = NULL;

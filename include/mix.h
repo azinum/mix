@@ -72,6 +72,7 @@ struct Mix;
 #include "fx_distortion.h"
 #include "fx_filter.h"
 #include "fx_delay.h"
+#include "fx_smooth.h"
 
 #include "instrument_picker.h"
 #include "control_panel.h"

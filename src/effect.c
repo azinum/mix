@@ -6,6 +6,7 @@ Effect effects[MAX_EFFECT_ID] = {
   DEFINE_EFFECT(EFFECT_DISTORTION, fx_distortion, "distortion"),
   DEFINE_EFFECT(EFFECT_FILTER, fx_filter, "filter"),
   DEFINE_EFFECT(EFFECT_DELAY, fx_delay, "delay"),
+  DEFINE_EFFECT(EFFECT_SMOOTH, fx_smooth, "smooth"),
 };
 
 Effect effect_new(Effect_id id) {

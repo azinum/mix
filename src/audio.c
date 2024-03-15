@@ -168,7 +168,6 @@ Audio_source audio_load_audio(const char* path) {
       size_t samples = wave.frameCount * wave.channels;
       u32 channel_count = (u32)wave.channels;
       f32* audio_buffer = memory_alloc(sizeof(f32) * samples);
-      printf("frameCount = %d, channels = %d\n", (i32)wave.frameCount, (i32)wave.channels);
       if (audio_buffer) {
         i16* data = (i16*)wave.data;
         for (size_t i = 0; i < samples; ++i) {

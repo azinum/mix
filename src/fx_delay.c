@@ -1,7 +1,6 @@
 // fx_delay.c
 // TODO:
 //  - wet/dry signal
-//  - feedback offset and amount on left and right channels individually
 
 typedef struct Delay {
   f32* feedback_left;
@@ -19,7 +18,7 @@ typedef struct Delay {
 static void fx_delay_default(Delay* delay);
 
 void fx_delay_default(Delay* delay) {
-  const size_t feedback_buffer_size = MS_TO_SAMPLES(SAMPLE_RATE, CHANNEL_COUNT, 400);
+  const size_t feedback_buffer_size = MS_TO_SAMPLES(SAMPLE_RATE, CHANNEL_COUNT, 1000);
 
   delay->feedback_left  = memory_calloc(sizeof(f32), feedback_buffer_size);
   delay->feedback_right = memory_calloc(sizeof(f32), feedback_buffer_size);
@@ -27,11 +26,11 @@ void fx_delay_default(Delay* delay) {
   delay->feedback_buffer_size = feedback_buffer_size;
   delay->tick = 0;
 
-  delay->amount_left = 0.4f;
-  delay->offset_left = feedback_buffer_size * 0.5f;
+  delay->amount_left = 0.3f;
+  delay->offset_left = (i32)MS_TO_SAMPLES(SAMPLE_RATE, CHANNEL_COUNT, 400);
 
-  delay->amount_right = 0.4f;
-  delay->offset_right = feedback_buffer_size * 0.6f;
+  delay->amount_right = 0.3f;
+  delay->offset_right = (i32)MS_TO_SAMPLES(SAMPLE_RATE, CHANNEL_COUNT, 500);
 }
 
 void fx_delay_init(Instrument* ins) {
