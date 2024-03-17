@@ -5,10 +5,10 @@
 
 #define MAX_CONFIG_STRING_SIZE 64
 
-static i32 WINDOW_WIDTH         = 0;
-static i32 WINDOW_HEIGHT        = 0;
+static i32 WINDOW_WIDTH         = 800;
+static i32 WINDOW_HEIGHT        = 600;
 static i32 WINDOW_RESIZABLE     = true;
-static i32 WINDOW_FULLSCREEN    = true;
+static i32 WINDOW_FULLSCREEN    = false;
 static i32 VSYNC                = false;
 static i32 MSAA_4X              = false;
 static i32 FONT_SIZE            = 20;

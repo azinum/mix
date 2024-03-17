@@ -32,17 +32,11 @@ typedef struct Waveshaper {
   i32 mod_freq;
   f32 mod_freq_mod_scale;
   f32 mod_freq_scale;
-  Arena arena;
-  Lfo lfo;
-  char* lfo_connection;
   Drumpad drumpad;
   Audio_source source;
   Audio_source mod_source;
   Ticket source_mutex;
 } Waveshaper;
-
-static Color color_connected = COLOR_RGB(40, 140, 40);
-static Color color_disconnected = COLOR_RGB(120, 40, 40);
 
 static void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source);
 static void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source);
@@ -52,12 +46,10 @@ static void waveshaper_hover_source(Element* e);
 static void waveshaper_hover_mod_source(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
-static void waveshaper_bind_lfo(Element* e, Element* target);
-static void waveshaper_update_lfo(Element* e);
-static bool waveshaper_connection_filter(Element* e, Element* target);
 static void waveshaper_drumpad_init(Drumpad* d);
 static void waveshaper_update_drumpad(Element* e);
 static void waveshaper_randomize_stepper(Element* e);
+static void waveshaper_flipflop(Element* e);
 
 static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
@@ -193,54 +185,7 @@ void waveshaper_default(Waveshaper* w) {
   w->mod_freq_mod_scale = 1.0f;
   w->mod_freq_scale = 55.0f;
 
-  w->lfo = (Lfo) {
-    .lfo_target = NULL,
-    .lfo = 0,
-    .amplitude = 0.5f,
-    .hz = 2.0f,
-    .tick = 0,
-    .connection_name = LFO_NO_CONNECTION,
-  };
   waveshaper_drumpad_init(&w->drumpad);
-}
-
-void waveshaper_bind_lfo(Element* e, Element* target) {
-  Instrument* ins = (Instrument*)e->userdata;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-  if (target->type == ELEMENT_SLIDER) {
-    if (target->name != NULL) {
-      w->lfo.connection_name = target->name;
-    }
-    switch (target->data.slider.type) {
-      case VALUE_TYPE_FLOAT: {
-        f32* binding = target->data.slider.v.f;
-        w->lfo.lfo_target = binding;
-        return;
-      }
-      default:
-        break;
-    }
-  }
-  w->lfo.lfo_target = NULL;
-  w->lfo.connection_name = LFO_NO_CONNECTION;
-}
-
-void waveshaper_update_lfo(Element* e) {
-  Instrument* ins = (Instrument*)e->userdata;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-  if (w->lfo.lfo_target) {
-    e->background_color = color_connected;
-    return;
-  }
-  e->background_color = color_disconnected;
-}
-
-bool waveshaper_connection_filter(Element* e, Element* target) {
-  (void)e;
-  if (target->type == ELEMENT_SLIDER) {
-    return target->data.slider.v.f != NULL;
-  }
-  return false;
 }
 
 void waveshaper_drumpad_init(Drumpad* d) {
@@ -275,6 +220,13 @@ void waveshaper_randomize_stepper(Element* e) {
   Waveshaper* w = (Waveshaper*)e->userdata;
   for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
     w->mod_table[i] = random_f32() * 2;
+  }
+}
+
+void waveshaper_flipflop(Element* e) {
+  Waveshaper* w = (Waveshaper*)e->userdata;
+  if (w->speed < 0) {
+    w->speed = -w->speed;
   }
 }
 
@@ -360,11 +312,6 @@ void waveshaper_init(Instrument* ins) {
   Waveshaper* w = memory_alloc(sizeof(Waveshaper));
   ASSERT(w != NULL);
   ins->userdata = w;
-  MEMORY_TAG("waveshaper: arena");
-  *w = (Waveshaper) {
-    .arena = arena_new(ARENA_SIZE),
-  };
-  w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
   waveshaper_default(w);
   w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
   w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
@@ -372,7 +319,6 @@ void waveshaper_init(Instrument* ins) {
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
-  ui_set_connection_filter(waveshaper_connection_filter);
   Waveshaper* w = (Waveshaper*)ins->userdata;
   Element line_break = ui_line_break(FONT_SIZE / 4);
 
@@ -404,6 +350,8 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
     e.tooltip = "flip the counting direction of the internal\nclock after processing audio buffer";
+    e.userdata = w;
+    e.onclick = waveshaper_flipflop;
     ui_attach_element(container, &e);
   }
   {
@@ -721,82 +669,11 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     Element e = ui_text_ex("LFO", false);
     ui_attach_element(container, &e);
   }
-
-  Element* lfo_container = NULL;
-  {
-    Element e = ui_container_ex(NULL, false);
-    e.scissor = false;
-    e.background = true;
-    e.placement = PLACEMENT_BLOCK;
-    e.background_color = lerp_color(e.background_color, UI_INTERPOLATION_COLOR, 0.05f);
-    e.sizing = SIZING_PERCENT(100, 0);
-    e.box.h = 4 * button_height;
-    lfo_container = ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_text("amplitude");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_text("hz");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_slider(&w->lfo.amplitude, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
-    e.name = "LFO amplitude";
-    e.box.h = slider_height;
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_slider(&w->lfo.hz, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 25.0f));
-    e.name = "LFO hz";
-    e.box.h = slider_height;
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_text("offset");
-    e.sizing = SIZING_PERCENT(100, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_slider(&w->lfo.offset, VALUE_TYPE_FLOAT, RANGE_FLOAT(-1.0f, 1.0f));
-    e.name = "LFO offset";
-    e.box.h = slider_height;
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_none();
-    e.render = true;
-    e.background = true;
-    e.background_color = color_disconnected;
-    e.border = true;
-    e.border_color = UI_BORDER_COLOR;
-    e.roundness = UI_BUTTON_ROUNDNESS;
-    e.box.w = e.box.h = FONT_SIZE;
-    e.userdata = ins;
-    e.onconnect = waveshaper_bind_lfo;
-    e.onupdate = waveshaper_update_lfo;
-    e.tooltip = "hold ctrl+left mouse click to connect the LFO\nto one of the range sliders";
-    ui_attach_element(lfo_container, &e);
-  }
-  {
-    Element e = ui_text_ex(w->lfo_connection, false);
-    ui_attach_element(lfo_container, &e);
-  }
 }
 
 void waveshaper_update(Instrument* ins, struct Mix* mix) {
   (void)mix;
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  arena_reset(&w->arena);
-
-  w->lfo_connection = arena_alloc(&w->arena, LFO_CONNECTION_STR_SIZE);
-  stb_snprintf(w->lfo_connection, LFO_CONNECTION_STR_SIZE, "connected to: %s", w->lfo.connection_name);
 
   size_t prev_index = w->drumpad.index;
   w->drumpad.index = mix->timed_tick;
@@ -841,7 +718,6 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   Waveshaper* w = (Waveshaper*)ins->userdata;
   ticket_mutex_begin(&w->source_mutex);
 
-  const i32 sample_rate = audio->sample_rate;
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
   f32 volume = ins->volume;
@@ -861,11 +737,6 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     }
   }
   for (size_t i = 0; i < ins->samples; i += channel_count) {
-    w->lfo.lfo = w->lfo.offset + w->lfo.amplitude * sinf((w->lfo.hz * w->lfo.tick * 2 * PI32) / (f32)sample_rate);
-    w->lfo.tick += 1;
-    if (w->lfo.lfo_target != NULL) {
-      *w->lfo.lfo_target = w->lfo.lfo;
-    }
     i32 offsets[2] = {
       w->left_offset,
       w->right_offset
@@ -923,7 +794,6 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 void waveshaper_destroy(struct Instrument* ins) {
   Waveshaper* w = (Waveshaper*)ins->userdata;
   ticket_mutex_begin(&w->source_mutex);
-  arena_free(&w->arena);
   audio_unload_audio(&w->source);
   audio_unload_audio(&w->mod_source);
   ticket_mutex_end(&w->source_mutex);

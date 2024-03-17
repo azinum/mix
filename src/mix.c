@@ -38,10 +38,11 @@
 #include "noise.c"
 // effects/filters
 #include "effect.c"
-#include "fx_distortion.c"
+#include "fx_clip_distortion.c"
 #include "fx_filter.c"
 #include "fx_delay.c"
 #include "fx_smooth.c"
+#include "fx_interpolator.c"
 
 #include "instrument_picker.c"
 #include "control_panel.c"

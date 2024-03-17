@@ -1,29 +1,29 @@
-// fx_distortion.c
+// fx_clip_distortion.c
 
-typedef struct Distortion {
+typedef struct Clip_distortion {
   f32 input_gain;
   f32 output_gain;
   f32 clip;
-} Distortion;
+} Clip_distortion;
 
-static void fx_distortion_default(Distortion* d);
+static void fx_clip_distortion_default(Clip_distortion* d);
 
-void fx_distortion_default(Distortion* d) {
+void fx_clip_distortion_default(Clip_distortion* d) {
   d->input_gain   = 1.0f;
   d->output_gain  = 1.0f;
   d->clip         = 0.5f;
 }
 
-void fx_distortion_init(Instrument* ins) {
-  MEMORY_TAG("fx_distortion: userdata");
-  Distortion* d = memory_alloc(sizeof(Distortion));
+void fx_clip_distortion_init(Instrument* ins) {
+  MEMORY_TAG("fx_clip_distortion: userdata");
+  Clip_distortion* d = memory_alloc(sizeof(Clip_distortion));
   ASSERT(d != NULL);
   ins->userdata = d;
-  fx_distortion_default(d);
+  fx_clip_distortion_default(d);
 }
 
-void fx_distortion_ui_new(Instrument* ins, Element* container) {
-  Distortion* d = (Distortion*)ins->userdata;
+void fx_clip_distortion_ui_new(Instrument* ins, Element* container) {
+  Clip_distortion* d = (Clip_distortion*)ins->userdata;
   i32 slider_height = FONT_SIZE;
   {
     Element e = ui_text("input gain");
@@ -67,17 +67,17 @@ void fx_distortion_ui_new(Instrument* ins, Element* container) {
   }
 }
 
-void fx_distortion_update(Instrument* ins, struct Mix* mix) {
+void fx_clip_distortion_update(Instrument* ins, struct Mix* mix) {
   (void)ins;
   (void)mix;
 }
 
-void fx_distortion_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+void fx_clip_distortion_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
   (void)mix;
   (void)audio;
   (void)dt;
 
-  Distortion* d = (Distortion*)ins->userdata;
+  Clip_distortion* d = (Clip_distortion*)ins->userdata;
 
   for (size_t i = 0; i < ins->samples; ++i) {
     f32 sample = ins->out_buffer[i];
@@ -85,6 +85,6 @@ void fx_distortion_process(struct Instrument* ins, struct Mix* mix, struct Audio
   }
 }
 
-void fx_distortion_destroy(struct Instrument* ins) {
+void fx_clip_distortion_destroy(struct Instrument* ins) {
   (void)ins;
 }
