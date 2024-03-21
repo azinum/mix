@@ -471,6 +471,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
       break;
     }
     case ELEMENT_BUTTON: {
+      // TODO(lucas): use ui_measure_text and ui_pad_box here
       char* text = e->data.text.string;
       if (!text) {
         break;
@@ -483,8 +484,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
       const i32 y = e->box.y + e->box.h / 2 - text_size.y / 2;
       const i32 w = (i32)text_size.x;
       const i32 h = (i32)text_size.y;
-      DrawTextEx(font, text, (Vector2) { x, y }, font_size, spacing, e->text_color);
-      (void)w; (void)h;
+      Box text_box = BOX(x, y, w, h);
+      ui_render_text(font, text, &text_box, true, false, font_size, spacing, UI_LINE_SPACING, e->text_color);
 #ifdef UI_DRAW_GUIDES
       if (e == ui->hover || !ONLY_DRAW_GUIDE_ON_HOVER) {
         DrawRectangleLines(x, y, w, h, GUIDE_COLOR);
@@ -622,7 +623,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
       y = e->box.y + e->box.h;
     }
     DrawRectangle(x, y, w, h, UI_TITLE_BAR_COLOR);
-    DrawTextEx(font, title_bar.title, (Vector2) { x + title_bar.padding, y + title_bar.padding }, font_size, spacing, e->text_color);
+    Box text_box = BOX(x + title_bar.padding, y + title_bar.padding, w, h);
+    ui_render_text(font, title_bar.title, &text_box, true, false, font_size, spacing, UI_LINE_SPACING, e->text_color);
     if (e->border) {
       DrawRectangleLinesEx((Rectangle) { x, y, w, h}, e->border_thickness, e->border_color);
     }

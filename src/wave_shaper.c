@@ -6,6 +6,7 @@
 #define ARENA_SIZE 1024
 #define INFO_TEXT_SIZE 256
 #define LFO_CONNECTION_STR_SIZE 64
+#define INTERP_SPEED_DEFAULT 100.0f
 
 // #define EXPERIMENTAL
 
@@ -17,7 +18,8 @@ typedef struct Waveshaper {
   f32 freq_target;
   f32 freq_mod;
   f32 freq_mod_target;
-  f32 interp_speed;
+  f32 freq_interp_speed;
+  f32 freq_mod_interp_speed;
   i32 freeze;
   i32 mute;
   f32 speed;
@@ -160,7 +162,8 @@ void waveshaper_default(Waveshaper* w) {
   w->freq_target      = 55;
   w->freq_mod         = 0;
   w->freq_mod_target  = 0;
-  w->interp_speed     = 100.0f;
+  w->freq_interp_speed      = INTERP_SPEED_DEFAULT;
+  w->freq_mod_interp_speed  = INTERP_SPEED_DEFAULT;
   w->freeze           = false;
   w->mute             = false;
   w->speed            = 2.0f;
@@ -408,88 +411,137 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
 
   ui_attach_element(container, &line_break);
 
+
+  // volume  gain
+  // x xxx   x xxx
   {
-    Element e = ui_text("volume");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(container, &e);
+    {
+      Element e = ui_text("volume");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_text("gain");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_input_float("volume", &w->volume_target);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider(&w->volume_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
+      e.name = "volume";
+      e.box = BOX(0, 0, 0, slider_height);
+      e.sizing = SIZING_PERCENT(35, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_input_float("gain", &w->gain);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider_float(&w->gain, 0.0f, 5.0f);
+      e.name = "gain";
+      e.box = BOX(0, 0, 0, slider_height);
+      e.sizing = SIZING_PERCENT(35, 0);
+      ui_attach_element(container, &e);
+    }
   }
+
+
+  // freq  freq interpolation
+  // x xxx x xxx
   {
-    Element e = ui_text("frequency modulation");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(container, &e);
+    {
+      Element e = ui_text("freq");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_text("freq interpolation");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_input_float("frequency", &w->freq_target);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider(&w->freq_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
+      e.name = "frequency";
+      e.box = BOX(0, 0, 0, slider_height);
+      e.sizing = SIZING_PERCENT(35, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_input_float("freq interpolation", &w->freq_interp_speed);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider(&w->freq_interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 200.0f));
+      e.box = BOX(0, 0, 0, slider_height);
+      e.name = "interpolation speed";
+      e.sizing = SIZING_PERCENT(35, 0);
+      ui_attach_element(container, &e);
+    }
   }
+
+  // freq mod  freq mod interpolation
+  // x xxx     x xxx
   {
-    Element e = ui_input_float("volume", &w->volume_target);
-    e.box = BOX(0, 0, 0, input_height);
-    e.sizing = SIZING_PERCENT(15, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider(&w->volume_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 1.0f));
-    e.name = "volume";
-    e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(35, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_input_float("frequency modulation", &w->freq_mod_target);
-    e.box = BOX(0, 0, 0, input_height);
-    e.sizing = SIZING_PERCENT(15, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider(&w->freq_mod_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0, 25.0f));
-    e.name = "frequency modulation";
-    e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(35, 0);
-    e.userdata = ins;
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_text("frequency");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_text("interpolation speed");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_input_float("frequency", &w->freq_target);
-    e.box = BOX(0, 0, 0, input_height);
-    e.sizing = SIZING_PERCENT(15, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider(&w->freq_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.0f, 440.0f));
-    e.name = "frequency";
-    e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(35, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_input_float("interpolation speed", &w->interp_speed);
-    e.box = BOX(0, 0, 0, input_height);
-    e.sizing = SIZING_PERCENT(15, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider(&w->interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 200.0f));
-    e.box = BOX(0, 0, 0, slider_height);
-    e.name = "interpolation speed";
-    e.sizing = SIZING_PERCENT(35, 0);
-    ui_attach_element(container, &e);
+    {
+      Element e = ui_text("frequency modulation");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_text("freq mod interpolation");
+      e.sizing = SIZING_PERCENT(50, 0);
+      ui_attach_element(container, &e);
+    }
+
+
+    {
+      Element e = ui_input_float("frequency modulation", &w->freq_mod_target);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider(&w->freq_mod_target, VALUE_TYPE_FLOAT, RANGE_FLOAT(0, 25.0f));
+      e.name = "frequency modulation";
+      e.box = BOX(0, 0, 0, slider_height);
+      e.sizing = SIZING_PERCENT(35, 0);
+      e.userdata = ins;
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_input_float("freq mod interpolation", &w->freq_mod_interp_speed);
+      e.box = BOX(0, 0, 0, input_height);
+      e.sizing = SIZING_PERCENT(15, 0);
+      ui_attach_element(container, &e);
+    }
+    {
+      Element e = ui_slider(&w->freq_mod_interp_speed, VALUE_TYPE_FLOAT, RANGE_FLOAT(0.05f, 200.0f));
+      e.box = BOX(0, 0, 0, slider_height);
+      e.name = "mod interpolation speed";
+      e.sizing = SIZING_PERCENT(35, 0);
+      ui_attach_element(container, &e);
+    }
   }
 
   {
     Element e = ui_text("speed");
-    e.sizing = SIZING_PERCENT(50, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_text("gain");
-    e.sizing = SIZING_PERCENT(50, 0);
+    e.sizing = SIZING_PERCENT(100, 0);
     ui_attach_element(container, &e);
   }
   {
@@ -506,16 +558,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_input_float("gain", &w->gain);
-    e.box = BOX(0, 0, 0, input_height);
-    e.sizing = SIZING_PERCENT(15, 0);
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider_float(&w->gain, 0.0f, 5.0f);
-    e.name = "gain";
-    e.box = BOX(0, 0, 0, slider_height);
-    e.sizing = SIZING_PERCENT(35, 0);
+    Element e = ui_line_break(0);
     ui_attach_element(container, &e);
   }
 
@@ -662,13 +705,6 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     }
     ui_attach_element_v2(container, ui_line_break(0));
   }
-
-  ui_attach_element(container, &line_break);
-
-  {
-    Element e = ui_text_ex("LFO", false);
-    ui_attach_element(container, &e);
-  }
 }
 
 void waveshaper_update(Instrument* ins, struct Mix* mix) {
@@ -759,10 +795,9 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
     w->tick += w->speed;
     w->mod_tick += w->speed;
-
-    w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->interp_speed);
-    w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->interp_speed);
-    ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * w->interp_speed);
+    w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->freq_interp_speed);
+    w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->freq_mod_interp_speed);
+    ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * INTERP_SPEED_DEFAULT);
   }
   if (w->distortion) {
 #ifdef EXPERIMENTAL
