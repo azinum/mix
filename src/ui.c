@@ -726,6 +726,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->scissor = false;
   e->hidden = false;
   e->readonly = false;
+  e->zoomable = false;
 
   e->border_thickness = UI_BORDER_THICKNESS;
   e->roundness = UI_ROUNDNESS;
@@ -1132,20 +1133,32 @@ void ui_update(f32 dt) {
       ui_slider_onclick(ui, ui->active);
     }
   }
-  if (ui->container != NULL) {
-    bool do_zoom = mod_key && IsKeyPressed(KEY_F);
+
+  bool do_zoom = mod_key && IsKeyPressed(KEY_F);
 #if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
-    i32 gesture = GetGestureDetected();
-    do_zoom = do_zoom || (gesture & GESTURE_DOUBLETAP);
+  i32 gesture = GetGestureDetected();
+  do_zoom = do_zoom || (gesture & GESTURE_DOUBLETAP);
 #endif
-    if (do_zoom && !ui_input_interacting()) {
+  // check for zoomable hovered element
+  // if not zoomable, use container
+  Element* zoomer = ui->hover;
+  if (zoomer) {
+    if (!zoomer->zoomable) {
+      zoomer = ui->container;
+    }
+  }
+  else {
+    zoomer = ui->container;
+  }
+  if (zoomer && do_zoom && !ui_input_interacting()) {
+    if (zoomer->zoomable) {
       if (ui->zoom) {
         ui->zoom->box = ui->zoom_box;
         ui->zoom->sizing = ui->zoom_sizing;
         ui->zoom = NULL;
       }
       else {
-        ui->zoom = ui->container;
+        ui->zoom = zoomer;
         ui->zoom_box = ui->zoom->box;
         ui->zoom_sizing = ui->zoom->sizing;
         ui->zoom->sizing = SIZING_PERCENT(100, 100);
@@ -1414,6 +1427,7 @@ Element ui_container(char* title) {
 
   e.render = true;
   e.scissor = true;
+  e.zoomable = true;
   e.title_bar = (Title_bar) {
     .title = title,
     .padding = UI_TITLE_BAR_PADDING,

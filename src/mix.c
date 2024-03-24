@@ -114,20 +114,19 @@ i32 mix_main(i32 argc, char** argv) {
     ClearBackground(MAIN_BACKGROUND_COLOR);
     mix_update_and_render(mix);
     EndDrawing();
-    mix->dt = TIMER_END();
-    if (mix->dt < DT_MIN) {
-      mix->dt = DT_MIN;
-    }
-    if (mix->dt > DT_MAX) {
-      mix->dt = DT_MAX;
-    }
-    f32 timestamp = mix->timer_start + ((60.0f / mix->bpm) / SUBTICKS);
+
+    mix->dt = CLAMP(TIMER_END(), DT_MIN, DT_MAX);
+    mix->bpm = CLAMP(mix->bpm, 1, 999);
+
+    const f32 bps = 60.0f / mix->bpm;
+    f32 timestamp = mix->timer_start + (bps / SUBTICKS);
     if (mix->timer >= timestamp) {
       f32 delta = mix->timer - timestamp;
       mix->timer_start = mix->timer - delta;
       mix->timed_tick += 1;
       mix->tick_delta = delta;
     }
+
     mix->fps = 1.0f / mix->dt;
     if (!mix->paused) {
       mix->timer += mix->dt;
@@ -287,6 +286,7 @@ void mix_reset(Mix* mix) {
   mix->dt = DT_MIN;
   mix->tick = 0;
   mix->timed_tick = 0;
+  mix->tick_delta = 0;
   mix->bpm = BPM;
   mix->timer = 0.0f;
   mix->timer_start = 0.0f;

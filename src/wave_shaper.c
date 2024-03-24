@@ -87,7 +87,7 @@ void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, 
     f32 sample = -(mouse_y / (f32)height - 0.5f) * 2.0f;
     i32 sample_index = x * source->samples;
     i32 window_size = ((source->channel_count * source->samples) / width) * 4;
-    sample_index = CLAMP(sample_index - (window_size / 2), 0, source->samples - window_size);
+    sample_index = CLAMP(sample_index - (window_size / 2), 0, (i32)source->samples - window_size);
     if (window_size > 0) {
       const f32 step = 2.0f / window_size;
       f32 interpolator = 0;
@@ -386,6 +386,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       .x      = 50,
       .y      = button_height * 3,
     };
+    e.zoomable = true;
     e.userdata = w;
     e.onrender = waveshaper_render_source;
     e.onhover = waveshaper_hover_source;
@@ -402,6 +403,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       .x      = 50,
       .y      = button_height * 3,
     };
+    e.zoomable = true;
     e.userdata = w;
     e.onrender = waveshaper_render_mod_source;
     e.onhover = waveshaper_hover_mod_source;

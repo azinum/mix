@@ -56,7 +56,7 @@ void fx_interpolator_update(Instrument* ins, Mix* mix) {
 }
 
 void fx_interpolator_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
-  const f32 sample_dt = dt / ins->samples;
+  (void)mix; (void)audio; (void)dt;
   Interpolator* interp = (Interpolator*)ins->userdata;
   for (size_t i = 0; i < ins->samples; ++i) {
     f32 sample = ins->out_buffer[i];
@@ -64,7 +64,7 @@ void fx_interpolator_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32
       f32 next = ins->out_buffer[(i + index) % ins->samples];
       ins->out_buffer[(i + index) % ins->samples] = lerp_f32(next, sample, interp->amount);
     }
-    i += interp->interval/2;
+    i += interp->interval;
   }
 }
 

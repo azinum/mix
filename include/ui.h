@@ -246,6 +246,7 @@ typedef struct Element {
   bool scissor;
   bool hidden;
   bool readonly;
+  bool zoomable;
 
   f32 border_thickness;
   f32 roundness;
