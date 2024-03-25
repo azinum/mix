@@ -78,19 +78,26 @@ void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* sourc
   }
 }
 
+// TODO(lucas): add controls for modifying window size
 void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source) {
   ASSERT(source != NULL);
   (void)w; // unused for now
 
-  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !ui_input_interacting() && width > 0 && height > 0 && source->ready && !source->internal) {
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
+
+  if (!mod_key && IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !ui_input_interacting() && width > 0 && height > 0 && source->ready && !source->internal) {
     f32 x = mouse_x / (f32)width;
     f32 sample = -(mouse_y / (f32)height - 0.5f) * 2.0f;
     i32 sample_index = x * source->samples;
     i32 window_size = ((source->channel_count * source->samples) / width) * 4;
     sample_index = CLAMP(sample_index - (window_size / 2), 0, (i32)source->samples - window_size);
     if (window_size > 0) {
-      const f32 step = 2.0f / window_size;
-      f32 interpolator = 0;
+      f32 step = 2.0f / window_size;
+      f32 interpolator = 0.0f;
+      if (sample_index == 0) {
+        interpolator += 0.5f;
+        step -= 0.5f / window_size;
+      }
       for (i32 i = 0; i < window_size; ++i) {
         interpolator += step;
         f32 factor = sinf((interpolator * PI32) / 2.0f);
