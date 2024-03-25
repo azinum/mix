@@ -64,7 +64,7 @@ void mix_reset(Mix* mix);
 void mix_update_and_render(Mix* mix);
 void mix_free(Mix* mix);
 void mix_ui_new(Mix* mix);
-void render_delta_buffer(Mix* mix);
+void render_delta_buffer(Mix* mix, bool update_text);
 void assets_load(Assets* a);
 void assets_unload(Assets* a);
 
@@ -225,26 +225,32 @@ void mix_update_and_render(Mix* mix) {
   ui_render();
 
 #ifdef DEVELOPER
+  static size_t debug_tick = 0;
+  const size_t debug_text_update_interval = 4;
   static char debug_text[256] = {0};
-  stb_snprintf(
-    debug_text,
-    sizeof(debug_text),
-    "%zu/%zu bytes (%.2g %%)\n"
-    "%.2g ms ui latency\n"
-    "%u/%u ui element updates\n"
-    "%.2g ms audio latency"
-    ,
-    memory_state.usage, memory_state.max_usage,
-    100 * ((f32)memory_state.usage / memory_state.max_usage),
-    1000 * ui_state.latency,
-    ui_state.element_update_count,
-    ui_state.element_count,
-    audio->dt * 1000
-  );
+  debug_tick += 1;
+  bool update_text = !(debug_tick % debug_text_update_interval);
+  if (update_text) {
+    stb_snprintf(
+      debug_text,
+      sizeof(debug_text),
+      "%zu/%zu bytes (%.2g %%)\n"
+      "%.2g ms ui latency\n"
+      "%u/%u ui element updates\n"
+      "%.2g ms audio latency"
+      ,
+      memory_state.usage, memory_state.max_usage,
+      100 * ((f32)memory_state.usage / memory_state.max_usage),
+      1000 * ui_state.latency,
+      ui_state.element_update_count,
+      ui_state.element_count,
+      audio->dt * 1000
+    );
+  }
   SetTextLineSpacing(FONT_SIZE_SMALLEST);
   DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 4 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
   SetTextLineSpacing(UI_LINE_SPACING);
-  render_delta_buffer(mix);
+  render_delta_buffer(mix, update_text);
 #else
   (void)render_delta_buffer;
 #endif
@@ -376,7 +382,7 @@ void mix_ui_new(Mix* mix) {
 #endif
 }
 
-void render_delta_buffer(Mix* mix) {
+void render_delta_buffer(Mix* mix, bool update_text) {
   i32 w = LENGTH(delta_buffer);
   i32 h = 38;
   i32 x = GetScreenWidth() - w - 32;
@@ -416,7 +422,9 @@ void render_delta_buffer(Mix* mix) {
 
   dt_avg /= window_size;
   static char text[32] = {0};
-  stb_snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)mix->fps);
+  if (update_text) {
+    snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)mix->fps);
+  }
   SetTextLineSpacing(FONT_SIZE_SMALLEST);
   DrawText(text, x, y - (FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
   SetTextLineSpacing(UI_LINE_SPACING);
