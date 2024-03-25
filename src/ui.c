@@ -227,7 +227,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
           switch (e->data.input.value_type) {
             case VALUE_TYPE_FLOAT: {
               f32 value = *(f32*)e->data.input.value;
-              buffer_from_fmt(&e->data.input.buffer, 24, "%g", value);
+              buffer_from_fmt(&e->data.input.buffer, 24, "%.7g", value);
               break;
             }
             case VALUE_TYPE_INTEGER: {

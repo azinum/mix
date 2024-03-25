@@ -224,25 +224,29 @@ void mix_update_and_render(Mix* mix) {
   ui_update(mix->dt);
   ui_render();
 
-#if 1
+#ifdef DEVELOPER
   static char debug_text[256] = {0};
   stb_snprintf(
     debug_text,
     sizeof(debug_text),
     "%zu/%zu bytes (%.2g %%)\n"
-    "%g ms ui latency\n"
-    "%u/%u ui element updates"
+    "%.2g ms ui latency\n"
+    "%u/%u ui element updates\n"
+    "%.2g ms audio latency"
     ,
     memory_state.usage, memory_state.max_usage,
     100 * ((f32)memory_state.usage / memory_state.max_usage),
     1000 * ui_state.latency,
     ui_state.element_update_count,
-    ui_state.element_count
+    ui_state.element_count,
+    audio->dt * 1000
   );
   SetTextLineSpacing(FONT_SIZE_SMALLEST);
-  DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 3 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+  DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 4 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
   SetTextLineSpacing(UI_LINE_SPACING);
   render_delta_buffer(mix);
+#else
+  (void)render_delta_buffer;
 #endif
 }
 
