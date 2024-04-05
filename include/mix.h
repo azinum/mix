@@ -63,6 +63,7 @@ struct Mix;
 #include "module.h"
 #include "ui.h"
 #include "settings.h"
+#include "midi.h"
 // instruments
 #include "instrument.h"
 #include "wave_shaper.h"

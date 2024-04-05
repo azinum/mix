@@ -51,6 +51,7 @@ static void hook_default(Variable* v);
 static void hook_target_fps(Variable* v);
 static void hook_warn_restart(Variable* v);
 static void hook_restart_audio_engine(Variable* v);
+static void hook_reload_midi_device(Variable* v);
 
 static void write_variable(i32 fd, const char* name, Type type, void* data);
 static Result read_variable(const char* name, Type type, void* data);
@@ -91,6 +92,7 @@ static Variable variables[] = {
   { "ui_slider_inner_padding", T_INT, &UI_SLIDER_INNER_PADDING, hook_default },
   { "ui_theme", T_STRING, &UI_THEME, hook_default },
   { "ui_roundness", T_FLOAT, &UI_ROUNDNESS, hook_default },
+  { "midi_device_path", T_STRING, &MIDI_DEVICE_PATH, hook_reload_midi_device },
 };
 
 struct {
@@ -180,6 +182,9 @@ Result config_load(const char* path) {
   for (size_t i = 0; i < LENGTH(variables); ++i) {
     Variable* v = &variables[i];
     size_t data_size = type_size[v->type];
+    if (v->type == T_STRING) {
+      data_size = strnlen(v->data, MAX_CONFIG_STRING_SIZE);
+    }
     memcpy(diff_buff, v->data, data_size); // copy current value
     if (read_variable(v->name, v->type, v->data) == Ok) {
       ASSERT(v->hook != NULL);
@@ -222,6 +227,19 @@ void hook_warn_restart(Variable* v) {
 void hook_restart_audio_engine(Variable* v) {
   log_print(STDOUT_FILENO, LOG_TAG_WARN, "setting `%s` was changed, restarting audio engine...\n", v->name);
   audio_engine_restart();
+}
+
+void hook_reload_midi_device(Variable* v) {
+  (void)v;
+  midi_close();
+  midi_init();
+  Result result = midi_open_device(MIDI_DEVICE_PATH);
+  if (result != Ok) {
+    log_print(STDOUT_FILENO, LOG_TAG_WARN, "failed to open midi device `%s`\n", MIDI_DEVICE_PATH);
+  }
+  else {
+    log_print(STDOUT_FILENO, LOG_TAG_SUCCESS, "opened midi device `%s`\n", MIDI_DEVICE_PATH);
+  }
 }
 
 void write_variable(i32 fd, const char* name, Type type, void* data) {
@@ -281,17 +299,18 @@ Result read_variable(const char* name, Type type, void* data) {
         return Ok;
       }
       lua_pop(l, 1);
-      break;
+      return Error;
     }
     case T_COLOR: {
       if (lua_isstring(l, -1)) {
         const char* value = lua_tostring(l, -1);
         Color color = hex_string_to_color((char*)value);
         *(Color*)data = color;
+        lua_pop(l, 1);
         return Ok;
       }
       lua_pop(l, 1);
-      break;
+      return Error;
     }
     default:
       break;

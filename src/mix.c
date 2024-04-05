@@ -31,6 +31,7 @@
 #include "module.c"
 #include "ui.c"
 #include "settings.c"
+#include "midi.c"
 // instruments
 #include "instrument.c"
 #include "wave_shaper.c"
@@ -303,6 +304,10 @@ void mix_reset(Mix* mix) {
   mix->timer = 0.0f;
   mix->timer_start = 0.0f;
   mix->paused = false;
+  midi_init();
+  if (midi_open_device(MIDI_DEVICE_PATH) != Ok) {
+    log_print(STDOUT_FILENO, LOG_TAG_WARN, "failed to open midi device `%s`\n", MIDI_DEVICE_PATH);
+  }
 }
 
 void mix_free(Mix* m) {
@@ -311,6 +316,7 @@ void mix_free(Mix* m) {
   ui_free();
   assets_unload(&assets);
   CloseWindow();
+  midi_close();
 }
 
 void mix_ui_new(Mix* mix) {

@@ -763,6 +763,14 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   Waveshaper* w = (Waveshaper*)ins->userdata;
   ticket_mutex_begin(&w->source_mutex);
 
+  for (size_t i = 0; i < audio->midi_event_count; ++i) {
+    Midi_event e = audio->midi_events[i];
+    if (e.message == MIDI_NOTE_ON) {
+      f32 freq = freq_table[e.note % LENGTH(freq_table)];
+      w->freq_target = freq;
+    }
+  }
+
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
   f32 volume = ins->volume;

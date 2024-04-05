@@ -50,6 +50,7 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
     .record_buffer_size   = record_buffer_size,
     .record_buffer_index  = 0,
     .db                   = 0,
+    .midi_event_count     = 0,
   };
 }
 
@@ -270,6 +271,9 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   const i32 channel_count = audio->channel_count;
   const i32 sample_count = frames_per_buffer * channel_count;
   const f32 process_dt = sample_count / (f32)audio->sample_rate;
+
+  // handle midi-events
+  audio->midi_event_count = midi_read_events(&audio->midi_events[0], MAX_MIDI_EVENTS);
 
   // clear master audio buffer
   for (i32 i = 0; i < sample_count; ++i) {
