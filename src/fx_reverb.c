@@ -70,6 +70,7 @@ void fx_reverb_randomize(Element* e) {
 }
 
 void fx_reverb_tree_new(Reverb* reverb) {
+  Random old_seed = random_get_current_seed();
   random_init((Random)reverb->model_seed);
   reverb->node_buffer_index = 0;
   reverb->node_count = 0;
@@ -86,7 +87,7 @@ void fx_reverb_tree_new(Reverb* reverb) {
     n->tick = 0;
   }
   fx_reverb_create_reverb_tree(reverb, &reverb->root, 0);
-  random_init(random_get_current_seed());
+  random_init(old_seed); // restore seed
 }
 
 f32* alloc_reverb_buffer(Reverb* reverb, size_t size) {
