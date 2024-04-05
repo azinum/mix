@@ -36,6 +36,7 @@
 #include "wave_shaper.c"
 #include "dummy.c"
 #include "noise.c"
+#include "audio_input.c"
 // effects/filters
 #include "effect.c"
 #include "fx_clip_distortion.c"

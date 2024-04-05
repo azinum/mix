@@ -277,13 +277,15 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   }
 
   if (!mix->paused) {
-    if (in) {
+    Instrument* ins = &audio->instrument;
+
+    if (in && ins->in_buffer) {
       for (i32 i = 0; i < sample_count; ++i) {
         audio->in_buffer[i] = ((f32*)in)[i];
+        ins->in_buffer[i]   = ((f32*)in)[i];
       }
     }
 
-    Instrument* ins = &audio->instrument;
 
     if (ins->initialized) {
       // process instruments and effects
