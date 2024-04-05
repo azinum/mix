@@ -9,6 +9,7 @@ typedef enum {
   EFFECT_DELAY,
   EFFECT_SMOOTH,
   EFFECT_INTERPOLATOR,
+  EFFECT_REVERB,
 
   MAX_EFFECT_ID,
 } Effect_id;

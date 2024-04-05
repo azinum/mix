@@ -8,6 +8,7 @@
 #endif
 
 void random_init(Random seed);
+Random random_get_current_seed(void);
 Random random_lc(void);
 Random random_xor_shift(void);
 Random random_number(void);

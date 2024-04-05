@@ -43,6 +43,7 @@
 #include "fx_delay.c"
 #include "fx_smooth.c"
 #include "fx_interpolator.c"
+#include "fx_reverb.c"
 
 #include "instrument_picker.c"
 #include "control_panel.c"

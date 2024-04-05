@@ -60,6 +60,8 @@ Audio_source audio_load_audio(const char* path);
 void audio_unload_audio(Audio_source* source);
 void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples);
 Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, const u32 channel_count);
+f32 audio_calc_rms(f32* buffer, size_t size);
+f32 audio_calc_rms_clamp(f32* buffer, size_t size);
 Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H

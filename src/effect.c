@@ -8,6 +8,7 @@ Effect effects[MAX_EFFECT_ID] = {
   DEFINE_EFFECT(EFFECT_DELAY, fx_delay, "delay"),
   DEFINE_EFFECT(EFFECT_SMOOTH, fx_smooth, "smooth"),
   DEFINE_EFFECT(EFFECT_INTERPOLATOR, fx_interpolator, "interpolator"),
+  DEFINE_EFFECT(EFFECT_REVERB, fx_reverb, "reverb"),
 };
 
 Effect effect_new(Effect_id id) {

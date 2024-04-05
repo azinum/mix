@@ -6,6 +6,7 @@
 struct Mix;
 
 #include <raylib.h>
+#include <raymath.h>
 
 #ifdef TARGET_ANDROID
   #include "raymob.h"
@@ -74,6 +75,7 @@ struct Mix;
 #include "fx_delay.h"
 #include "fx_smooth.h"
 #include "fx_interpolator.h"
+#include "fx_reverb.h"
 
 #include "instrument_picker.h"
 #include "control_panel.h"

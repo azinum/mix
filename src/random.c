@@ -6,6 +6,10 @@ void random_init(Random seed) {
   current_seed = seed;
 }
 
+Random random_get_current_seed(void) {
+  return current_seed;
+}
+
 Random random_lc(void) {
   const Random a = 16807;
   const Random multiplier = 2147483647;
@@ -25,5 +29,5 @@ Random random_number(void) {
 }
 
 f32 random_f32(void) {
-  return random_number() / (f32)INT32_MAX;
+  return (i32)random_number() / (f32)INT32_MAX;
 }

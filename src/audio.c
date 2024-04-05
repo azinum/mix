@@ -231,6 +231,21 @@ Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, 
   return source;
 }
 
+f32 audio_calc_rms(f32* buffer, size_t size) {
+  ASSERT(buffer != NULL);
+
+  f32 db = 0.0f;
+  for (size_t i = 0; i < size; ++i) {
+    f32 sample = buffer[i];
+    db += sample * sample;
+  }
+  return sqrtf(db / (f32)size);
+}
+
+f32 audio_calc_rms_clamp(f32* buffer, size_t size) {
+  return CLAMP(audio_calc_rms(buffer, size), 0, 1);
+}
+
 Result audio_engine_process(const void* in, void* out, i32 frames) {
   TIMER_START();
   // TODO(lucas): measure latency of instruments and effects/plugins for
