@@ -10,6 +10,11 @@
 
 // #define EXPERIMENTAL
 
+typedef struct Mod_item {
+  f32 value;
+  i32 enabled;
+} Mod_item;
+
 typedef struct Waveshaper {
   f32 tick;
   size_t mod_tick;
@@ -28,12 +33,13 @@ typedef struct Waveshaper {
   f32 gain;
   i32 left_offset;
   i32 right_offset;
-  f32 mod_table[MOD_TABLE_LENGTH];
+  Mod_item mod_table[MOD_TABLE_LENGTH];
   u32 mod_index;
   i32 mod_freq_mod;
   i32 mod_freq;
   f32 mod_freq_mod_scale;
   f32 mod_freq_scale;
+  i32 mod_map_to_freq_table;
   Drumpad drumpad;
   Audio_source source;
   Audio_source mod_source;
@@ -181,10 +187,10 @@ void waveshaper_default(Waveshaper* w) {
   w->left_offset      = 0;
   w->right_offset     = 0;
   const f32 max_freq_mod = 1.0f;
-  f32 freq_mod_step = 2 * max_freq_mod / MOD_TABLE_LENGTH;
+  f32 freq_mod_step = max_freq_mod / MOD_TABLE_LENGTH;
   f32 freq_mod = freq_mod_step;
   for (u32 i = 0; i < MOD_TABLE_LENGTH; ++i) {
-    w->mod_table[i] = freq_mod;
+    w->mod_table[i] = (Mod_item) { .value = freq_mod, .enabled = true, };
     if (i == MOD_TABLE_LENGTH / 2) {
       freq_mod_step = -freq_mod_step;
     }
@@ -195,6 +201,7 @@ void waveshaper_default(Waveshaper* w) {
   w->mod_freq     = false;
   w->mod_freq_mod_scale = 1.0f;
   w->mod_freq_scale = 55.0f;
+  w->mod_map_to_freq_table = false;
 
   w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
   w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
@@ -234,7 +241,7 @@ void waveshaper_update_drumpad(Element* e) {
 void waveshaper_randomize_stepper(Element* e) {
   Waveshaper* w = (Waveshaper*)e->userdata;
   for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
-    w->mod_table[i] = random_f32() * 2;
+    w->mod_table[i].value = random_f32();
   }
 }
 
@@ -247,11 +254,32 @@ void waveshaper_flipflop(Element* e) {
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
   w->drumpad.sample_index[0] = 0;
+  Mod_item item = w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
+  if (!item.enabled) {
+    // skip all items that are not enabled
+    for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
+      size_t index = (w->mod_index + i) % MOD_TABLE_LENGTH;
+      item = w->mod_table[index];
+      if (item.enabled) {
+        w->mod_index = index;
+        goto found;
+      }
+    }
+    w->mod_index += 1;
+    return; // none was found, early out
+  }
+found:
   if (w->mod_freq_mod) {
-    w->freq_mod_target = w->mod_freq_mod_scale * w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
+    w->freq_mod_target = w->mod_freq_mod_scale * item.value;
   }
   if (w->mod_freq) {
-    w->freq_target = w->mod_freq_scale * w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
+    if (w->mod_map_to_freq_table) {
+      size_t index = (size_t)(item.value * LENGTH(freq_table)) % LENGTH(freq_table);
+      w->freq_target = w->mod_freq_scale * freq_table[index];
+    }
+    else {
+      w->freq_target = w->mod_freq_scale * item.value;
+    }
   }
   w->mod_index += 1;
 }
@@ -617,11 +645,23 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
-    f32* f = &w->mod_table[i];
-    Element e = ui_slider_float(f, 0.0f, 2.0f);
+    f32* f = &w->mod_table[i].value;
+    Element e = ui_slider_float(f, 0.0f, 1.0f);
     e.box.w = 20;
     e.box.h = 3 * button_height;
     e.data.slider.slider_type = SLIDER_VERTICAL;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_line_break(0);
+    ui_attach_element(container, &e);
+  }
+  for (size_t i = 0; i < MOD_TABLE_LENGTH; ++i) {
+    i32* enabled = &w->mod_table[i].enabled;
+    Element e = ui_toggle_ex2(enabled, "N", "Y");
+    e.box.w = 20;
+    e.box.h = 20;
+    e.tooltip = "use this modifier";
     ui_attach_element(container, &e);
   }
   {
@@ -673,6 +713,17 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     };
     e.userdata = w;
     e.onclick = waveshaper_randomize_stepper;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->mod_map_to_freq_table, "m -> ft");
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 20,
+      .y = small_button_height,
+    };
+    e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~32.70 hz (C1)\n1.0 -> ~84384.63 hz (B9)";
     ui_attach_element(container, &e);
   }
 
