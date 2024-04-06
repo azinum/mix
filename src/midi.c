@@ -10,23 +10,23 @@ struct {
 
 // taken from lmms src/core/midi/MidiClient.cpp
 static const i32 lengths_f0_f6[] = {
-	0,  // 0xf0
-	2,  // 0Xf1
-	3,  // 0Xf2
-	2,  // 0Xf3
-	2,  // 0Xf4 (undefined)
-	2,  // 0Xf5 (undefined)
-	1,  // 0Xf6
+  0,  // 0xf0
+  2,  // 0Xf1
+  3,  // 0Xf2
+  2,  // 0Xf3
+  2,  // 0Xf4 (undefined)
+  2,  // 0Xf5 (undefined)
+  1,  // 0Xf6
 };
 
 static const i32 lengths_80_e0[] = {
-	3,  // 0x8x note off
-	3,  // 0x9x note on
-	3,  // 0xax poly-key pressure
-	3,  // 0xbx control change
-	2,  // 0xcx program change
-	2,  // 0xdx channel pressure
-	3,  // 0xex pitch-bend change
+  3,  // 0x8x note off
+  3,  // 0x9x note on
+  3,  // 0xax poly-key pressure
+  3,  // 0xbx control change
+  2,  // 0xcx program change
+  2,  // 0xdx channel pressure
+  3,  // 0xex pitch-bend change
 };
 
 static i32 midi_event_length(u8 event);

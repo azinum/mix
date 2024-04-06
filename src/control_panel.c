@@ -2,6 +2,7 @@
 // TODO:
 //  - add time elapsed
 //  - add recorded time elapsed
+//  - add ability to export recorded audio, instead of exporting on exit
 
 static void control_panel_render_waveform(Element* e);
 static void control_panel_change_audio_setting(Element* e);

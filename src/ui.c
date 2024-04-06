@@ -81,7 +81,8 @@ static void ui_render_input(UI_state* ui, Element* e);
 void ui_state_init(UI_state* ui) {
   ui_element_init(&ui->root, ELEMENT_CONTAINER);
   ui->root.placement = PLACEMENT_FILL;
-  ui->root.padding = 0;
+  ui->root.x_padding = 0;
+  ui->root.y_padding = 0;
   ui->root.border = false;
   ui->root.background = false;
 
@@ -274,10 +275,10 @@ void ui_update_container(UI_state* ui, Element* e) {
     switch (e->placement) {
       case PLACEMENT_FILL: {
         item->box = BOX(
-          e->box.x + e->padding,
-          e->box.y + e->padding,
-          e->box.w - 2 * e->padding,
-          e->box.h - 2 * e->padding
+          e->box.x + e->x_padding,
+          e->box.y + e->y_padding,
+          e->box.w - 2 * e->x_padding,
+          e->box.h - 2 * e->y_padding
         );
         // this fitment only allows one item
         done = true;
@@ -296,7 +297,7 @@ void ui_update_container(UI_state* ui, Element* e) {
           }
           case SIZE_MODE_PERCENT: {
             if (sizing.x != 0) {
-              w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+              w = (sizing.x / 100.0f) * e->box.w - 2 * e->x_padding;
             }
             break;
           }
@@ -312,7 +313,7 @@ void ui_update_container(UI_state* ui, Element* e) {
           }
           case SIZE_MODE_PERCENT: {
             if (sizing.y != 0) {
-              h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+              h = (sizing.y / 100.0f) * e->box.h - 2 * e->y_padding;
             }
             break;
           }
@@ -320,12 +321,12 @@ void ui_update_container(UI_state* ui, Element* e) {
             break;
         }
         item->box = BOX(
-          e->box.x + e->padding + px,
-          e->box.y + e->padding + py,
+          e->box.x + e->x_padding + px,
+          e->box.y + e->y_padding + py,
           w,
           h
         );
-        py += item->box.h + 2 * e->padding;
+        py += item->box.h + 2 * e->y_padding;
         break;
       }
       case PLACEMENT_BLOCK: {
@@ -341,7 +342,7 @@ void ui_update_container(UI_state* ui, Element* e) {
           }
           case SIZE_MODE_PERCENT: {
             if (sizing.x != 0) {
-              w = (sizing.x / 100.0f) * e->box.w - 2 * e->padding;
+              w = (sizing.x / 100.0f) * e->box.w - 2 * e->x_padding;
             }
             break;
           }
@@ -357,7 +358,7 @@ void ui_update_container(UI_state* ui, Element* e) {
           }
           case SIZE_MODE_PERCENT: {
             if (sizing.y != 0) {
-              h = (sizing.y / 100.0f) * e->box.h - 2 * e->padding;
+              h = (sizing.y / 100.0f) * e->box.h - 2 * e->y_padding;
             }
             break;
           }
@@ -365,21 +366,21 @@ void ui_update_container(UI_state* ui, Element* e) {
             break;
         }
 
-        if (px + w + e->padding >= e->box.w) {
+        if (px + w + e->x_padding >= e->box.w) {
           px = 0;
-          py += py_offset + 2 * e->padding;
+          py += py_offset + 2 * e->y_padding;
           py_offset = 0;
         }
         if (h > py_offset) {
           py_offset = h;
         }
         item->box = BOX(
-          e->box.x + e->padding + px,
-          e->box.y + e->padding + py,
+          e->box.x + e->x_padding + px,
+          e->box.y + e->y_padding + py,
           w,
           h
         );
-        px += item->box.w + 2 * e->padding;
+        px += item->box.w + 2 * e->x_padding;
         break;
       }
       default:
@@ -389,7 +390,7 @@ void ui_update_container(UI_state* ui, Element* e) {
       ((item->box.y + item->box.h < root->box.y) || (item->box.y > root->box.y + root->box.h));
   }
 
-  py_offset += 2 * e->padding;
+  py_offset += 2 * e->y_padding;
   e->data.container.content_height = py + py_offset - scroll_y;
 }
 
@@ -399,15 +400,15 @@ void ui_update_grid(UI_state* ui, Element* e) {
   const u32 rows = (u32)ceilf((f32)e->count / cols);
   for (size_t i = 0; i < e->count; ++i) {
     Element* item = &e->items[i];
-    const i32 w = (i32)ceilf((f32)(e->box.w - 2 * e->padding) / cols);
+    const i32 w = (i32)ceilf((f32)(e->box.w - 2 * e->x_padding) / cols);
     const i32 h = (i32)ceilf((f32)e->box.h / rows);
     const i32 x = i % cols;
     const i32 y = (i32)floorf((f32)i / cols);
     item->box = BOX(
-      e->box.x + x * w + e->padding,
-      e->box.y + y * h + e->padding,
-      w - 2 * e->padding,
-      h - 2 * e->padding
+      e->box.x + x * w + e->x_padding,
+      e->box.y + y * h + e->y_padding,
+      w - 2 * e->x_padding,
+      h - 2 * e->y_padding
     );
   }
 }
@@ -652,8 +653,8 @@ void ui_render_elements(UI_state* ui, Element* e) {
     }
   }
 #ifdef UI_DRAW_GUIDES
-  if (e->type == ELEMENT_CONTAINER && e->padding > 0) {
-    ui_render_rectangle_lines(ui_pad_box(e->box, e->padding), 1, 0, GUIDE_COLOR3);
+  if (e->type == ELEMENT_CONTAINER && e->x_padding > 0 && e->y_padding > 0) {
+    ui_render_rectangle_lines(ui_pad_box_ex(e->box, e->x_padding, e->y_padding), 1, 0, GUIDE_COLOR3);
   }
 #endif
 }
@@ -713,7 +714,8 @@ void ui_element_init(Element* e, Element_type type) {
     .padding = UI_TITLE_BAR_PADDING,
     .top = true,
   };
-  e->padding = UI_PADDING;
+  e->x_padding = UI_X_PADDING;
+  e->y_padding = UI_Y_PADDING;
 
   e->text_color = UI_TEXT_COLOR;
   e->background_color = UI_BACKGROUND_COLOR;
@@ -831,8 +833,8 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   offset_from_center_factor.x = offset_from_center_factor.x / fabs(offset_from_center_factor.x);
   offset_from_center_factor.y = offset_from_center_factor.y / fabs(offset_from_center_factor.y);
 
-  const i32 base_x_offset = 10 + UI_PADDING;
-  const i32 base_y_offset = 10 + UI_PADDING;
+  const i32 base_x_offset = 10 + UI_X_PADDING;
+  const i32 base_y_offset = 10 + UI_Y_PADDING;
 
   x_offset += offset_from_center_factor.x * text_size.x * 0.5f + (offset_from_center_factor.x * base_x_offset);
   y_offset += offset_from_center_factor.y * text_size.y * 0.5f + (offset_from_center_factor.y * base_y_offset);
@@ -846,7 +848,7 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   const f32 border_thickness = UI_BORDER_THICKNESS;
   const Color border_color = UI_BORDER_COLOR;
   {
-    Box box = ui_expand_box(BOX(x, y, text_size.x, text_size.y), UI_PADDING);
+    Box box = ui_expand_box_ex(BOX(x, y, text_size.x, text_size.y), UI_X_PADDING, UI_Y_PADDING);
     if (roundness > 0) {
       DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, background_color);
       DrawRectangleRoundedLines((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, border_thickness, border_color);
@@ -901,10 +903,10 @@ void ui_render_alert(UI_state* ui) {
     spacing,
     line_spacing
   );
-  box.x += (root->box.x + root->box.w - box.w - UI_PADDING) - 2 * UI_PADDING;
-  box.y += (root->box.y) + 2 * UI_PADDING;
+  box.x += (root->box.x + root->box.w - box.w - UI_X_PADDING) - 2 * UI_X_PADDING;
+  box.y += (root->box.y) + 2 * UI_Y_PADDING;
 
-  Box padded_box = ui_expand_box_ex(box, 2 * UI_PADDING, UI_PADDING);
+  Box padded_box = ui_expand_box_ex(box, UI_X_PADDING, UI_Y_PADDING);
   ui_render_rectangle(padded_box, UI_ROUNDNESS, UI_BACKGROUND_COLOR);
   ui_render_rectangle_lines(padded_box, UI_BORDER_THICKNESS, UI_ROUNDNESS, UI_BORDER_COLOR);
   ui_render_text(font, ui->alert_text, &box, false, true, font_size, spacing, line_spacing, UI_TEXT_COLOR);
@@ -1240,7 +1242,7 @@ void ui_render(void) {
     root = ui->zoom;
   }
   ui_render_elements(ui, root);
-#ifdef UI_DRAW_GUIDES
+#if defined(UI_DRAW_GUIDES) && 0
   if (ui->hover != NULL) {
     Element* e = ui->hover;
     DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.0f, GUIDE_COLOR2);
@@ -1424,6 +1426,9 @@ Element ui_container(char* title) {
   e.data.container.content_height = 0;
   e.data.container.scrollable = true;
   e.placement = PLACEMENT_BLOCK;
+
+  e.x_padding = UI_CONTAINER_X_PADDING;
+  e.y_padding = UI_CONTAINER_Y_PADDING;
 
   e.render = true;
   e.scissor = true;
@@ -1673,7 +1678,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
       stb_dprintf(fd, "-\n");
       break;
   }
-  tabs(fd, level); stb_dprintf(fd, "padding: %d\n", e->padding);
+  tabs(fd, level); stb_dprintf(fd, "padding: %d, %d\n", e->x_padding, e->y_padding);
   tabs(fd, level); stb_dprintf(fd, "render: %s\n", bool_str[e->render == true]);
   tabs(fd, level); stb_dprintf(fd, "background: %s\n", bool_str[e->background == true]);
   tabs(fd, level); stb_dprintf(fd, "border: %s\n", bool_str[e->border == true]);

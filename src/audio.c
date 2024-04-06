@@ -161,7 +161,6 @@ Audio_source audio_load_audio(const char* path) {
   Wave wave = LoadWaveFromMemory(ext, buffer.data, buffer.count);
   buffer_free(&buffer);
   if (wave.data) {
-    log_print(STDOUT_FILENO, LOG_TAG_SUCCESS, "loaded file `%s`\n", path);
     if (wave.sampleSize != 16) {
       log_print(STDOUT_FILENO, LOG_TAG_WARN, "loading audio file `%s` with %u-bit sample size, this is not supported yet\n", path, wave.sampleSize);
     }
@@ -178,6 +177,7 @@ Audio_source audio_load_audio(const char* path) {
         source.samples = samples;
         source.channel_count = channel_count;
         source.ready = true;
+        log_print(STDOUT_FILENO, LOG_TAG_SUCCESS, "loaded audio file `%s` (%u-bit, %zu samples, %u channels)\n", path, wave.sampleSize, samples, channel_count);
       }
       else {
         log_print(STDERR_FILENO, LOG_TAG_ERROR, "failed to allocate memory for audio source (from file `%s`)\n", path);

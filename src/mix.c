@@ -334,7 +334,8 @@ void mix_ui_new(Mix* mix) {
     e.border = false;
     e.background = false;
     e.placement = PLACEMENT_BLOCK;
-    e.padding = UI_PADDING / 2;
+    e.x_padding = UI_CONTAINER_X_PADDING / 2;
+    e.y_padding = UI_CONTAINER_Y_PADDING / 2;
     container = ui_attach_element(NULL, &e);
   }
   {
@@ -372,7 +373,8 @@ void mix_ui_new(Mix* mix) {
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
 #ifdef TARGET_ANDROID
-    e.padding = UI_PADDING * 4;
+    e.x_padding = UI_CONTAINER_X_PADDING * 4;
+    e.y_padding = UI_CONTAINER_Y_PADDING * 2;
 #endif
     mix->effect_chain = ui_attach_element(container, &e);
     effect_chain_ui_new(mix, mix->effect_chain);

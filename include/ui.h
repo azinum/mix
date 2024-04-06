@@ -232,7 +232,8 @@ typedef struct Element {
     char* s;
   } v;
 
-  i32 padding;
+  i32 x_padding;
+  i32 y_padding;
   Title_bar title_bar;
 
   Color text_color;

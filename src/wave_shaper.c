@@ -158,6 +158,7 @@ void waveshaper_hover_mod_source(Element* e) {
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
   Waveshaper* w = (Waveshaper*)ins->userdata;
+  waveshaper_destroy(ins);
   waveshaper_default(w);
 }
 
@@ -194,6 +195,10 @@ void waveshaper_default(Waveshaper* w) {
   w->mod_freq     = false;
   w->mod_freq_mod_scale = 1.0f;
   w->mod_freq_scale = 55.0f;
+
+  w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
+  w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
+  w->source_mutex = ticket_mutex_new();
 
   waveshaper_drumpad_init(&w->drumpad);
 }
@@ -323,9 +328,6 @@ void waveshaper_init(Instrument* ins) {
   ASSERT(w != NULL);
   ins->userdata = w;
   waveshaper_default(w);
-  w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
-  w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
-  w->source_mutex = ticket_mutex_new();
 }
 
 void waveshaper_ui_new(Instrument* ins, Element* container) {
@@ -789,12 +791,12 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
     }
   }
-  for (size_t i = 0; i < ins->samples; i += channel_count) {
-    i32 offsets[2] = {
-      w->left_offset,
-      w->right_offset
-    };
 
+  i32 offsets[2] = {
+    w->left_offset,
+    w->right_offset
+  };
+  for (size_t i = 0; i < ins->samples; i += channel_count) {
     for (i32 channel_index = 0; channel_index < channel_count; ++channel_index) {
       i32 offset = offsets[(channel_index % 2) == 0];
       size_t mod_sample_index = (size_t)((w->mod_tick + offset) * w->freq_mod);
