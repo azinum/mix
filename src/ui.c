@@ -1479,6 +1479,12 @@ Element ui_text_ex(char* text, bool text_wrapping) {
   return e;
 }
 
+Element ui_text_line(char* text) {
+  Element e = ui_text(text);
+  e.sizing = SIZING_PERCENT(100, 0);
+  return e;
+}
+
 Element ui_button(char* text) {
   Element e;
   ui_element_init(&e, ELEMENT_BUTTON);

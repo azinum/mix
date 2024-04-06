@@ -106,6 +106,7 @@ size_t midi_read_events(Midi_event* events, const size_t max_events) {
         }
         else {
           // lost event :(
+          log_print(STDOUT_FILENO, LOG_TAG_WARN, "lost a midi event\n");
         }
       }
     }

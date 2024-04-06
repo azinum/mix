@@ -819,7 +819,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   for (size_t i = 0; i < audio->midi_event_count; ++i) {
     Midi_event e = audio->midi_events[i];
     if (e.message == MIDI_NOTE_ON) {
-      f32 freq = freq_table[e.note % LENGTH(freq_table)];
+      f32 freq = freq_table[CLAMP(e.note - 24, 0, (i32)LENGTH(freq_table))];
       w->freq_target = freq;
     }
   }

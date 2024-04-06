@@ -78,9 +78,10 @@ i32 main(void) {
     export(&sound, "data/audio/shapes/combined.wav");
   }
 #else
-  print_wave_file(STDOUT_FILENO, "data/audio/drums/kick.wav", "kick");
-  print_wave_file(STDOUT_FILENO, "data/audio/drums/snare.wav", "snare");
-  print_wave_file(STDOUT_FILENO, "data/audio/drums/hihat.wav", "hihat");
+  print_wave_file(STDOUT_FILENO, "data/samples/drums/kick.wav", "kick");
+  print_wave_file(STDOUT_FILENO, "data/samples/drums/snare.wav", "snare");
+  print_wave_file(STDOUT_FILENO, "data/samples/drums/hihat.wav", "hihat");
+  print_wave_file(STDOUT_FILENO, "data/samples/shapes/saw.wav", "saw");
   print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
 #endif
   return EXIT_SUCCESS;

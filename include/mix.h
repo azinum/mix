@@ -70,6 +70,7 @@ struct Mix;
 #include "dummy.h"
 #include "noise.h"
 #include "audio_input.h"
+#include "basic_poly_synth.h"
 // effects/filters
 #include "effect.h"
 #include "fx_clip_distortion.h"

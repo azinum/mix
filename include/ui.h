@@ -334,6 +334,7 @@ Element ui_container_ex(char* title, bool scrollable);
 Element ui_grid(u32 cols, bool render);
 Element ui_text(char* text);
 Element ui_text_ex(char* text, bool text_wrapping);
+Element ui_text_line(char* text); // text that takes up the width of the container it belongs to
 Element ui_button(char* text);
 Element ui_canvas(bool border);
 Element ui_toggle(i32* value);

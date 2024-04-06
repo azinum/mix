@@ -1,4 +1,6 @@
 // effect.h
+// TODO:
+//  - add a plugin that sends midi events
 
 #ifndef _EFFECT_H
 #define _EFFECT_H

@@ -38,6 +38,7 @@
 #include "dummy.c"
 #include "noise.c"
 #include "audio_input.c"
+#include "basic_poly_synth.c"
 // effects/filters
 #include "effect.c"
 #include "fx_clip_distortion.c"
@@ -194,6 +195,8 @@ void mix_update_and_render(Mix* mix) {
   mix->mouse = GetMousePosition();
   delta_buffer[mix->tick % LENGTH(delta_buffer)] = mix->dt;
 
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
+
   if (audio->restart) {
     mix_restart_audio_engine();
     ui_free();
@@ -202,24 +205,26 @@ void mix_update_and_render(Mix* mix) {
   }
 
   if (!ui_input_interacting()) {
-    if (IsKeyPressed(KEY_R)) {
-      if (IsKeyDown(KEY_LEFT_CONTROL)) {
-        mix_restart_audio_engine();
+    if (mod_key) {
+      if (IsKeyPressed(KEY_R)) {
+        if (IsKeyDown(KEY_LEFT_SHIFT)) {
+          mix_restart_audio_engine();
+        }
+        audio_engine_clear_effects();
+        ui_free();
+        ui_init();
+        mix_reset(mix);
+        mix_ui_new(mix);
       }
-      audio_engine_clear_effects();
-      ui_free();
-      ui_init();
-      mix_reset(mix);
-      mix_ui_new(mix);
+      if (IsKeyPressed(KEY_L)) {
+        config_load(CONFIG_PATH);
+      }
+      if (IsKeyPressed(KEY_M)) {
+        memory_print_info(STDOUT_FILENO);
+      }
     }
     if (IsKeyPressed(KEY_SPACE)) {
       mix->paused = !mix->paused;
-    }
-    if (IsKeyPressed(KEY_L)) {
-      config_load(CONFIG_PATH);
-    }
-    if (IsKeyPressed(KEY_M)) {
-      memory_print_info(STDOUT_FILENO);
     }
   }
   instrument_update(&audio->instrument, mix);

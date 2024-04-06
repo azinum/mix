@@ -1,4 +1,6 @@
 // instrument.c
+// TODO:
+//  - generalize resetting of instruments
 
 #define DEFINE_INSTRUMENT(ID, NAME, TITLE) [ID] = { .title = TITLE, .init = NAME##_init, .ui_new = NAME##_ui_new, .update = NAME##_update, .process = NAME##_process, .destroy = NAME##_destroy, }
 
@@ -7,6 +9,7 @@ Instrument instruments[MAX_INSTRUMENT_ID] = {
   DEFINE_INSTRUMENT(INSTRUMENT_DUMMY, dummy, "dummy"),
   DEFINE_INSTRUMENT(INSTRUMENT_NOISE, noise, "noise"),
   DEFINE_INSTRUMENT(INSTRUMENT_AUDIO_INPUT, audio_input, "audio input"),
+  DEFINE_INSTRUMENT(INSTRUMENT_BASIC_POLY_SYNTH, basic_poly_synth, "basic poly synth"),
 };
 
 void instrument_init_default(Instrument* ins) {
@@ -41,7 +44,9 @@ Instrument instrument_new_from_path(const char* path) {
 void instrument_init(Instrument* ins, Audio_engine* audio) {
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
   MEMORY_TAG("instrument.instrument_init: audio buffer");
-  ins->in_buffer = memory_calloc(samples, sizeof(f32));
+  if (AUDIO_INPUT) {
+    ins->in_buffer = memory_calloc(samples, sizeof(f32));
+  }
   ins->out_buffer = memory_calloc(samples, sizeof(f32));
   if (ins->out_buffer) {
     ins->samples = samples;
