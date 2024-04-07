@@ -43,5 +43,7 @@ extern Color hex_string_to_color(char* hex);
 extern f32 get_time(void);
 extern i32 fd_open(const char* path, i32 flags, ...);
 extern char* file_extension(const char* path);
+extern f32 dot_product(f32 a, f32 b);
+extern f32 v2_dot_product(Vector2 a, Vector2 b);
 
 #endif // _MISC_H

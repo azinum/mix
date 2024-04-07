@@ -179,7 +179,7 @@ void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32
 
   for (u32 node_index = 0; node_index < node->node_count; ++node_index) {
     Reverb_node* next = node->nodes[node_index];
-    process_reverb_node(ins, reverb, next, depth + 1, CLAMP(Vector2DotProduct(node->direction, next->direction), -1, 1), dt);
+    process_reverb_node(ins, reverb, next, depth + 1, CLAMP(v2_dot_product(node->direction, next->direction), -1, 1), dt);
   }
 }
 

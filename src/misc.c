@@ -230,3 +230,11 @@ char* file_extension(const char* path) {
   }
   return result;
 }
+
+inline f32 dot_product(f32 a, f32 b) {
+  return (a * b);
+}
+
+inline f32 v2_dot_product(Vector2 a, Vector2 b) {
+  return dot_product(a.x, b.x) + dot_product(a.y, b.y);
+}

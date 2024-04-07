@@ -50,9 +50,10 @@ void midi_init(void) {
 }
 
 Result midi_open_device(const char* path) {
-  i32 flags = O_RDONLY | O_NOCTTY | O_NDELAY;
 #ifdef TARGET_WINDOWS
-  flags |= O_BINARY;
+  i32 flags = O_RDONLY | O_BINARY;
+#else
+  i32 flags = O_RDONLY | O_NOCTTY | O_NDELAY;
 #endif
   i32 fd = open(path, flags);
   if (fd < 0) {
