@@ -25,8 +25,6 @@ typedef struct Bps {
   f32 release;
   Bps_voice voices[MAX_VOICES];
   f32 voice_blend; // sine -> saw
-  i32 vp_octave; // virtual piano
-  f32 vp_velocity; // virtual piano
 } Bps;
 
 static void basic_poly_synth_default(Bps* bps);
@@ -38,8 +36,6 @@ void basic_poly_synth_default(Bps* bps) {
   bps->attack = 0.05f;
   bps->release = 0.9f;
   bps->voice_blend = 0.2f;
-  bps->vp_octave = 2;
-  bps->vp_velocity = 0.8f;
   basic_poly_synth_reset_voices(bps);
 }
 
@@ -186,62 +182,7 @@ void basic_poly_synth_ui_new(Instrument* ins, Element* container) {
     };
     ui_attach_element(container, &e);
   }
-
-  ui_attach_element_v2(container, ui_text_line("octave (virtual piano)"));
-  {
-    Element e = ui_input_int("octave", &bps->vp_octave);
-    e.sizing = (Sizing) {
-      .x_mode = SIZE_MODE_PERCENT,
-      .y_mode = SIZE_MODE_PIXELS,
-      .x = 100,
-      .y = button_height,
-    };
-    ui_attach_element(container, &e);
-  }
-
-  ui_attach_element_v2(container, ui_text_line("velocity (virtual piano)"));
-  {
-    Element e = ui_input_float("velocity", &bps->vp_velocity);
-    e.sizing = (Sizing) {
-      .x_mode = SIZE_MODE_PERCENT,
-      .y_mode = SIZE_MODE_PIXELS,
-      .x = 20,
-      .y = button_height,
-    };
-    ui_attach_element(container, &e);
-  }
-  {
-    Element e = ui_slider_float(&bps->vp_velocity, 0, 1);
-    e.sizing = (Sizing) {
-      .x_mode = SIZE_MODE_PERCENT,
-      .y_mode = SIZE_MODE_PIXELS,
-      .x = 80,
-      .y = button_height,
-    };
-    ui_attach_element(container, &e);
-  }
 }
-
-static const i32 keycode_to_note_map[100] = {
-  [KEY_A]           = 1 + 0,   // C
-    [KEY_W]         = 1 + 1,   // C#
-  [KEY_S]           = 1 + 2,   // D
-    [KEY_E]         = 1 + 3,   // D#
-  [KEY_D]           = 1 + 4,   // E
-  [KEY_F]           = 1 + 5,   // F
-    [KEY_T]         = 1 + 6,   // F#
-  [KEY_G]           = 1 + 7,   // G
-    [KEY_Y]         = 1 + 8,   // G#
-  [KEY_H]           = 1 + 9,   // A
-    [KEY_U]         = 1 + 10,  // A#
-  [KEY_J]           = 1 + 11,  // B
-  [KEY_K]           = 1 + 12,  // C
-    [KEY_O]         = 1 + 13,  // C#
-  [KEY_L]           = 1 + 14,  // D
-    [KEY_P]         = 1 + 15,  // D#
-  [KEY_SEMICOLON]   = 1 + 16,  // E
-  [KEY_APOSTROPHE]  = 1 + 17,  // F
-};
 
 void basic_poly_synth_update(Instrument* ins, struct Mix* mix) {
   (void)ins; (void)mix;
@@ -249,27 +190,10 @@ void basic_poly_synth_update(Instrument* ins, struct Mix* mix) {
 
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
   if (!mod_key && !ui_input_interacting()) {
-    i32 key = 0;
-    while ((key = GetKeyPressed()) != 0) {
-      if (key < (i32)LENGTH(keycode_to_note_map)) {
-        i32 note = keycode_to_note_map[key];
-        if (note != 0) {
-          note -= 1;
-          note += bps->vp_octave * 12;
-          basic_poly_synth_play_note(bps, note, bps->vp_velocity);
-        }
-      }
-      if (key == KEY_X) {
-        bps->vp_octave = CLAMP(bps->vp_octave + 1, 0, 12);
-      }
-      if (key == KEY_Z) {
-        bps->vp_octave = CLAMP(bps->vp_octave - 1, 0, 12);
-      }
-      if (key == KEY_V) {
-        bps->vp_velocity = CLAMP(bps->vp_velocity + 0.1f, 0, 1);
-      }
-      if (key == KEY_C) {
-        bps->vp_velocity = CLAMP(bps->vp_velocity - 0.1f, 0, 1);
+    Midi_event event = {0};
+    while (keyboard_query_event(&event)) {
+      if (event.message == MIDI_NOTE_ON) {
+        basic_poly_synth_play_note(bps, event.note, event.velocity);
       }
     }
   }
@@ -353,11 +277,6 @@ void basic_poly_synth_destroy(struct Instrument* ins) {
   (void)ins;
 }
 
-// a = pan
-// b = 1 - a
-
-// a = 0.6
-// b = 0.4
 #undef MAX_VOICES
 #undef MIN_ATTACK
 #undef MIN_RELEASE

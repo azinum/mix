@@ -32,6 +32,7 @@
 #include "ui.c"
 #include "settings.c"
 #include "midi.c"
+#include "keyboard.c"
 // instruments
 #include "instrument.c"
 #include "wave_shaper.c"
@@ -195,6 +196,8 @@ void mix_update_and_render(Mix* mix) {
   mix->mouse = GetMousePosition();
   delta_buffer[mix->tick % LENGTH(delta_buffer)] = mix->dt;
 
+  keyboard_update();
+
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
   if (audio->restart) {
@@ -310,6 +313,7 @@ void mix_reset(Mix* mix) {
   mix->timer_start = 0.0f;
   mix->paused = false;
   midi_init();
+  keyboard_init();
   if (midi_open_device(MIDI_DEVICE_PATH) != Ok) {
     log_print(STDOUT_FILENO, LOG_TAG_WARN, "failed to open midi device `%s`\n", MIDI_DEVICE_PATH);
   }
