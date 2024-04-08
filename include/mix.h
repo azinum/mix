@@ -6,7 +6,7 @@
 struct Mix;
 
 #include <raylib.h>
-#include <raymath.h>
+// #include <raymath.h>
 
 #ifdef TARGET_ANDROID
   #include "raymob.h"

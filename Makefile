@@ -32,7 +32,7 @@ profile:
 	perf record -e cycles -c 2000000 ./${TARGET} && perf report -n -f > perf.txt && rm -f perf.data perf.data.old
 
 deps:
-	make -C deps/raylib/src RAYLIB_MODULE_AUDIO=FALSE RAYLIB_MODULE_MODELS=FALSE
+	make -C deps/raylib/src RAYLIB_MODULE_MODELS=FALSE
 
 test:
 	${CC} src/test.c -o test ${FLAGS}

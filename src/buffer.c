@@ -140,7 +140,7 @@ Buffer buffer_new_from_file(const char* path) {
   };
 #else
   i32 flags = O_RDONLY;
-#if TARGET_WINDOWS
+#ifdef TARGET_WINDOWS
   flags |= O_BINARY;
 #endif
   i32 fd = open(path, flags);
