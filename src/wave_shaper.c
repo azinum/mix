@@ -723,7 +723,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       .x = 20,
       .y = small_button_height,
     };
-    e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~32.70 hz (C1)\n1.0 -> ~84384.63 hz (B9)";
+    e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~32.70 hz (C1)\n1.0 -> ~7902.13 hz (B8)";
     ui_attach_element(container, &e);
   }
 

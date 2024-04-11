@@ -161,6 +161,13 @@ void mix_assets_unload(void) {
   assets_unload(&assets);
 }
 
+void mix_send_midi_event(Midi_event event) {
+  Mix* mix = &mix_state;
+  if (mix->midi_event_count < MAX_MIDI_EVENTS) {
+    mix->midi_events[mix->midi_event_count++] = event;
+  }
+}
+
 void mix_render_curve(const f32* samples, const size_t count, Box box, Color color) {
   box = ui_pad_box_ex(box, 1, 2);
   const i32 width = box.w;
@@ -200,6 +207,10 @@ void mix_update_and_render(Mix* mix) {
 
   // handle midi-events
   mix->midi_event_count = midi_read_events(&mix->midi_events[0], MAX_MIDI_EVENTS);
+  Midi_event event = {0};
+  while (keyboard_query_event(&event)) {
+    mix_send_midi_event(event);
+  }
 
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
@@ -240,7 +251,7 @@ void mix_update_and_render(Mix* mix) {
 
 #ifdef DEVELOPER
   static size_t debug_tick = 0;
-  const size_t debug_text_update_interval = 4;
+  const size_t debug_text_update_interval = 2;
   static char debug_text[256] = {0};
   debug_tick += 1;
   bool update_text = !(debug_tick % debug_text_update_interval);
@@ -251,14 +262,16 @@ void mix_update_and_render(Mix* mix) {
       "%zu/%zu bytes (%.2g %%)\n"
       "%.2g ms ui latency\n"
       "%u/%u ui element updates\n"
-      "%.2g ms audio latency"
+      "%.2g/%.2g ms audio latency (%zu samples)"
       ,
       memory_state.usage, memory_state.max_usage,
       100 * ((f32)memory_state.usage / memory_state.max_usage),
       1000 * ui_state.latency,
       ui_state.element_update_count,
       ui_state.element_count,
-      audio->dt * 1000
+      audio->dt * 1000,
+      ((audio->frames_per_buffer * audio->channel_count) / (f32)audio->sample_rate) * 1000,
+      audio->frames_per_buffer * audio->channel_count
     );
   }
   SetTextLineSpacing(FONT_SIZE_SMALLEST);
@@ -268,21 +281,6 @@ void mix_update_and_render(Mix* mix) {
 #else
   (void)render_delta_buffer;
 #endif
-}
-
-void onclick_test(Element* e) {
-  stb_printf(
-    "Element {\n"
-    "  id: %u\n"
-    "  box: {%d, %d, %d, %d}\n"
-    "}\n"
-    ,
-    e->id,
-    e->box.x,
-    e->box.y,
-    e->box.w,
-    e->box.h
-  );
 }
 
 Result mix_init(Mix* mix) {

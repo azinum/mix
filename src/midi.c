@@ -90,13 +90,13 @@ size_t midi_read_events(Midi_event* events, const size_t max_events) {
         if (status == 0) {
           break;
         }
-        if (midi_index + bytes < read_bytes) {
+        if (midi_index + bytes <= read_bytes) {
           switch (status) {
             case MIDI_NOTE_OFF:
             case MIDI_NOTE_ON: {
               event.message = c;
               event.velocity = midi_buffer[midi_index + 2] / (f32)INT8_MAX;
-              event.note = midi_buffer[midi_index + 1];
+              event.note = CLAMP(midi_buffer[midi_index + 1] - 24, 0, INT8_MAX);
               event.channel = channel;
               events[event_count++] = event;
               break;

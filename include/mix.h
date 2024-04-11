@@ -88,7 +88,7 @@ struct Mix;
   #include "test_ui.h"
 #endif
 
-#define MAX_MIDI_EVENTS 32
+#define MAX_MIDI_EVENTS 128
 
 typedef struct Mix {
   Vector2 mouse;
@@ -120,6 +120,7 @@ i32 mix_main(i32 argc, char** argv);
 Result mix_restart_audio_engine(void);
 void mix_assets_load(void);
 void mix_assets_unload(void);
+void mix_send_midi_event(Midi_event event);
 void mix_render_curve(const f32* samples, const size_t count, Box box, Color color);
 
 #endif // _MIX_H

@@ -204,14 +204,14 @@ void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Au
           switch (voice->state) {
             case BPS_STATE_ATTACK: {
               voice->amplitude = lerp_f32(voice->amplitude, 1, sample_dt * (1.0f / bps->attack));
-              if (voice->amplitude >= 0.99) {
+              if (voice->amplitude >= 0.995f) {
                 voice->state = BPS_STATE_RELEASE;
               }
               break;
             }
             case BPS_STATE_RELEASE: {
               voice->amplitude = lerp_f32(voice->amplitude, 0, sample_dt * (1.0f / bps->release));
-              if (voice->amplitude <= 0.01) {
+              if (voice->amplitude <= 0.005f) {
                 voice->state = BPS_STATE_SILENT;
                 voice->timer = 0;
                 voice->tick = 0;
