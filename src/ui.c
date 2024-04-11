@@ -1136,7 +1136,8 @@ void ui_update(f32 dt) {
     }
   }
 
-  bool do_zoom = mod_key && IsKeyPressed(KEY_F);
+  bool escaped = IsKeyPressed(KEY_ESCAPE);
+  bool do_zoom = (mod_key && IsKeyPressed(KEY_F)) || escaped;
 #if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
   i32 gesture = GetGestureDetected();
   do_zoom = do_zoom || (gesture & GESTURE_DOUBLETAP);
@@ -1159,7 +1160,7 @@ void ui_update(f32 dt) {
         ui->zoom->sizing = ui->zoom_sizing;
         ui->zoom = NULL;
       }
-      else {
+      else if (!escaped) {
         ui->zoom = zoomer;
         ui->zoom_box = ui->zoom->box;
         ui->zoom_sizing = ui->zoom->sizing;
