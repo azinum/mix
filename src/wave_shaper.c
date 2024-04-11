@@ -789,23 +789,8 @@ void waveshaper_update(Instrument* ins, struct Mix* mix) {
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
   if (!ui_input_interacting() && !mod_key) {
-    if (IsKeyPressed(KEY_W)) {
-      w->freq_target += 1;
-    }
-    if (IsKeyPressed(KEY_S)) {
-      w->freq_target -= 1;
-    }
-    if (IsKeyPressed(KEY_E)) {
-      w->freq_mod_target += 1;
-    }
-    if (IsKeyPressed(KEY_D)) {
-      w->freq_mod_target -= 1;
-    }
-    if (IsKeyPressed(KEY_F)) {
-      w->freeze = !w->freeze;
-    }
     if (IsKeyPressed(KEY_Q)) {
-      waveshaper_default(w);
+      w->freeze = !w->freeze;
     }
   }
 }
@@ -815,14 +800,6 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
   Waveshaper* w = (Waveshaper*)ins->userdata;
   ticket_mutex_begin(&w->source_mutex);
-
-  for (size_t i = 0; i < audio->midi_event_count; ++i) {
-    Midi_event e = audio->midi_events[i];
-    if (e.message == MIDI_NOTE_ON) {
-      f32 freq = freq_table[CLAMP(e.note - 24, 0, (i32)LENGTH(freq_table))];
-      w->freq_target = freq;
-    }
-  }
 
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
@@ -894,6 +871,18 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     w->speed = -w->speed;
   }
   ticket_mutex_end(&w->source_mutex);
+}
+
+void waveshaper_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+  (void)velocity;
+  Waveshaper* w = (Waveshaper*)ins->userdata;
+
+  f32 freq = freq_table[CLAMP(note - 0 /* - 0, otherwise gcc freaks out with warnings */, 0, (i32)LENGTH(freq_table))];
+  w->freq_target = freq;
+}
+
+void waveshaper_noteoff(struct Instrument* ins, u8 note) {
+  (void)ins; (void)note;
 }
 
 void waveshaper_destroy(struct Instrument* ins) {

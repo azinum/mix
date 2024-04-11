@@ -48,8 +48,11 @@ void keyboard_init(void) {
 }
 
 void keyboard_update(void) {
-  keyboard.event_count = 0;
+  if (ui_input_interacting() || IsKeyDown(KEY_LEFT_CONTROL)) {
+    return;
+  }
 
+  keyboard.event_count = 0;
   i32 key = 0;
   while ((key = GetKeyPressed()) != 0) {
     if (key < (i32)LENGTH(keycode_to_note_map)) {

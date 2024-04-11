@@ -17,8 +17,6 @@
 #define MS_TO_SAMPLES(sample_rate, channels, ms) ((sample_rate) * ((ms / 1000.0f) * channels))
 #define SECS_TO_SAMPLES(sample_rate, channels, seconds) (MS_TO_SAMPLES(sample_rate, channels, seconds * 1000.0f))
 
-#define MAX_MIDI_EVENTS 32
-
 typedef struct Audio_source {
   f32* buffer;
   size_t samples;
@@ -45,8 +43,6 @@ typedef struct Audio_engine {
   i32 record_buffer_index;
   i32 recording;
   f32 db;
-  Midi_event midi_events[MAX_MIDI_EVENTS];
-  size_t midi_event_count;
 } Audio_engine;
 
 extern Audio_engine audio_engine;

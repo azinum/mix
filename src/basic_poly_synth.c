@@ -29,7 +29,6 @@ typedef struct Bps {
 
 static void basic_poly_synth_default(Bps* bps);
 static void basic_poly_synth_reset_voices(Bps* bps);
-static void basic_poly_synth_play_note(Bps* bps, i32 note, f32 velocity);
 static Bps_voice* basic_poly_synth_find_silent_voice(Bps* bps);
 
 void basic_poly_synth_default(Bps* bps) {
@@ -50,20 +49,6 @@ void basic_poly_synth_reset_voices(Bps* bps) {
   };
   for (size_t i = 0; i < MAX_VOICES; ++i) {
     bps->voices[i] = voice;
-  }
-}
-
-void basic_poly_synth_play_note(Bps* bps, i32 note, f32 velocity) {
-  Bps_voice* voice = basic_poly_synth_find_silent_voice(bps);
-  const f32 register_influence = 0.4f;
-  const f32 random_influence = 0.2f;
-  f32 pan_random = random_influence * (random_f32() - 0.5f); // r * [-.5, .5]
-  if (voice) {
-    voice->state = BPS_STATE_ATTACK;
-    voice->amplitude = 0;
-    voice->velocity = velocity;
-    voice->note = note;
-    voice->pan = lerp_f32(1 - (note / 88.0f), 0.5f + pan_random, 1.0f - register_influence);
   }
 }
 
@@ -186,17 +171,6 @@ void basic_poly_synth_ui_new(Instrument* ins, Element* container) {
 
 void basic_poly_synth_update(Instrument* ins, struct Mix* mix) {
   (void)ins; (void)mix;
-  Bps* bps = (Bps*)ins->userdata;
-
-  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
-  if (!mod_key && !ui_input_interacting()) {
-    Midi_event event = {0};
-    while (keyboard_query_event(&event)) {
-      if (event.message == MIDI_NOTE_ON) {
-        basic_poly_synth_play_note(bps, event.note, event.velocity);
-      }
-    }
-  }
 }
 
 void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
@@ -211,13 +185,6 @@ void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Au
     bps->release = MIN_RELEASE;
   }
 
-  for (size_t i = 0; i < audio->midi_event_count; ++i) {
-    Midi_event e = audio->midi_events[i];
-    if (e.message == MIDI_NOTE_ON && e.velocity > 0) {
-      i32 note = CLAMP(e.note - 24, 0, (i32)LENGTH(freq_table));
-      basic_poly_synth_play_note(bps, note, e.velocity);
-    }
-  }
   f32 sample_dt = dt / (f32)ins->samples;
   f32 saw_amplitude = bps->voice_blend;
   f32 sine_amplitude = 1 - saw_amplitude;
@@ -253,9 +220,7 @@ void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Au
               break;
             }
             default: {
-              voice->timer = 0;
-              voice->tick = 0;
-              goto voice_finished;
+              break;
             }
           }
           f32 freq = freq_table[voice->note % LENGTH(freq_table)];
@@ -271,6 +236,26 @@ void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Au
 voice_finished: {}
     }
   }
+}
+
+void basic_poly_synth_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+  Bps* bps = (Bps*)ins->userdata;
+
+  Bps_voice* voice = basic_poly_synth_find_silent_voice(bps);
+  const f32 register_influence = 0.4f;
+  const f32 random_influence = 0.2f;
+  f32 pan_random = random_influence * (random_f32() - 0.5f); // r * [-.5, .5]
+  if (voice) {
+    voice->state = BPS_STATE_ATTACK;
+    voice->amplitude = 0;
+    voice->velocity = velocity;
+    voice->note = note;
+    voice->pan = lerp_f32(1 - (note / 44.0f), 0.5f + pan_random, 1.0f - register_influence);
+  }
+}
+
+void basic_poly_synth_noteoff(struct Instrument* ins, u8 note) {
+  (void)ins; (void)note;
 }
 
 void basic_poly_synth_destroy(struct Instrument* ins) {

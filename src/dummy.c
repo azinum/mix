@@ -347,6 +347,14 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   ticket_mutex_end(&dummy->source_mutex);
 }
 
+void dummy_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+  (void)ins; (void)note; (void)velocity;
+}
+
+void dummy_noteoff(struct Instrument* ins, u8 note) {
+  (void)ins; (void)note;
+}
+
 void dummy_destroy(struct Instrument* ins) {
   Dummy* dummy = (Dummy*)ins->userdata;
   memory_free(dummy->feedback_buffer);

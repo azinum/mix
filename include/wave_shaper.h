@@ -39,6 +39,8 @@ void waveshaper_init(Instrument* ins);
 void waveshaper_ui_new(Instrument* ins, Element* container);
 void waveshaper_update(Instrument* ins, struct Mix* mix);
 void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);
+void waveshaper_noteon(struct Instrument* ins, u8 note, f32 velocity);
+void waveshaper_noteoff(struct Instrument* ins, u8 note);
 void waveshaper_destroy(struct Instrument* ins);
 
 #endif // _WAVE_SHAPER_H

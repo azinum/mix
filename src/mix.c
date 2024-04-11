@@ -198,6 +198,9 @@ void mix_update_and_render(Mix* mix) {
 
   keyboard_update();
 
+  // handle midi-events
+  mix->midi_event_count = midi_read_events(&mix->midi_events[0], MAX_MIDI_EVENTS);
+
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
   if (audio->restart) {
@@ -312,6 +315,7 @@ void mix_reset(Mix* mix) {
   mix->timer = 0.0f;
   mix->timer_start = 0.0f;
   mix->paused = false;
+  mix->midi_event_count = 0;
   midi_init();
   keyboard_init();
   if (midi_open_device(MIDI_DEVICE_PATH) != Ok) {

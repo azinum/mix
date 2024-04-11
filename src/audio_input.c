@@ -24,6 +24,14 @@ void audio_input_process(struct Instrument* ins, struct Mix* mix, struct Audio_e
   }
 }
 
+void audio_input_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+  (void)ins; (void)note; (void)velocity;
+}
+
+void audio_input_noteoff(struct Instrument* ins, u8 note) {
+  (void)ins; (void)note;
+}
+
 void audio_input_destroy(struct Instrument* ins) {
   (void)ins;
 }

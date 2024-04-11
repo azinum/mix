@@ -24,6 +24,14 @@ void noise_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   }
 }
 
+void noise_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+  (void)ins; (void)note; (void)velocity;
+}
+
+void noise_noteoff(struct Instrument* ins, u8 note) {
+  (void)ins; (void)note;
+}
+
 void noise_destroy(struct Instrument* ins) {
   (void)ins;
 }

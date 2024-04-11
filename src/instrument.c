@@ -2,7 +2,7 @@
 // TODO:
 //  - generalize resetting of instruments
 
-#define DEFINE_INSTRUMENT(ID, NAME, TITLE) [ID] = { .title = TITLE, .init = NAME##_init, .ui_new = NAME##_ui_new, .update = NAME##_update, .process = NAME##_process, .destroy = NAME##_destroy, }
+#define DEFINE_INSTRUMENT(ID, NAME, TITLE) [ID] = { .title = TITLE, .init = NAME##_init, .ui_new = NAME##_ui_new, .update = NAME##_update, .process = NAME##_process, .noteon = NAME##_noteon, .noteoff = NAME##_noteoff, .destroy = NAME##_destroy, }
 
 Instrument instruments[MAX_INSTRUMENT_ID] = {
   DEFINE_INSTRUMENT(INSTRUMENT_WAVE_SHAPER, waveshaper, "waveshaper"),
@@ -71,6 +71,45 @@ void instrument_ui_new(Instrument* ins, Element* container) {
 void instrument_update(Instrument* ins, struct Mix* mix) {
   TIMER_START();
   if (LIKELY(ins->initialized)) {
+    Midi_event event = {0};
+    while (keyboard_query_event(&event)) {
+      switch (event.message) {
+        case MIDI_NOTE_ON: {
+          if (ins->noteon && event.velocity > 0) {
+            ins->noteon(ins, event.note, event.velocity);
+          }
+          break;
+        }
+        case MIDI_NOTE_OFF: {
+          if (ins->noteoff) {
+            ins->noteoff(ins, event.note);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+    for (size_t i = 0; i < mix->midi_event_count; ++i) {
+      Midi_event event = mix->midi_events[i];
+      switch (event.message) {
+        case MIDI_NOTE_ON: {
+          if (ins->noteon && event.velocity > 0) {
+            ins->noteon(ins, CLAMP(event.note - 24, 0, (i32)LENGTH(freq_table)), event.velocity);
+          }
+          break;
+        }
+        case MIDI_NOTE_OFF: {
+          if (ins->noteoff) {
+            ins->noteoff(ins, CLAMP(event.note - 24, 0, (i32)LENGTH(freq_table)));
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
     ins->update(ins, mix);
   }
   ins->latency = TIMER_END();

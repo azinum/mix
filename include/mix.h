@@ -19,9 +19,6 @@ struct Mix;
 
 #define COLOR_RGB(R, G, B) ((Color) { .r = R, .g = G, .b = B, .a = 255, })
 #define COLOR(R, G, B, A)  ((Color) { .r = R, .g = G, .b = B, .a = A, })
-#define MIN(x, y) (x < y ? x : y)
-#define MAX(x, y) (x > y ? x : y)
-#define CLAMP(x, x_min, x_max) MIN(MAX(x_min, x), x_max)
 
 #define OVERLAP(x0, y0, x1, y1, w, h) \
   (x0 >= x1 && x0 < x1 + w) && \
@@ -91,6 +88,8 @@ struct Mix;
   #include "test_ui.h"
 #endif
 
+#define MAX_MIDI_EVENTS 32
+
 typedef struct Mix {
   Vector2 mouse;
   f32 fps;
@@ -105,6 +104,9 @@ typedef struct Mix {
 
   Element* ins_container;
   Element* effect_chain;
+
+  Midi_event midi_events[MAX_MIDI_EVENTS];
+  size_t midi_event_count;
 } Mix;
 
 typedef struct Assets {

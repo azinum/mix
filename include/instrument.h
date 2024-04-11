@@ -3,7 +3,7 @@
 #ifndef _INSTRUMENT_H
 #define _INSTRUMENT_H
 
-#define INSTRUMENT_VOLUME_DEFAULT 0.1f
+#define INSTRUMENT_VOLUME_DEFAULT 0.4f
 
 struct Mix;
 struct Audio_engine;
@@ -25,6 +25,8 @@ typedef struct Instrument {
   void (*ui_new)(struct Instrument*, Element*);
   void (*update)(struct Instrument*, struct Mix*);
   void (*process)(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);
+  void (*noteon)(struct Instrument*, u8 note, f32 velocity);
+  void (*noteoff)(struct Instrument*, u8 note);
   void (*destroy)(struct Instrument*);
 
   Element* ui;
