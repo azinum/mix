@@ -1,7 +1,7 @@
 // fx_reverb.c
 // cpu intensive, experimental reverb effect
 
-#define MAX_REVERB_CHILD_NODE 3
+#define MAX_REVERB_CHILD_NODE 4
 #define MAX_REVERB_NODE_DEPTH 3
 // pow(MAX_REVERB_CHILD_NODE, MAX_REVERB_NODE_DEPTH)
 #define MAX_REVERB_NODE_TOTAL ( \
@@ -10,7 +10,7 @@
   MAX_REVERB_CHILD_NODE \
 )
 
-#define MAX_REVERB_FEEDBACK_BUFFER_LENGTH (4410)
+#define MAX_REVERB_FEEDBACK_BUFFER_LENGTH (4410 * 2)
 #define NODE_BUFFER_SIZE (MAX_REVERB_FEEDBACK_BUFFER_LENGTH * MAX_REVERB_NODE_TOTAL)
 
 typedef struct Reverb_node {
@@ -40,6 +40,7 @@ typedef struct Reverb {
   Ticket mutex;
   i32 model_seed;
   f32 offset_base;
+  f32 grain;
 } Reverb;
 
 static void fx_reverb_default(Reverb* reverb);
@@ -57,6 +58,7 @@ void fx_reverb_default(Reverb* reverb) {
   reverb->amount = 0.5f;
   reverb->tick = 0;
   reverb->offset_base = 411;
+  reverb->grain = .1f;
   fx_reverb_tree_new(reverb);
 }
 
@@ -65,6 +67,7 @@ void fx_reverb_randomize(Element* e) {
   ticket_mutex_begin(&reverb->mutex);
   reverb->model_seed = (i32)random_number();
   reverb->offset_base = random_number() % (MAX_REVERB_FEEDBACK_BUFFER_LENGTH / 2);
+  reverb->grain = random_f32() * .2f;
   fx_reverb_tree_new(reverb);
   ticket_mutex_end(&reverb->mutex);
 }
@@ -144,7 +147,7 @@ void fx_reverb_create_reverb_tree(Reverb* reverb, Reverb_node* root, u32 depth) 
 
 void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32 depth, f32 dot, f32 dt) {
   // contribution factor, how much this node affects the output reverberated signal
-  f32 cf = ((MAX_REVERB_NODE_DEPTH + 1) - depth) / (f32)MAX_REVERB_NODE_DEPTH;
+  f32 cf = ((MAX_REVERB_NODE_DEPTH + 1) - depth) / (f32)(MAX_REVERB_NODE_DEPTH);
   f32 sample_dt = dt / ins->samples;
   if (node->length >= 2) {
     node->rms = audio_calc_rms_clamp(node->buffer, node->length);
@@ -164,8 +167,12 @@ void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32
     };
     size_t offset  = (size_t)(offset_table[(size_t)((pan_left)  * LENGTH(offset_table)) % LENGTH(offset_table)]);
     for (size_t i = 0; i < ins->samples; i += 2) {
-      f32 feedback_left  = reverb->amount * node->feedback_amount * (1 + node->direction.x) * ins->out_buffer[i + 0];
-      f32 feedback_right = reverb->amount * node->feedback_amount * (1 + node->direction.y) * ins->out_buffer[i + 1];
+      Random grain_index = random_number();
+      f32 grain_left  = 1 + (reverb->grain * node->buffer[grain_index % node->length] - (reverb->grain * .5f));
+      f32 grain_right = 1 + (reverb->grain * node->buffer[(grain_index + offset) % node->length] - (reverb->grain * .5f));
+
+      f32 feedback_left  = reverb->amount * node->feedback_amount * grain_left * (1 + node->direction.x) * ins->out_buffer[i + 0];
+      f32 feedback_right = reverb->amount * node->feedback_amount * grain_right * (1 + node->direction.y) * ins->out_buffer[i + 1];
 
       ins->out_buffer[i + 0] += pan_left  * reverb->amount * cf * node->buffer[(node->tick + offset) % node->length];
       ins->out_buffer[i + 1] += pan_right * reverb->amount * cf * node->buffer[(node->tick + offset) % node->length];
@@ -262,7 +269,12 @@ void fx_reverb_ui_new(Instrument* ins, Element* container) {
 
   {
     Element e = ui_text("offset base");
-    e.sizing = SIZING_PERCENT(100, 0);
+    e.sizing = SIZING_PERCENT(50, 0);
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_text("grain");
+    e.sizing = SIZING_PERCENT(50, 0);
     ui_attach_element(container, &e);
   }
   {
@@ -273,6 +285,18 @@ void fx_reverb_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_slider_float(&reverb->offset_base, 0.0f, MAX_REVERB_FEEDBACK_BUFFER_LENGTH / 2);
+    e.sizing = SIZING_PERCENT(30, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_input_float("grain", &reverb->grain);
+    e.sizing = SIZING_PERCENT(20, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_float(&reverb->grain, 0.0f, 1.0f);
     e.sizing = SIZING_PERCENT(30, 0);
     e.box.h = button_height;
     ui_attach_element(container, &e);
