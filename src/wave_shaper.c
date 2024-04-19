@@ -40,6 +40,7 @@ typedef struct Waveshaper {
   f32 mod_freq_mod_scale;
   f32 mod_freq_scale;
   i32 mod_map_to_freq_table;
+  i32 mod_divide_by_sample_rate;
   Drumpad drumpad;
   Audio_source source;
   Audio_source mod_source;
@@ -202,6 +203,7 @@ void waveshaper_default(Waveshaper* w) {
   w->mod_freq_mod_scale = 1.0f;
   w->mod_freq_scale = 55.0f;
   w->mod_map_to_freq_table = false;
+  w->mod_divide_by_sample_rate = false;
 
   w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
   w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
@@ -279,6 +281,9 @@ found:
     }
     else {
       w->freq_target = w->mod_freq_scale * item.value;
+    }
+    if (w->mod_divide_by_sample_rate) {
+      w->freq_target /= SAMPLE_RATE;
     }
   }
   w->mod_index += 1;
@@ -724,6 +729,17 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       .y = small_button_height,
     };
     e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~16.35 hz (C0)\n1.0 -> ~7902.13 hz (B8)";
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_toggle_ex(&w->mod_divide_by_sample_rate, "f / sr");
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 20,
+      .y = small_button_height,
+    };
+    e.tooltip = "divide frequency by the sample rate";
     ui_attach_element(container, &e);
   }
 
