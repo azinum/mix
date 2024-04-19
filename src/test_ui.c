@@ -9,6 +9,7 @@ Element test_ui_new(void) {
   test_ui.border = false;
   test_ui.background = false;
   test_ui.placement = PLACEMENT_BLOCK;
-  test_ui.padding = 16;
+  test_ui.x_padding = 16;
+  test_ui.y_padding = 16;
   return test_ui;
 }

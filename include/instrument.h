@@ -18,6 +18,8 @@ typedef struct Instrument {
   bool blocking;
   bool initialized;
 
+  Ticket blocking_mutex;
+
   void* userdata;
   char* title;
 

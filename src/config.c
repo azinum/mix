@@ -135,7 +135,8 @@ Result config_init(void) {
   WINDOW_FULLSCREEN = true;
   UI_ROUNDNESS = 0;
   UI_BUTTON_ROUNDNESS = 0;
-  UI_PADDING = 4;
+  UI_X_PADDING = 4;
+  UI_Y_PADDING = 4;
   FONT_SIZE_SMALLEST = 12;
 #endif
   return Ok;

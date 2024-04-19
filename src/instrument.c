@@ -20,6 +20,7 @@ void instrument_init_default(Instrument* ins) {
   ins->latency = 0;
   ins->audio_latency = 0;
   ins->blocking = true;
+  ins->blocking_mutex = ticket_mutex_new();
   ins->initialized = false;
   ins->ui = NULL;
 }
@@ -42,6 +43,7 @@ Instrument instrument_new_from_path(const char* path) {
 }
 
 void instrument_init(Instrument* ins, Audio_engine* audio) {
+  ticket_mutex_begin(&ins->blocking_mutex);
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
   MEMORY_TAG("instrument.instrument_init: audio buffer");
   if (AUDIO_INPUT) {
@@ -55,6 +57,7 @@ void instrument_init(Instrument* ins, Audio_engine* audio) {
   ins->init(ins);
   ins->initialized = true;
   ins->blocking = false;
+  ticket_mutex_end(&ins->blocking_mutex);
 }
 
 void instrument_ui_new(Instrument* ins, Element* container) {
@@ -101,21 +104,22 @@ void instrument_process(Instrument* ins, struct Mix* mix, Audio_engine* audio, f
   if (UNLIKELY(ins->blocking)) {
     return;
   }
+  ticket_mutex_begin(&ins->blocking_mutex);
   ins->blocking = true;
   if (LIKELY(ins->initialized)) {
     ins->process(ins, mix, audio, dt);
   }
   ins->audio_latency = TIMER_END();
   ins->blocking = false;
+  ticket_mutex_end(&ins->blocking_mutex);
 }
 
 void instrument_destroy(Instrument* ins) {
   if (!UNLIKELY(ins->initialized)) {
     return;
   }
-  while (ins->blocking) {
-    spin_wait();
-  }
+  ticket_mutex_begin(&ins->blocking_mutex);
+  ins->blocking = true;
   ui_detach_elements(ins->ui);
   ui_set_title(ins->ui, "empty");
   ins->destroy(ins);
@@ -127,4 +131,5 @@ void instrument_destroy(Instrument* ins) {
   memory_free(ins->userdata);
   ins->userdata = NULL;
   ins->initialized = false;
+  ticket_mutex_end(&ins->blocking_mutex);
 }

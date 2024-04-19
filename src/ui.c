@@ -1139,7 +1139,6 @@ void ui_update(f32 dt) {
   bool escaped = IsKeyPressed(KEY_ESCAPE);
   bool do_zoom = (mod_key && IsKeyPressed(KEY_F)) || escaped;
 #if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
-  i32 gesture = GetGestureDetected();
   do_zoom = do_zoom || (gesture & GESTURE_DOUBLETAP);
 #endif
   // check for zoomable hovered element

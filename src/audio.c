@@ -287,9 +287,11 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     }
 
 
-    if (ins->initialized) {
+    if (ins->initialized && !ins->blocking) {
       // process instruments and effects
       instrument_process(ins, mix, audio, process_dt);
+
+      ticket_mutex_begin(&ins->blocking_mutex);
 
       // check to see if all effects are ready
       bool effects_ready = true;
@@ -319,9 +321,11 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
         }
       }
       // sum all audio buffers (only one instrument for now)
+      ASSERT(ins->out_buffer != NULL);
       for (i32 i = 0; i < sample_count; ++i) {
         audio->out_buffer[i] += ins->out_buffer[i];
       }
+      ticket_mutex_end(&ins->blocking_mutex);
     }
   }
 

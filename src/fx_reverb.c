@@ -96,6 +96,7 @@ void fx_reverb_tree_new(Reverb* reverb) {
 f32* alloc_reverb_buffer(Reverb* reverb, size_t size) {
   if (reverb->node_buffer_index + size < NODE_BUFFER_SIZE) {
     f32* buffer = &reverb->node_buffer[reverb->node_buffer_index];
+    memset(buffer, 0, size);
     reverb->node_buffer_index += size;
     return buffer;
   }
@@ -153,6 +154,7 @@ void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32
     node->rms = audio_calc_rms_clamp(node->buffer, node->length);
     f32 pan_left = (dot + 1) / 2;
     f32 pan_right = 1 - pan_left;
+#ifdef USE_OFFSET_TABLE
     f32 offset_table[] = {
       (reverb->offset_base),
       (reverb->offset_base*1.1375035),
@@ -165,7 +167,10 @@ void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32
       (reverb->offset_base*1.8479969),
       (reverb->offset_base*1.9259994),
     };
-    size_t offset  = (size_t)(offset_table[(size_t)((pan_left)  * LENGTH(offset_table)) % LENGTH(offset_table)]);
+    size_t offset  = (size_t)(offset_table[(size_t)((pan_left) * LENGTH(offset_table)) % LENGTH(offset_table)]);
+#else
+    size_t offset  = reverb->offset_base;
+#endif
     for (size_t i = 0; i < ins->samples; i += 2) {
       Random grain_index = random_number();
       f32 grain_left  = 1 + (reverb->grain * node->buffer[grain_index % node->length] - (reverb->grain * .5f));
