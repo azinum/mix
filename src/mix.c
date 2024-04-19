@@ -351,7 +351,7 @@ void mix_free(Mix* m) {
 void mix_ui_new(Mix* mix) {
 #ifdef TEST_UI
   {
-    Element e = test_ui_new();
+    Element e = test_ui_new(mix);
     ui_attach_element(NULL, &e);
   }
 #else

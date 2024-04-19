@@ -3,6 +3,8 @@
 #ifndef _TEST_UI_H
 #define _TEST_UI_H
 
-Element test_ui_new(void);
+struct Mix;
+
+Element test_ui_new(struct Mix* mix);
 
 #endif
