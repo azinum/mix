@@ -311,6 +311,7 @@ typedef struct UI_state {
   Vector2 scroll;
   bool (*connection_filter)(struct Element* e, struct Element* target);
   char alert_text[512];
+  i32 cursor;
 } UI_state;
 
 extern UI_state ui_state;
@@ -333,6 +334,7 @@ void ui_alert_simple(const char* message);
 void ui_alert(const char* format, ...);
 void ui_switch_state(i32 tag);
 i32  ui_get_current_tag(void);
+void ui_scroll_container(Element* e, f32 ratio); // 0-1, 0 -> top, 1 -> bottom
 
 Element* ui_attach_element(Element* target, Element* e);
 Element* ui_attach_element_v2(Element* target, Element e);

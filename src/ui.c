@@ -129,6 +129,7 @@ void ui_state_init(UI_state* ui) {
   ui->slider_deadzone = 0.0f;
   ui->connection_filter = ui_connection_filter;
   memset(&ui->alert_text, 0, sizeof(ui->alert_text));
+  ui->cursor = MOUSE_CURSOR_DEFAULT;
 }
 
 void ui_update_elements(UI_state* ui, Element* e) {
@@ -176,7 +177,6 @@ void ui_update_elements(UI_state* ui, Element* e) {
   if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && e == ui->hover) {
     ui->select = e;
   }
-
   switch (e->type) {
     case ELEMENT_CONTAINER: {
       ui_update_container(ui, e);
@@ -766,7 +766,7 @@ inline bool ui_overlap(i32 x, i32 y, Box box) {
 bool ui_container_is_scrollable(Element* e) {
   const i32 content_height = e->data.container.content_height;
   const i32 scroll_y = e->data.container.scroll_y;
-  return (content_height > e->box.h) || (scroll_y < 0);
+  return ((content_height > e->box.h) || (scroll_y < 0)) && e->type == ELEMENT_CONTAINER;
 }
 
 bool ui_container_is_scroll_at_top(Element* e) {
@@ -1170,6 +1170,9 @@ void ui_update(f32 dt) {
         ui->zoom_sizing = ui->zoom->sizing;
         ui->zoom->sizing = SIZING_PERCENT(100, 100);
       }
+      else {
+        ui_switch_state(0);
+      }
     }
   }
   if (((i32)ui->mouse.x != (i32)ui->prev_mouse.x) || ((i32)ui->mouse.y != (i32)ui->prev_mouse.y)) {
@@ -1205,6 +1208,7 @@ void ui_update(f32 dt) {
       }
     }
   }
+  i32 prev_cursor = ui->cursor;
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
     if (!ui->hover->readonly) {
@@ -1228,7 +1232,10 @@ void ui_update(f32 dt) {
       }
     }
   }
-  SetMouseCursor(cursor);
+  if (prev_cursor != cursor) {
+    SetMouseCursor(cursor);
+    ui->cursor = cursor;
+  }
   ui->latency += TIMER_END();
 }
 
@@ -1365,6 +1372,16 @@ void ui_switch_state(i32 tag) {
 i32 ui_get_current_tag(void) {
   UI_state* ui = &ui_state;
   return ui->tag;
+}
+
+void ui_scroll_container(Element* e, f32 ratio) {
+  UI_state* ui = &ui_state;
+  if (ui_container_is_scrollable(e)) {
+    i32 content_height = e->data.container.content_height;
+    i32 content_height_delta = content_height - e->box.h;
+    e->data.container.scroll_y = ratio * -content_height_delta;
+    ui->scrollbar_timer = 0;
+  }
 }
 
 void ui_alert(const char* format, ...) {
