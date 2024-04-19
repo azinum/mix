@@ -53,6 +53,12 @@ Color saturate_color(Color a, f32 amount) {
   return hsv_to_rgb(hsv);
 }
 
+Color brighten_color(Color a, f32 amount) {
+  Hsv hsv = rgb_to_hsv(a);
+  hsv.v = CLAMP(hsv.v + amount, 0, 1);
+  return hsv_to_rgb(hsv);
+}
+
 // https://www.calculatorology.com/rgb-to-hsv-conversion/
 Hsv rgb_to_hsv(Color color) {
   const f32 r = color.r / 255.0f;

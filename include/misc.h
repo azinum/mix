@@ -29,6 +29,7 @@ extern Color lerp_color(Color a, Color b, f32 t);
 extern Color warmer_color(Color a, u8 amount);
 extern Color invert_color(Color a);
 extern Color saturate_color(Color a, f32 amount);
+extern Color brighten_color(Color a, f32 amount);
 extern Hsv rgb_to_hsv(Color color);
 extern Color hsv_to_rgb(Hsv hsv);
 extern void print_bits(i32 fd, char byte);
