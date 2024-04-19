@@ -16,4 +16,4 @@ ui_roundness            = 0.02
 ui_x_padding            = 6
 ui_y_padding            = 2
 ui_container_x_padding  = 4
-ui_container_y_padding  = 4
+ui_container_y_padding  = 2

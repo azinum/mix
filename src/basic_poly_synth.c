@@ -226,8 +226,8 @@ void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Au
           f32 freq = freq_table[voice->note % LENGTH(freq_table)];
           size_t sample_index = (size_t)(voice->tick * freq);
           ins->out_buffer[i + channel_index] += pan_map[channel_index % LENGTH(pan_map)] *
-            ((ins->volume * voice->amplitude * voice->velocity * sine_amplitude * sine[sample_index % LENGTH(sine)]) +
-            (ins->volume * voice->amplitude * voice->velocity * saw_amplitude * saw[sample_index % LENGTH(saw)]));
+            ((voice->amplitude * voice->velocity * sine_amplitude * sine[sample_index % LENGTH(sine)]) +
+            (voice->amplitude * voice->velocity * saw_amplitude * saw[sample_index % LENGTH(saw)]));
 
           voice->timer += sample_dt;
           voice->tick += 1;
@@ -242,10 +242,11 @@ void basic_poly_synth_noteon(struct Instrument* ins, u8 note, f32 velocity) {
   Bps* bps = (Bps*)ins->userdata;
 
   Bps_voice* voice = basic_poly_synth_find_silent_voice(bps);
-  const f32 register_influence = 0.4f;
-  const f32 random_influence = 0.2f;
-  f32 pan_random = random_influence * (random_f32() - 0.5f); // r * [-.5, .5]
   if (voice) {
+    const f32 register_influence = 0.4f;
+    const f32 random_influence = 0.3f;
+    f32 pan_random = random_influence * (random_f32() - 0.5f); // r * [-.5, .5]
+
     voice->state = BPS_STATE_ATTACK;
     voice->amplitude = 0;
     voice->velocity = velocity;

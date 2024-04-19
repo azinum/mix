@@ -320,7 +320,6 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   ticket_mutex_begin(&dummy->source_mutex);
 
   const f32 sample_dt = dt / (f32)ins->samples;
-  f32 volume = ins->volume;
 
   size_t delta_to_sample_index = (size_t)(ins->samples * mix->tick_delta);
   bool plucked = false;
@@ -335,7 +334,7 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
     }
     f32 source_sample = dummy->source.buffer[(size_t)(dummy->tick * dummy->frequency) % dummy->source.samples];
     f32 noise = 2 * (random_f32() - 0.5f);
-    f32 sample = volume * dummy->velocity * (dummy->noise_amount * noise + (1 - dummy->noise_amount) * source_sample);
+    f32 sample = dummy->velocity * (dummy->noise_amount * noise + (1 - dummy->noise_amount) * source_sample);
     dummy->velocity = lerp_f32(dummy->velocity, 0, dummy->decay * sample_dt);
     ins->out_buffer[i] = sample;
     if (dummy->feedback) {

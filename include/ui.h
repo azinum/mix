@@ -146,6 +146,7 @@ typedef union Element_data {
     i32 scroll_y;
     i32 content_height;
     bool scrollable;
+    bool auto_adjust_height; // adjust height based on content
   } container;
   struct {
     i32 mouse_x;

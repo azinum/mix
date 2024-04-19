@@ -171,7 +171,7 @@ void waveshaper_reset_onclick(Element* e) {
 void waveshaper_default(Waveshaper* w) {
   w->tick             = 0.0f;
   w->mod_tick         = 0;
-  w->volume_target    = 0.1f;
+  w->volume_target    = INSTRUMENT_VOLUME_DEFAULT;
   w->freq             = 55;
   w->freq_target      = 55;
   w->freq_mod         = 0;
@@ -723,7 +723,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
       .x = 20,
       .y = small_button_height,
     };
-    e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~32.70 hz (C1)\n1.0 -> ~7902.13 hz (B8)";
+    e.tooltip = "map frequency modification values to frequency table\n0.0 -> ~16.35 hz (C0)\n1.0 -> ~7902.13 hz (B8)";
     ui_attach_element(container, &e);
   }
 
@@ -803,9 +803,8 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
 
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
-  f32 volume = ins->volume;
   if (w->mute) {
-    volume = 0.0f;
+    goto process_done;
   }
 
   if (!w->freeze) {
@@ -830,7 +829,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       size_t mod_sample_index = (size_t)((w->mod_tick + offset) * w->freq_mod);
       f32 mod_sample = w->mod_source.buffer[mod_sample_index % w->mod_source.samples];
       size_t sample_index = (size_t)((w->tick + offset) * (w->freq + mod_sample));
-      f32 sample = volume * w->source.buffer[sample_index % w->source.samples];
+      f32 sample = w->source.buffer[sample_index % w->source.samples];
       if (sample_index >= w->source.samples) {
         w->tick = 0;
       }
@@ -870,6 +869,7 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   if (w->flipflop) {
     w->speed = -w->speed;
   }
+process_done:
   ticket_mutex_end(&w->source_mutex);
 }
 

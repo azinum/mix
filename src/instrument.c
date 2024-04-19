@@ -108,6 +108,9 @@ void instrument_process(Instrument* ins, struct Mix* mix, Audio_engine* audio, f
   ins->blocking = true;
   if (LIKELY(ins->initialized)) {
     ins->process(ins, mix, audio, dt);
+    for (size_t i = 0; i < ins->samples; ++i) {
+      ins->out_buffer[i] *= ins->volume;
+    }
   }
   ins->audio_latency = TIMER_END();
   ins->blocking = false;

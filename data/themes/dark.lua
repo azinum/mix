@@ -1,7 +1,7 @@
 -- dark.lua
 
-main_background_color   = "171717"
-ui_background_color     = "222222"
+main_background_color   = "121212"
+ui_background_color     = "181818"
 ui_border_color         = "020202"
 ui_button_color         = "405075"
 ui_text_color           = "f0f0f0"

@@ -392,6 +392,9 @@ void ui_update_container(UI_state* ui, Element* e) {
 
   py_offset += 2 * e->y_padding;
   e->data.container.content_height = py + py_offset - scroll_y;
+  if (e->data.container.auto_adjust_height && e->sizing.y_mode == SIZE_MODE_PIXELS) {
+    e->sizing.y = e->data.container.content_height + (FONT_SIZE + e->title_bar.padding * 2) + e->y_padding;
+  }
 }
 
 void ui_update_grid(UI_state* ui, Element* e) {
@@ -1425,6 +1428,7 @@ Element ui_container(char* title) {
   e.data.container.scroll_y = 0;
   e.data.container.content_height = 0;
   e.data.container.scrollable = true;
+  e.data.container.auto_adjust_height = false;
   e.placement = PLACEMENT_BLOCK;
 
   e.x_padding = UI_CONTAINER_X_PADDING;

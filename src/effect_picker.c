@@ -1,6 +1,7 @@
 // effect_picker.c
 
 static void add_effect(Element* e);
+static void effect_controls_new(Element* container, Effect* effect);
 static void clear_effects(Element* e);
 
 void add_effect(Element* e) {
@@ -22,18 +23,55 @@ void add_effect(Element* e) {
       e.placement = PLACEMENT_BLOCK;
       e.background = true;
       Hsv hsv = rgb_to_hsv(UI_BUTTON_COLOR);
-      hsv.s = 0.4f;
-      hsv.h += 0.05f;
+      hsv.s = 0.5f;
+      hsv.h += 0.07f;
       e.background_color = lerp_color(e.background_color, hsv_to_rgb(hsv), 0.1f);
 #ifdef TARGET_ANDROID
       e.sizing = SIZING_PERCENT(100, 50);
 #else
-      e.sizing = SIZING_PERCENT(100, 25);
+      e.sizing = SIZING_PERCENT(100, 30);
 #endif
+      e.sizing.y_mode = SIZE_MODE_PIXELS;
+      e.data.container.auto_adjust_height = true;
       Element* effect_container = ui_attach_element(mix->effect_chain, &e);
       instrument_ui_new(effect, effect_container);
+      effect_controls_new(effect_container, effect);
     }
   }
+}
+
+void effect_controls_new(Element* container, Effect* effect) {
+  i32 button_height = FONT_SIZE;
+  {
+    Element e = ui_line_break(2);
+    e.background = true;
+    e.background_color = lerp_color(UI_BORDER_COLOR, UI_INTERPOLATION_COLOR, 0.05f);
+    e.render = true;
+    e.border_thickness = UI_BORDER_THICKNESS;
+    ui_attach_element(container, &e);
+  }
+  ui_attach_element_v2(container, ui_text_line("volume"));
+  {
+    Element e = ui_input_float("volume", &effect->volume);
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 20,
+      .y = button_height,
+    };
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_float(&effect->volume, 0, 1);
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 80,
+      .y = button_height,
+    };
+    ui_attach_element(container, &e);
+  }
+  ui_attach_element_v2(container, ui_line_break(0));
 }
 
 void clear_effects(Element* e) {
