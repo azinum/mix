@@ -15,6 +15,26 @@ typedef struct Mod_item {
   i32 enabled;
 } Mod_item;
 
+struct Waveshaper;
+
+#define MAX_DRUMPAD_VOICES 48
+
+typedef struct Drumpad_voice {
+  f32* source;
+  size_t samples;
+  size_t index;
+  f32 amplitude;
+  bool silent;
+} Drumpad_voice;
+
+typedef struct Drumpad {
+  i32 pad[DRUMPAD_COLS][DRUMPAD_ROWS];
+  void (*event[DRUMPAD_ROWS])(struct Waveshaper* w);
+  void (*process[DRUMPAD_ROWS])(struct Audio_engine* audio, struct Instrument* ins, f32* buffer, size_t samples);
+  size_t index;
+  Drumpad_voice voices[MAX_DRUMPAD_VOICES];
+} Drumpad;
+
 typedef struct Waveshaper {
   f32 tick;
   size_t mod_tick;
@@ -66,11 +86,8 @@ static void waveshaper_drumpad_event2(Waveshaper* w);
 static void waveshaper_drumpad_event3(Waveshaper* w);
 static void waveshaper_drumpad_event4(Waveshaper* w);
 
-static void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
-static void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
-static void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
-static void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
-static void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples);
+static Drumpad_voice* waveshaper_drumpad_find_silent_voice(Drumpad* drumpad);
+static void waveshaper_play_voice(Drumpad* drumpad, f32* source, size_t samples, f32 amplitude);
 
 void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source) {
   Audio_source loaded_source = audio_load_audio(path);
@@ -219,13 +236,17 @@ void waveshaper_drumpad_init(Drumpad* d) {
   d->event[2] = waveshaper_drumpad_event2;
   d->event[3] = waveshaper_drumpad_event3;
   d->event[4] = waveshaper_drumpad_event4;
-  d->process[0] = waveshaper_drumpad_process0;
-  d->process[1] = waveshaper_drumpad_process1;
-  d->process[2] = waveshaper_drumpad_process2;
-  d->process[3] = waveshaper_drumpad_process3;
-  d->process[4] = waveshaper_drumpad_process4;
-  memset(d->sample_index, 0, sizeof(d->sample_index));
   d->index = 0;
+  Drumpad_voice silent = (Drumpad_voice) {
+    .source = NULL,
+    .samples = 0,
+    .index = 0,
+    .amplitude = 0,
+    .silent = true,
+  };
+  for (size_t i = 0; i < MAX_DRUMPAD_VOICES; ++i) {
+    d->voices[i] = silent;
+  }
 }
 
 void waveshaper_update_drumpad(Element* e) {
@@ -255,7 +276,6 @@ void waveshaper_flipflop(Element* e) {
 }
 
 void waveshaper_drumpad_event0(Waveshaper* w) {
-  w->drumpad.sample_index[0] = 0;
   Mod_item item = w->mod_table[w->mod_index % MOD_TABLE_LENGTH];
   if (!item.enabled) {
     // skip all items that are not enabled
@@ -290,70 +310,41 @@ found:
 }
 
 void waveshaper_drumpad_event1(Waveshaper* w) {
-  w->drumpad.sample_index[1] = 0;
+  waveshaper_play_voice(&w->drumpad, (f32*)hihat, LENGTH(hihat), 1);
 }
 
 void waveshaper_drumpad_event2(Waveshaper* w) {
-  w->drumpad.sample_index[2] = 0;
+  waveshaper_play_voice(&w->drumpad, (f32*)snare, LENGTH(snare), 1);
 }
 
 void waveshaper_drumpad_event3(Waveshaper* w) {
-  w->drumpad.sample_index[3] = 0;
+  waveshaper_play_voice(&w->drumpad, (f32*)kick, LENGTH(kick), 1);
 }
 
 void waveshaper_drumpad_event4(Waveshaper* w) {
-  w->drumpad.sample_index[4] = 0;
   w->freeze = !w->freeze;
 }
 
-void waveshaper_drumpad_process0(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
-  (void)audio;
-  (void)ins;
-  (void)buffer;
-  (void)samples;
-}
-
-void waveshaper_drumpad_process1(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
-  (void)audio;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-  size_t* sample_index = &w->drumpad.sample_index[1];
-  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
-    if (*sample_index >= LENGTH(hihat)) {
-      return;
+Drumpad_voice* waveshaper_drumpad_find_silent_voice(Drumpad* drumpad) {
+  for (size_t i = 0; i < MAX_DRUMPAD_VOICES; ++i) {
+    Drumpad_voice* voice = &drumpad->voices[i];
+    if (voice->silent) {
+      return voice;
     }
-    buffer[i] += hihat[*sample_index % LENGTH(hihat)];
   }
+  return NULL;
 }
 
-void waveshaper_drumpad_process2(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
-  (void)audio;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-  size_t* sample_index = &w->drumpad.sample_index[2];
-  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
-    if (*sample_index >= LENGTH(snare)) {
-      return;
-    }
-    buffer[i] += snare[*sample_index % LENGTH(snare)];
+void waveshaper_play_voice(Drumpad* drumpad, f32* source, size_t samples, f32 amplitude) {
+  Drumpad_voice* voice = waveshaper_drumpad_find_silent_voice(drumpad);
+  if (!voice) {
+    return;
   }
-}
-
-void waveshaper_drumpad_process3(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
-  (void)audio;
-  Waveshaper* w = (Waveshaper*)ins->userdata;
-  size_t* sample_index = &w->drumpad.sample_index[3];
-  for (size_t i = 0; i < samples; ++i, *sample_index += 1) {
-    if (*sample_index >= LENGTH(kick)) {
-      return;
-    }
-    buffer[i] += kick[*sample_index % LENGTH(kick)];
-  }
-}
-
-void waveshaper_drumpad_process4(Audio_engine* audio, Instrument* ins, f32* buffer, size_t samples) {
-  (void)audio;
-  (void)ins;
-  (void)buffer;
-  (void)samples;
+  voice->source = source;
+  voice->samples = samples;
+  voice->index = 0;
+  voice->amplitude = amplitude;
+  voice->silent = false;
 }
 
 void waveshaper_init(Instrument* ins) {
@@ -828,10 +819,18 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
       ins->out_buffer[i] = 0.0f;
     }
   }
-  for (size_t y = 0; y < DRUMPAD_ROWS; ++y) {
-    size_t x = w->drumpad.index;
-    if (w->drumpad.pad[x][y]) {
-      w->drumpad.process[y](audio, ins, ins->out_buffer, ins->samples);
+
+  for (size_t i = 0; i < MAX_DRUMPAD_VOICES; ++i) {
+    Drumpad_voice* voice = &w->drumpad.voices[i];
+    if (!voice->silent) {
+      for (size_t sample_index = 0; sample_index < ins->samples; ++sample_index) {
+        if (voice->index >= voice->samples) {
+          voice->silent = true;
+          break;
+        }
+        ins->out_buffer[sample_index] += voice->amplitude * voice->source[voice->index];
+        voice->index += 1;
+      }
     }
   }
 

@@ -25,16 +25,6 @@ typedef struct Lfo {
   #define MOD_TABLE_LENGTH 16
 #endif
 
-struct Waveshaper;
-
-typedef struct Drumpad {
-  i32 pad[DRUMPAD_COLS][DRUMPAD_ROWS];
-  void (*event[DRUMPAD_ROWS])(struct Waveshaper* w);
-  void (*process[DRUMPAD_ROWS])(struct Audio_engine* audio, struct Instrument* ins, f32* buffer, size_t samples);
-  size_t sample_index[DRUMPAD_ROWS];
-  size_t index;
-} Drumpad;
-
 void waveshaper_init(Instrument* ins);
 void waveshaper_ui_new(Instrument* ins, Element* container);
 void waveshaper_update(Instrument* ins, struct Mix* mix);

@@ -84,7 +84,7 @@ i32 main(void) {
   print_wave_file(STDOUT_FILENO, "data/samples/drums/hihat.wav", "hihat");
   print_wave_file(STDOUT_FILENO, "data/samples/shapes/saw.wav", "saw");
   print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
-  print_freq_table(STDOUT_FILENO, 55.0f, -21 /* C0 ~16.35 hz */, 87 /* B8 ~7902.13 hz */);
+  // print_freq_table(STDOUT_FILENO, 55.0f, -21 /* C0 ~16.35 hz */, 87 /* B8 ~7902.13 hz */);
 #endif
   return EXIT_SUCCESS;
 }
