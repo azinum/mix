@@ -1068,6 +1068,8 @@ void ui_update(f32 dt) {
     ui->scroll.y += 1;
   }
 
+  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
+
 #if defined(TARGET_ANDROID) || defined(UI_EMULATE_TOUCH_SCREEN)
   static Vector2 drag = {0, 0};
   static Vector2 prev_drag = {0, 0};
@@ -1093,8 +1095,6 @@ void ui_update(f32 dt) {
       ui->active_id = ui->active->id;
     }
   }
-
-  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
 
   if (ui->select != NULL) {
     if (ui->select->type == ELEMENT_INPUT && ui->select->id == ui->active_id) {
@@ -1186,7 +1186,7 @@ void ui_update(f32 dt) {
   }
   if (ui->scrollable != NULL) {
     ASSERT(ui->scrollable->type == ELEMENT_CONTAINER);
-    if (ui->scrollable->data.container.scrollable) {
+    if (ui->scrollable->data.container.scrollable && !mod_key) {
       Element* e = ui->scrollable;
       Vector2 wheel = ui->scroll;
       i32 scroll_y = e->data.container.scroll_y;
@@ -1206,6 +1206,39 @@ void ui_update(f32 dt) {
           ui->scrollbar_timer = 0.0f;
         }
       }
+    }
+  }
+  if (mod_key && ui->scroll.y != 0 && ui->hover && !ui_input_interacting()) {
+    Element* e = ui->hover;
+    switch (e->type) {
+      case ELEMENT_SLIDER: {
+        if (e->data.slider.type == VALUE_TYPE_FLOAT) {
+          f32 f_min = e->data.slider.range.f_min;
+          f32 f_max = e->data.slider.range.f_max;
+          f32 increment = (0.05f * (f_max - f_min)) * ui->scroll.y;
+          *e->data.slider.v.f = CLAMP(*e->data.slider.v.f + increment, f_min, f_max);
+        }
+        else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
+          i32 i_min = e->data.slider.range.i_min;
+          i32 i_max = e->data.slider.range.i_max;
+          i32 increment = (0.05f * (i_max - i_min)) * ui->scroll.y;
+          *e->data.slider.v.i = CLAMP(*e->data.slider.v.i + increment, i_min, i_max);
+        }
+        break;
+      }
+      case ELEMENT_INPUT: {
+        if (e->data.input.value_type == VALUE_TYPE_FLOAT) {
+          f32 increment = 0.1f * ui->scroll.y; // NOTE: arbitrary
+          *(f32*)e->data.input.value += increment;
+        }
+        else if (e->data.input.value_type == VALUE_TYPE_INTEGER) {
+          i32 increment = 1 * ui->scroll.y; // NOTE: arbitrary
+          *(i32*)e->data.input.value += increment;
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
   i32 prev_cursor = ui->cursor;
