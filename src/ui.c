@@ -1350,14 +1350,21 @@ void ui_alert_simple(const char* message) {
 }
 
 void ui_switch_state(i32 tag) {
-  tag = CLAMP(tag, 0, MAX_UI_TAGS - 1);
+  tag = CLAMP(tag, 0, MAX_UI_TAGS) % MAX_UI_TAGS;
+
   UI_state* ui = &ui_state;
   Element* current = ui->root;
   Element* next = &ui->tags[tag];
   if (current != next) {
+    ui->tag = tag;
     ui->root = &ui->tags[tag];
     ui_unzoom(ui); // unzoom if zoomed
   }
+}
+
+i32 ui_get_current_tag(void) {
+  UI_state* ui = &ui_state;
+  return ui->tag;
 }
 
 void ui_alert(const char* format, ...) {

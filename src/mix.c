@@ -258,6 +258,9 @@ void mix_update_and_render(Mix* mix) {
     if (IsKeyPressed(KEY_KP_5) || IsKeyPressed(KEY_FIVE)) {
       ui_switch_state(4);
     }
+    if (IsKeyPressed(KEY_TAB)) {
+      ui_switch_state(ui_get_current_tag() + 1);
+    }
   }
   instrument_update(&audio->instrument, mix);
 
@@ -415,6 +418,11 @@ void mix_ui_new(Mix* mix) {
     Element* effect_picker = ui_attach_element(container, &e);
     effect_picker_ui_new(mix, effect_picker);
   }
+  ui_switch_state(UI_TAG_SETTINGS);
+
+  ui_attach_element_v2(NULL, settings_ui_new(mix));
+
+  ui_switch_state(UI_TAG_MAIN);
 #endif
 }
 
