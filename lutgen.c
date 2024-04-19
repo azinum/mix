@@ -39,6 +39,7 @@ static void generate(Sound_source* sound, Shape shape, f32 amplitude);
 static void export(Sound_source* sound, const char* path);
 static void print_header(i32 fd, const char* name, const char* type, size_t size);
 static void print_sine_table(i32 fd, const char* name, const char* type, size_t size);
+static void print_freq_table(i32 fd, const f32 standard_pitch, i32 start, i32 end);
 static void print_wave_file(i32 fd, const char* path, const char* name);
 
 i32 main(void) {
@@ -83,6 +84,7 @@ i32 main(void) {
   print_wave_file(STDOUT_FILENO, "data/samples/drums/hihat.wav", "hihat");
   print_wave_file(STDOUT_FILENO, "data/samples/shapes/saw.wav", "saw");
   print_sine_table(STDOUT_FILENO, "sine", "f32", 44100);
+  print_freq_table(STDOUT_FILENO, 55.0f, -21 /* C0 ~16.35 hz */, 87 /* B8 ~7902.13 hz */);
 #endif
   return EXIT_SUCCESS;
 }
@@ -154,12 +156,27 @@ void print_sine_table(i32 fd, const char* name, const char* type, size_t size) {
   print_header(fd, name, type, size);
   for (size_t i = 0; i < size; ++i) {
     f32 v = sinf((i * PI32 * 2) / (f32)size);
-    stb_dprintf(fd, "%.6ff,", v);
+    dprintf(fd, "%.6ff,", v);
     if (!((i+1) % WIDTH)) {
-      stb_dprintf(fd, "\n");
+      dprintf(fd, "\n");
     }
   }
-  stb_dprintf(fd, "};\n");
+  dprintf(fd, "};\n");
+}
+
+void print_freq_table(i32 fd, const f32 standard_pitch, i32 start, i32 end) {
+  dprintf(fd, "static const f32 frequency_table[] = {\n");
+  size_t row = 0;
+  for (i32 i = start; i < end; ++i) {
+    f32 freq = standard_pitch * powf(2.0f, i / 12.0f);
+    dprintf(fd, "%.6ff,", freq);
+    row += 1;
+    if (row == 12) {
+      row = 0;
+      dprintf(fd, "\n");
+    }
+  }
+  dprintf(fd, "\n};\n");
 }
 
 void print_wave_file(i32 fd, const char* path, const char* name) {
