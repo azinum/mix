@@ -243,6 +243,21 @@ void mix_update_and_render(Mix* mix) {
     if (IsKeyPressed(KEY_SPACE)) {
       mix->paused = !mix->paused;
     }
+    if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_ONE)) {
+      ui_switch_state(0);
+    }
+    if (IsKeyPressed(KEY_KP_2) || IsKeyPressed(KEY_TWO)) {
+      ui_switch_state(1);
+    }
+    if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_THREE)) {
+      ui_switch_state(2);
+    }
+    if (IsKeyPressed(KEY_KP_4) || IsKeyPressed(KEY_FOUR)) {
+      ui_switch_state(3);
+    }
+    if (IsKeyPressed(KEY_KP_5) || IsKeyPressed(KEY_FIVE)) {
+      ui_switch_state(4);
+    }
   }
   instrument_update(&audio->instrument, mix);
 

@@ -267,8 +267,11 @@ typedef struct Element {
   void (*onhover)(struct Element* e);
 } __attribute__((aligned(sizeof(size_t)))) Element;
 
+#define MAX_UI_TAGS 10
+
 typedef struct UI_state {
-  Element root;
+  Element* root;
+  Element tags[MAX_UI_TAGS];
   u32 id_counter;
   u32 element_count;
   f32 latency;
@@ -322,6 +325,7 @@ void ui_reset_connection_filter(void);
 bool ui_input_interacting(void);
 void ui_alert_simple(const char* message);
 void ui_alert(const char* format, ...);
+void ui_switch_state(i32 tag);
 
 Element* ui_attach_element(Element* target, Element* e);
 Element* ui_attach_element_v2(Element* target, Element e);

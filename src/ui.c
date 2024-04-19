@@ -5,7 +5,6 @@
 //  - icon/image
 //  - container tabs
 //  - drag and drop (from external file browser)
-//  - multiple ui states to switch between
 //  - implement an element `watcher` mechanism that notifies external references
 //      to elements that changes, for instance when reallocating or detaching ui nodes. external
 //      element references must not be invalidated.
@@ -77,14 +76,19 @@ static bool ui_measure_text(Font, char* text, Box* box, bool allow_overflow, boo
 static void ui_render_text(Font font, char* text, const Box* box, bool allow_overflow, bool text_wrapping, i32 font_size, i32 spacing, i32 line_spacing, Color tint);
 static void ui_update_input(UI_state* ui, Element* e);
 static void ui_render_input(UI_state* ui, Element* e);
+static void ui_unzoom(UI_state* ui);
 
 void ui_state_init(UI_state* ui) {
-  ui_element_init(&ui->root, ELEMENT_CONTAINER);
-  ui->root.placement = PLACEMENT_FILL;
-  ui->root.x_padding = 0;
-  ui->root.y_padding = 0;
-  ui->root.border = false;
-  ui->root.background = false;
+  ui->root = &ui->tags[0];
+  for (size_t i = 0; i < MAX_UI_TAGS; ++i) {
+    Element* tag = &ui->tags[i];
+    ui_element_init(tag, ELEMENT_CONTAINER);
+    tag->placement = PLACEMENT_FILL;
+    tag->x_padding = 0;
+    tag->y_padding = 0;
+    tag->border = false;
+    tag->background = false;
+  }
 
   ui->element_count = 1;
   ui->id_counter = 2;
@@ -257,7 +261,7 @@ void ui_update_elements(UI_state* ui, Element* e) {
 void ui_update_container(UI_state* ui, Element* e) {
   (void)ui; // unused
 
-  Element* root = &ui->root;
+  Element* root = ui->root;
 
   i32 scroll_y = e->data.container.scroll_y;
 
@@ -811,7 +815,7 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
   if (!tooltip) {
     return;
   }
-  const Box box = ui->root.box;
+  const Box box = ui->root->box;
   i32 x_center = 0, y_center = 0;
   ui_center_of(&box, &x_center, &y_center);
   if (x_center == 0 || y_center == 0) {
@@ -890,7 +894,7 @@ void ui_render_alert(UI_state* ui) {
   }
 
   char* text = ui->alert_text;
-  Element* root = &ui->root;
+  Element* root = ui->root;
   const Font font = assets.font;
   const i32 font_size = FONT_SIZE;
   const i32 spacing = 0;
@@ -1032,7 +1036,7 @@ void ui_update(f32 dt) {
     ui->alert_timer = 0;
   }
 
-  Element* root = &ui->root;
+  Element* root = ui->root;
   if (ui->zoom) {
     root = ui->zoom;
   }
@@ -1158,9 +1162,7 @@ void ui_update(f32 dt) {
   if (zoomer && do_zoom && !ui_input_interacting()) {
     if (zoomer->zoomable) {
       if (ui->zoom) {
-        ui->zoom->box = ui->zoom_box;
-        ui->zoom->sizing = ui->zoom_sizing;
-        ui->zoom = NULL;
+        ui_unzoom(ui);
       }
       else if (!escaped) {
         ui->zoom = zoomer;
@@ -1233,14 +1235,14 @@ void ui_update(f32 dt) {
 void ui_hierarchy_print(void) {
   UI_state* ui = &ui_state;
   if (ui->fd >= 0) {
-    ui_print_elements(ui, ui->fd, &ui->root, 0);
+    ui_print_elements(ui, ui->fd, ui->root, 0);
   }
 }
 
 void ui_render(void) {
   TIMER_START();
   UI_state* ui = &ui_state;
-  Element* root = &ui->root;
+  Element* root = ui->root;
   if (ui->zoom) {
     root = ui->zoom;
   }
@@ -1304,7 +1306,9 @@ void ui_render(void) {
 void ui_free(void) {
   UI_state* ui = &ui_state;
   ui_hierarchy_print();
-  ui_free_elements(ui, &ui->root);
+  for (size_t i = 0; i < MAX_UI_TAGS; ++i) {
+    ui_free_elements(ui, &ui->tags[i]);
+  }
   close(ui->fd);
   ui->fd = -1;
   arena_free(&ui->frame_arena);
@@ -1345,6 +1349,17 @@ void ui_alert_simple(const char* message) {
   ui_alert("%s", message);
 }
 
+void ui_switch_state(i32 tag) {
+  tag = CLAMP(tag, 0, MAX_UI_TAGS - 1);
+  UI_state* ui = &ui_state;
+  Element* current = ui->root;
+  Element* next = &ui->tags[tag];
+  if (current != next) {
+    ui->root = &ui->tags[tag];
+    ui_unzoom(ui); // unzoom if zoomed
+  }
+}
+
 void ui_alert(const char* format, ...) {
   UI_state* ui = &ui_state;
   va_list argp;
@@ -1357,7 +1372,7 @@ void ui_alert(const char* format, ...) {
 Element* ui_attach_element(Element* target, Element* e) {
   UI_state* ui = &ui_state;
   if (!target) {
-    target = &ui->root;
+    target = ui->root;
   }
   size_t index = target->count;
   e->id = ui->id_counter++;
@@ -2022,4 +2037,14 @@ void ui_render_input(UI_state* ui, Element* e) {
   if (blink > 0) {
     ui_render_rectangle(cursor_box, 0, UI_TEXT_COLOR);
   }
+}
+
+void ui_unzoom(UI_state* ui) {
+  if (!ui->zoom) {
+    return;
+  }
+  ui->zoom->box = ui->zoom_box;
+  ui->zoom->sizing = ui->zoom_sizing;
+  ui->zoom = NULL;
+
 }
