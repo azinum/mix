@@ -169,6 +169,10 @@ void mix_send_midi_event(Midi_event event) {
 }
 
 void mix_render_curve(const f32* samples, const size_t count, Box box, Color color) {
+  mix_render_curve_v2(samples, count, box, color, false, 0);
+}
+
+void mix_render_curve_v2(const f32* samples, const size_t count, Box box, Color color, bool render_cursor, size_t cursor) {
   box = ui_pad_box_ex(box, 1, 2);
   const i32 width = box.w;
   const i32 height = box.h;
@@ -193,6 +197,15 @@ void mix_render_curve(const f32* samples, const size_t count, Box box, Color col
       x + i + 1,
       y + (height / 2.0f * sample),
       colors[(i % 2) == 0]
+    );
+  }
+  if (render_cursor) {
+    DrawLine(
+      x + width * (cursor/(f32)count),
+      box.y,
+      x + width * (cursor/(f32)count),
+      box.y + height,
+      brighten_color(saturate_color(color, -0.3f), 0.2f)
     );
   }
 }

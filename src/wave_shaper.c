@@ -48,7 +48,7 @@ typedef struct Waveshaper {
   i32 freeze;
   i32 mute;
   f32 speed;
-  i32 flipflop;
+  i32 pingpong;
   i32 distortion;
   f32 gain;
   i32 left_offset;
@@ -78,7 +78,7 @@ static void waveshaper_default(Waveshaper* w);
 static void waveshaper_drumpad_init(Drumpad* d);
 static void waveshaper_update_drumpad(Element* e);
 static void waveshaper_randomize_stepper(Element* e);
-static void waveshaper_flipflop(Element* e);
+static void waveshaper_pingpong(Element* e);
 
 static void waveshaper_drumpad_event0(Waveshaper* w);
 static void waveshaper_drumpad_event1(Waveshaper* w);
@@ -138,7 +138,7 @@ void waveshaper_render_source(Element* e) {
   if (!source->buffer) {
     return;
   }
-  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
+  mix_render_curve_v2(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->tick * w->freq));
 }
 
 void waveshaper_render_mod_source(Element* e) {
@@ -147,7 +147,7 @@ void waveshaper_render_mod_source(Element* e) {
   if (!source->buffer) {
     return;
   }
-  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
+  mix_render_curve_v2(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->mod_tick * w->freq_mod));
 }
 
 void waveshaper_hover_source(Element* e) {
@@ -198,8 +198,8 @@ void waveshaper_default(Waveshaper* w) {
   w->freq_mod_interp_speed  = INTERP_SPEED_DEFAULT;
   w->freeze           = false;
   w->mute             = false;
-  w->speed            = 2.0f;
-  w->flipflop         = false;
+  w->speed            = 1.0f;
+  w->pingpong         = false;
   w->distortion       = false;
   w->gain             = 1.0f;
   w->left_offset      = 0;
@@ -268,7 +268,7 @@ void waveshaper_randomize_stepper(Element* e) {
   }
 }
 
-void waveshaper_flipflop(Element* e) {
+void waveshaper_pingpong(Element* e) {
   Waveshaper* w = (Waveshaper*)e->userdata;
   if (w->speed < 0) {
     w->speed = -w->speed;
@@ -382,12 +382,12 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
   {
-    Element e = ui_toggle_ex(&w->flipflop, "flipflop");
+    Element e = ui_toggle_ex(&w->pingpong, "pingpong");
     e.box = BOX(0, 0, 0, button_height);
     e.sizing = SIZING_PERCENT(50, 0);
-    e.tooltip = "flip the counting direction of the internal\nclock after processing audio buffer";
     e.userdata = w;
-    e.onclick = waveshaper_flipflop;
+    e.onclick = waveshaper_pingpong;
+    // TODO(lucas): tooltip
     ui_attach_element(container, &e);
   }
   {
@@ -838,24 +838,44 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     w->left_offset,
     w->right_offset
   };
+
   for (size_t i = 0; i < ins->samples; i += channel_count) {
     for (i32 channel_index = 0; channel_index < channel_count; ++channel_index) {
-      i32 offset = offsets[(channel_index % 2) == 0];
-      size_t mod_sample_index = (size_t)((w->mod_tick + offset) * w->freq_mod);
-      f32 mod_sample = w->mod_source.buffer[mod_sample_index % w->mod_source.samples];
-      size_t sample_index = (size_t)((w->tick + offset) * (w->freq + mod_sample));
-      f32 sample = w->source.buffer[sample_index % w->source.samples];
-      if (sample_index >= w->source.samples) {
-        w->tick = 0;
-      }
-      if (mod_sample_index >= w->mod_source.samples) {
+      i32 offset = offsets[channel_index % 2];
+
+      i32 mod_sample_index = w->mod_tick * w->freq_mod;
+      if (mod_sample_index >= (i32)w->mod_source.samples) {
+        mod_sample_index = 0;
         w->mod_tick = 0;
       }
+      f32 mod_sample = w->mod_source.buffer[mod_sample_index % w->mod_source.samples];
+      i32 sample_index = w->tick * (w->freq + mod_sample);
+
+      if (sample_index >= (i32)w->source.samples) {
+        if (fabs(w->freq + mod_sample) > FLT_EPSILON) {
+          w->tick = w->source.samples / (w->freq + mod_sample);
+        }
+        if (w->pingpong) {
+          w->speed = -w->speed;
+        }
+        else {
+          w->tick = 0;
+        }
+        sample_index = w->source.samples - 1;
+      }
+      else if (sample_index < 0) {
+        sample_index = 0;
+        w->tick = 0;
+        if (w->pingpong) {
+          w->speed = -w->speed;
+        }
+      }
+      f32 sample = w->source.buffer[(i32)abs(sample_index + offset) % w->source.samples];
       ins->out_buffer[i + channel_index] += sample;
+      w->tick += w->speed;
+      w->mod_tick += fabs(w->speed);
     }
 
-    w->tick += w->speed;
-    w->mod_tick += w->speed;
     w->freq = lerp_f32(w->freq, w->freq_target, sample_dt * w->freq_interp_speed);
     w->freq_mod = lerp_f32(w->freq_mod, w->freq_mod_target, sample_dt * w->freq_mod_interp_speed);
     ins->volume = lerp_f32(ins->volume, w->volume_target, sample_dt * INTERP_SPEED_DEFAULT);
@@ -880,9 +900,6 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     for (size_t i = 0; i < ins->samples; ++i) {
       ins->out_buffer[i] *= w->gain;
     }
-  }
-  if (w->flipflop) {
-    w->speed = -w->speed;
   }
 process_done:
   ticket_mutex_end(&w->source_mutex);
