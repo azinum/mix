@@ -99,7 +99,6 @@ typedef struct Mix {
   f32 tick_delta;
   i32 bpm;
   f32 timer;
-  f32 timer_start;
   i32 paused;
 
   Element* ins_container;

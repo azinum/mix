@@ -124,12 +124,12 @@ i32 mix_main(i32 argc, char** argv) {
     mix->bpm = CLAMP(mix->bpm, 1, 999);
 
     const f32 bps = 60.0f / mix->bpm;
-    f32 timestamp = mix->timer_start + (bps / SUBTICKS);
+    f32 timestamp = (bps / SUBTICKS);
     if (mix->timer >= timestamp) {
       f32 delta = mix->timer - timestamp;
-      mix->timer_start = mix->timer - delta;
       mix->timed_tick += 1;
       mix->tick_delta = delta;
+      mix->timer = delta;
     }
 
     mix->fps = 1.0f / mix->dt;
@@ -329,7 +329,6 @@ void mix_reset(Mix* mix) {
   mix->tick_delta = 0;
   mix->bpm = BPM;
   mix->timer = 0.0f;
-  mix->timer_start = 0.0f;
   mix->paused = false;
   mix->midi_event_count = 0;
   midi_init();
