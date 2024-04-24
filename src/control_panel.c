@@ -13,7 +13,7 @@ static void control_panel_render_waveform(Element* e) {
   const f32* buffer = audio->out_buffer;
   const size_t samples = (size_t)audio->frames_per_buffer;
 
-  mix_render_curve(buffer, samples, BOX(e->box.x + e->border_thickness, e->box.y, e->box.w - 2 * e->border_thickness, e->box.h), COLOR_RGB(130, 190, 100));
+  ui_audio_render_curve(buffer, samples, BOX(e->box.x + e->border_thickness, e->box.y, e->box.w - 2 * e->border_thickness, e->box.h), COLOR_RGB(130, 190, 100), false, 0);
 
   f32 dt = TIMER_END();
   (void)dt;

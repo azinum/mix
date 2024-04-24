@@ -138,7 +138,7 @@ void waveshaper_render_source(Element* e) {
   if (!source->buffer) {
     return;
   }
-  mix_render_curve_v2(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->tick * w->freq));
+  ui_audio_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->tick * w->freq));
 }
 
 void waveshaper_render_mod_source(Element* e) {
@@ -147,7 +147,7 @@ void waveshaper_render_mod_source(Element* e) {
   if (!source->buffer) {
     return;
   }
-  mix_render_curve_v2(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->mod_tick * w->freq_mod));
+  ui_audio_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->mod_tick * w->freq_mod));
 }
 
 void waveshaper_hover_source(Element* e) {
@@ -909,7 +909,7 @@ void waveshaper_noteon(struct Instrument* ins, u8 note, f32 velocity) {
   (void)velocity;
   Waveshaper* w = (Waveshaper*)ins->userdata;
 
-  f32 freq = freq_table[CLAMP(note - 0 /* - 0, otherwise gcc freaks out with warnings */, 0, (i32)LENGTH(freq_table))];
+  f32 freq = freq_table[note % LENGTH(freq_table)];
   w->freq_target = freq;
 }
 

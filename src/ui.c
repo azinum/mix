@@ -864,7 +864,7 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
       DrawRectangle(box.x, box.y, box.w, box.h, background_color);
       DrawRectangleLinesEx((Rectangle) {box.x, box.y, box.w, box.h }, border_thickness, border_color);
     }
-    DrawTextEx(font, tooltip, (Vector2) { x, y }, font_size, spacing, COLOR_RGB(255, 255, 255));
+    DrawTextEx(font, tooltip, (Vector2) { x, y }, font_size, spacing, UI_TEXT_COLOR);
   }
 }
 

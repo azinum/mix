@@ -54,6 +54,7 @@
 #include "effect_chain.c"
 #include "effect_picker.c"
 #include "audio.c"
+#include "ui_audio.c"
 
 #ifdef TEST_UI
   #include "test_ui.c"
@@ -165,48 +166,6 @@ void mix_send_midi_event(Midi_event event) {
   Mix* mix = &mix_state;
   if (mix->midi_event_count < MAX_MIDI_EVENTS) {
     mix->midi_events[mix->midi_event_count++] = event;
-  }
-}
-
-void mix_render_curve(const f32* samples, const size_t count, Box box, Color color) {
-  mix_render_curve_v2(samples, count, box, color, false, 0);
-}
-
-void mix_render_curve_v2(const f32* samples, const size_t count, Box box, Color color, bool render_cursor, size_t cursor) {
-  box = ui_pad_box_ex(box, 1, 2);
-  const i32 width = box.w;
-  const i32 height = box.h;
-  const i32 x = box.x;
-  const i32 y = box.y + height / 2;
-  Color colors[2] = {
-    color,
-    saturate_color(color, 0.4f)
-  };
-  DrawLine(x, y, x + width, y, COLOR(255, 255, 255, 50));
-  // invert samples so that negative values are in the bottom, and positive at top
-  f32 sample = -CLAMP(samples[0], -1.0f, 1.0f);
-  f32 prev_sample = 0;
-  f32 index = 0;
-  f32 step = count / (f32)width;
-  for (i32 i = 0; i < width && index < (f32)count; ++i, index += step) {
-    prev_sample = sample;
-    sample = -CLAMP(samples[(size_t)index], -1.0f, 1.0f);
-    DrawLine(
-      x + i,
-      y + (height / 2.0f * prev_sample),
-      x + i + 1,
-      y + (height / 2.0f * sample),
-      colors[(i % 2) == 0]
-    );
-  }
-  if (render_cursor) {
-    DrawLine(
-      x + width * (cursor/(f32)count),
-      box.y,
-      x + width * (cursor/(f32)count),
-      box.y + height,
-      brighten_color(saturate_color(color, -0.3f), 0.2f)
-    );
   }
 }
 

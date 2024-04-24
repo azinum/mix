@@ -65,7 +65,7 @@ void dummy_render_sample(Element* e) {
   if (!source->buffer) {
     return;
   }
-  mix_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100));
+  ui_audio_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), false, 0);
 }
 
 void dummy_hover_sample(Element* e) {
@@ -348,6 +348,9 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
 
 void dummy_noteon(struct Instrument* ins, u8 note, f32 velocity) {
   (void)ins; (void)note; (void)velocity;
+  Dummy* dummy = (Dummy*)ins->userdata;
+  dummy->pluck = true;
+  dummy->frequency = freq_table[note % LENGTH(freq_table)];
 }
 
 void dummy_noteoff(struct Instrument* ins, u8 note) {

@@ -83,6 +83,7 @@ struct Mix;
 #include "effect_chain.h"
 #include "effect_picker.h"
 #include "audio.h"
+#include "ui_audio.h"
 
 #ifdef TEST_UI
   #include "test_ui.h"
@@ -120,7 +121,5 @@ Result mix_restart_audio_engine(void);
 void mix_assets_load(void);
 void mix_assets_unload(void);
 void mix_send_midi_event(Midi_event event);
-void mix_render_curve(const f32* samples, const size_t count, Box box, Color color);
-void mix_render_curve_v2(const f32* samples, const size_t count, Box box, Color color, bool render_cursor, size_t cursor);
 
 #endif // _MIX_H

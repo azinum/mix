@@ -15,6 +15,7 @@ struct {
   Tracker_row rows[NUM_ROWS];
   Color highlight_color;
   Color background_color;
+  Audio_source sources[4];
 } state = {
   .cursor = 0,
   .follow_cursor = true,
@@ -61,6 +62,10 @@ Element test_ui_new(Mix* mix) {
 
   state.background_color = UI_BACKGROUND_COLOR;
   state.highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, -0.1f), 0.2f);
+  for (size_t i = 0; i < LENGTH(state.sources); ++i) {
+    state.sources[i] = audio_source_copy_into_new(sine, LENGTH(sine), 1);
+  }
+
   const i32 width = 600;
   const i32 height = 400;
 
@@ -128,6 +133,27 @@ Element test_ui_new(Mix* mix) {
       ui_attach_element(inner, &e);
     }
     ui_attach_element_v2(inner, ui_line_break(0));
+  }
+  for (size_t i = 0; i < LENGTH(state.sources); ++i) {
+    Element audio_canvas = ui_audio_canvas("audio source", 100, &state.sources[i], true);
+    audio_canvas.border = true;
+    audio_canvas.sizing.x_mode = SIZE_MODE_PIXELS;
+    audio_canvas.sizing.x = 200;
+    Element* canvas = ui_attach_element(&test_ui, &audio_canvas);
+    {
+      {
+        Element e = ui_button("reset");
+        e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, 50, line_height, };
+        e.background_color = warmer_color(e.background_color, 80);
+        ui_attach_element(canvas, &e);
+      }
+      {
+        Element e = ui_toggle_ex(&state.sources[i].drawable, "drawable");
+        e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, 50, line_height, };
+        ui_attach_element(canvas, &e);
+      }
+
+    }
   }
   return test_ui;
 }
