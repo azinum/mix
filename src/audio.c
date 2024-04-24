@@ -226,7 +226,7 @@ Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, 
     .channel_count = channel_count,
     .ready = true,
     .internal = false,
-    .drawable = false,
+    .drawable = true,
     .cursor = 0,
     .mutex = ticket_mutex_new()
   };

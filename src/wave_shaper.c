@@ -67,12 +67,6 @@ typedef struct Waveshaper {
   Ticket source_mutex;
 } Waveshaper;
 
-static void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source);
-static void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source);
-static void waveshaper_render_source(Element* e);
-static void waveshaper_render_mod_source(Element* e);
-static void waveshaper_hover_source(Element* e);
-static void waveshaper_hover_mod_source(Element* e);
 static void waveshaper_reset_onclick(Element* e);
 static void waveshaper_default(Waveshaper* w);
 static void waveshaper_drumpad_init(Drumpad* d);
@@ -88,96 +82,6 @@ static void waveshaper_drumpad_event4(Waveshaper* w);
 
 static Drumpad_voice* waveshaper_drumpad_find_silent_voice(Drumpad* drumpad);
 static void waveshaper_play_voice(Drumpad* drumpad, f32* source, size_t samples, f32 amplitude);
-
-void waveshaper_load_sample(Waveshaper* w, const char* path, Audio_source* source) {
-  Audio_source loaded_source = audio_load_audio(path);
-  if (loaded_source.buffer != NULL && loaded_source.samples > 0) {
-    ticket_mutex_begin(&w->source_mutex);
-    audio_unload_audio(source);
-    *source = loaded_source;
-    ticket_mutex_end(&w->source_mutex);
-  }
-  else {
-    ui_alert("failed to load audio file\n%s", path);
-  }
-}
-
-// TODO(lucas): add controls for modifying window size
-void waveshaper_draw_sample(Waveshaper* w, i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio_source* source) {
-  ASSERT(source != NULL);
-  (void)w; // unused for now
-
-  bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
-
-  if (!mod_key && IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !ui_input_interacting() && width > 0 && height > 0 && source->ready && !source->internal) {
-    f32 x = mouse_x / (f32)width;
-    f32 sample = -(mouse_y / (f32)height - 0.5f) * 2.0f;
-    i32 sample_index = x * source->samples;
-    i32 window_size = ((source->channel_count * source->samples) / width) * 4;
-    sample_index = CLAMP(sample_index - (window_size / 2), 0, (i32)source->samples - window_size);
-    if (window_size > 0) {
-      f32 step = 2.0f / window_size;
-      f32 interpolator = 0.0f;
-      if (sample_index == 0) {
-        interpolator += 0.5f;
-        step -= 0.5f / window_size;
-      }
-      for (i32 i = 0; i < window_size; ++i) {
-        interpolator += step;
-        f32 factor = sinf((interpolator * PI32) / 2.0f);
-        f32 current_sample = source->buffer[(sample_index + i) % source->samples];
-        source->buffer[(sample_index + i) % source->samples] = lerp_f32(current_sample, sample, factor);
-      }
-    }
-  }
-}
-
-void waveshaper_render_source(Element* e) {
-  Waveshaper* w = (Waveshaper*)e->userdata;
-  Audio_source* source = &w->source;
-  if (!source->buffer) {
-    return;
-  }
-  ui_audio_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->tick * w->freq));
-}
-
-void waveshaper_render_mod_source(Element* e) {
-  Waveshaper* w = (Waveshaper*)e->userdata;
-  Audio_source* source = &w->mod_source;
-  if (!source->buffer) {
-    return;
-  }
-  ui_audio_render_curve(source->buffer, source->samples, e->box, COLOR_RGB(130, 190, 100), true, (size_t)(w->mod_tick * w->freq_mod));
-}
-
-void waveshaper_hover_source(Element* e) {
-  Waveshaper* w = (Waveshaper*)e->userdata;
-  char* path = NULL;
-  if (IsFileDropped()) {
-    FilePathList files = LoadDroppedFiles();
-    if (files.count > 0) {
-      path = files.paths[0];
-    }
-    waveshaper_load_sample(w, path, &w->source);
-    UnloadDroppedFiles(files);
-  }
-
-  waveshaper_draw_sample(w, e->data.canvas.mouse_x, e->data.canvas.mouse_y, e->box.w, e->box.h, &w->source);
-}
-
-void waveshaper_hover_mod_source(Element* e) {
-  Waveshaper* w = (Waveshaper*)e->userdata;
-  char* path = NULL;
-  if (IsFileDropped()) {
-    FilePathList files = LoadDroppedFiles();
-    if (files.count > 0) {
-      path = files.paths[0];
-    }
-    waveshaper_load_sample(w, path, &w->mod_source);
-    UnloadDroppedFiles(files);
-  }
-  waveshaper_draw_sample(w, e->data.canvas.mouse_x, e->data.canvas.mouse_y, e->box.w, e->box.h, &w->mod_source);
-}
 
 void waveshaper_reset_onclick(Element* e) {
   Instrument* ins = (Instrument*)e->userdata;
@@ -222,8 +126,8 @@ void waveshaper_default(Waveshaper* w) {
   w->mod_map_to_freq_table = false;
   w->mod_divide_by_sample_rate = false;
 
-  w->source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
-  w->mod_source = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
+  w->source       = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
+  w->mod_source   = audio_source_copy_into_new((f32*)&sine[0], LENGTH(sine), 2);
   w->source_mutex = ticket_mutex_new();
 
   waveshaper_drumpad_init(&w->drumpad);
@@ -411,6 +315,21 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
   ui_attach_element(container, &line_break);
 
   {
+    Element e = ui_audio_canvas("source", button_height * 3, &w->source, true);
+    e.sizing.x_mode = SIZE_MODE_PERCENT;
+    e.sizing.x = 50;
+    e.border = true;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_audio_canvas("mod source", button_height * 3, &w->mod_source, true);
+    e.sizing.x_mode = SIZE_MODE_PERCENT;
+    e.sizing.x = 50;
+    e.border = true;
+    ui_attach_element(container, &e);
+  }
+#if 0
+  {
     Element e = ui_canvas(true);
     ui_set_title(&e, "source");
     e.sizing = (Sizing) {
@@ -443,7 +362,7 @@ void waveshaper_ui_new(Instrument* ins, Element* container) {
     e.tooltip = "drag and drop audio file here";
     ui_attach_element(container, &e);
   }
-
+#endif
   ui_attach_element(container, &line_break);
 
 
@@ -806,7 +725,8 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
   (void)mix;
 
   Waveshaper* w = (Waveshaper*)ins->userdata;
-  ticket_mutex_begin(&w->source_mutex);
+  ticket_mutex_begin(&w->source.mutex);
+  ticket_mutex_begin(&w->mod_source.mutex);
 
   const i32 channel_count = audio->channel_count;
   const f32 sample_dt = dt / (f32)ins->samples;
@@ -902,7 +822,10 @@ void waveshaper_process(struct Instrument* ins, struct Mix* mix, struct Audio_en
     }
   }
 process_done:
-  ticket_mutex_end(&w->source_mutex);
+  w->mod_source.cursor = (size_t)(w->mod_tick * w->freq_mod);
+  w->source.cursor = (size_t)(w->tick * w->freq) + w->mod_source.cursor;
+  ticket_mutex_end(&w->source.mutex);
+  ticket_mutex_end(&w->mod_source.mutex);
 }
 
 void waveshaper_noteon(struct Instrument* ins, u8 note, f32 velocity) {
