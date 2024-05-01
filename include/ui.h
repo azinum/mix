@@ -227,6 +227,7 @@ typedef struct Element {
   Element_type type;
   Element_data data;
   void* userdata;
+
   struct {
     f32 f;
     i32 i;
@@ -263,7 +264,7 @@ typedef struct Element {
   void (*onrender)(struct Element* e);
   void (*onconnect)(struct Element* e, struct Element* target); // element e connects to target
   void (*oninput)(struct Element* e, char ch);
-  void (*onenter)(struct Element* e);
+  void (*onmodify)(struct Element* e);
   void (*onhover)(struct Element* e);
 } __attribute__((aligned(sizeof(size_t)))) Element;
 

@@ -64,7 +64,7 @@ static void ui_onupdate(struct Element* e);
 static void ui_onrender(struct Element* e);
 static void ui_onconnect(struct Element* e, struct Element* target);
 static void ui_oninput(struct Element* e, char ch);
-static void ui_onenter(struct Element* e);
+static void ui_onmodify(struct Element* e);
 static void ui_onhover(struct Element* e);
 static bool ui_connection_filter(struct Element* e, struct Element* target);
 static void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level);
@@ -397,7 +397,7 @@ void ui_update_container(UI_state* ui, Element* e) {
   py_offset += 2 * e->y_padding;
   e->data.container.content_height = py + py_offset - scroll_y;
   if (e->data.container.auto_adjust_height && e->sizing.y_mode == SIZE_MODE_PIXELS) {
-    e->sizing.y = e->data.container.content_height + (FONT_SIZE + e->title_bar.padding * 2) + e->y_padding;
+    e->sizing.y = e->data.container.content_height + (e->title_bar.title != NULL) * (FONT_SIZE + e->title_bar.padding * 2) + e->y_padding;
   }
 }
 
@@ -715,6 +715,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->type = type;
   memset(&e->data, 0, sizeof(e->data));
   e->userdata = NULL;
+
   e->v.i = 0;
   e->title_bar = (Title_bar) {
     .title = NULL,
@@ -754,7 +755,7 @@ void ui_element_init(Element* e, Element_type type) {
   e->onrender = ui_onrender;
   e->onconnect = ui_onconnect;
   e->oninput = ui_oninput;
-  e->onenter = ui_onenter;
+  e->onmodify = ui_onmodify;
   e->onhover = ui_onhover;
 }
 
@@ -1006,7 +1007,7 @@ void ui_oninput(struct Element* e, char ch) {
   (void)ch;
 }
 
-void ui_onenter(struct Element* e) {
+void ui_onmodify(struct Element* e) {
   (void)e;
 }
 
@@ -1127,6 +1128,7 @@ void ui_update(f32 dt) {
       else {
         if (ui->select->type == ELEMENT_TOGGLE) {
           ui_toggle_onclick(ui->select);
+          ui->select->onmodify(ui->select);
         }
         else if (ui->select->type == ELEMENT_INPUT) {
           ui_input_onclick(ui, ui->select);
@@ -1180,9 +1182,20 @@ void ui_update(f32 dt) {
     ui->scrollbar_timer = 0.0f;
   }
   if (ui->hover != NULL) {
+    Element* e = ui->hover;
     ui->tooltip_timer += ui->dt;
     ui->scrollbar_timer += ui->dt;
-    ui->hover->onhover(ui->hover);
+    e->onhover(e);
+    if (e->type == ELEMENT_INPUT && mod_key && !ui_input_interacting()) {
+      if (IsKeyPressed(KEY_C)) {
+        ui_update_input(ui, e);
+      }
+      if (IsKeyPressed(KEY_X) || IsKeyPressed(KEY_V)) {
+        e->data.input.cursor = 0;
+        e->data.input.buffer.count = 0;
+        ui_update_input(ui, e);
+      }
+    }
   }
   if (ui->scrollable != NULL) {
     ASSERT(ui->scrollable->type == ELEMENT_CONTAINER);
@@ -1210,35 +1223,44 @@ void ui_update(f32 dt) {
   }
   if (mod_key && ui->scroll.y != 0 && ui->hover && !ui_input_interacting()) {
     Element* e = ui->hover;
-    switch (e->type) {
-      case ELEMENT_SLIDER: {
-        if (e->data.slider.type == VALUE_TYPE_FLOAT) {
-          f32 f_min = e->data.slider.range.f_min;
-          f32 f_max = e->data.slider.range.f_max;
-          f32 increment = (0.05f * (f_max - f_min)) * ui->scroll.y;
-          *e->data.slider.v.f = CLAMP(*e->data.slider.v.f + increment, f_min, f_max);
+    if (!e->readonly) {
+      switch (e->type) {
+        case ELEMENT_SLIDER: {
+          if (e->data.slider.type == VALUE_TYPE_FLOAT) {
+            f32 f_min = e->data.slider.range.f_min;
+            f32 f_max = e->data.slider.range.f_max;
+            f32 increment = (0.05f * (f_max - f_min)) * ui->scroll.y;
+            *e->data.slider.v.f = CLAMP(*e->data.slider.v.f + increment, f_min, f_max);
+          }
+          else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
+            i32 i_min = e->data.slider.range.i_min;
+            i32 i_max = e->data.slider.range.i_max;
+            i32 increment = (0.05f * (i_max - i_min)) * ui->scroll.y;
+            *e->data.slider.v.i = CLAMP(*e->data.slider.v.i + increment, i_min, i_max);
+          }
+          break;
         }
-        else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
-          i32 i_min = e->data.slider.range.i_min;
-          i32 i_max = e->data.slider.range.i_max;
-          i32 increment = (0.05f * (i_max - i_min)) * ui->scroll.y;
-          *e->data.slider.v.i = CLAMP(*e->data.slider.v.i + increment, i_min, i_max);
+        case ELEMENT_INPUT: {
+            // TODO: add increment that can be modified by the user
+            // if it's not set then remember the difference between the previous and current value to determine the increment. say if it's set to 1, and user changes it to 1.1, then the increment would be 0.1
+            // increment = abs(current - prev)
+          if (e->data.input.value_type == VALUE_TYPE_FLOAT) {
+            f32 increment = 0.1f * ui->scroll.y; // NOTE: arbitrary
+            *(f32*)e->data.input.value += increment;
+          }
+          else if (e->data.input.value_type == VALUE_TYPE_INTEGER) {
+            i32 increment = 1 * ui->scroll.y; // NOTE: arbitrary
+            *(i32*)e->data.input.value += increment;
+          }
+          break;
         }
-        break;
+        default:
+          break;
       }
-      case ELEMENT_INPUT: {
-        if (e->data.input.value_type == VALUE_TYPE_FLOAT) {
-          f32 increment = 0.1f * ui->scroll.y; // NOTE: arbitrary
-          *(f32*)e->data.input.value += increment;
-        }
-        else if (e->data.input.value_type == VALUE_TYPE_INTEGER) {
-          i32 increment = 1 * ui->scroll.y; // NOTE: arbitrary
-          *(i32*)e->data.input.value += increment;
-        }
-        break;
+      e->onmodify(e);
+      if (e->data.input.callback) {
+        e->data.input.callback(&e->data.input);
       }
-      default:
-        break;
     }
   }
   i32 prev_cursor = ui->cursor;
@@ -1412,8 +1434,11 @@ void ui_scroll_container(Element* e, f32 ratio) {
   if (ui_container_is_scrollable(e)) {
     i32 content_height = e->data.container.content_height;
     i32 content_height_delta = content_height - e->box.h;
+    i32 prev_scroll = e->data.container.scroll_y;
     e->data.container.scroll_y = ratio * -content_height_delta;
-    ui->scrollbar_timer = 0;
+    if (prev_scroll != e->data.container.scroll_y) {
+      ui->scrollbar_timer = 0;
+    }
   }
 }
 
@@ -1953,6 +1978,8 @@ void ui_update_input(UI_state* ui, Element* e) {
   char ch = 0;
   bool mod_key = IsKeyDown(KEY_LEFT_CONTROL);
   i32 keycode = GetLastSoftKeyCode();
+  bool paste = false;
+
   for (;;) {
 #ifdef TARGET_ANDROID
     ch = GetLastSoftKeyChar();
@@ -1963,11 +1990,12 @@ void ui_update_input(UI_state* ui, Element* e) {
     ch = GetCharPressed();
 #endif
     const char* clipboard = NULL;
-    bool paste = mod_key && IsKeyPressed(KEY_V);
+    paste = mod_key && IsKeyPressed(KEY_V);
     size_t num_keys_pressed = 1;
     if (paste) {
       clipboard = GetClipboardText();
       if (!clipboard) {
+        paste = false;
         break;
       }
       num_keys_pressed = strlen(clipboard);
@@ -2046,7 +2074,7 @@ void ui_update_input(UI_state* ui, Element* e) {
       e->data.input.cursor = buffer->count;
     }
   }
-  if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || keycode == 66) {
+  if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || keycode == 66 || paste) {
     if (e->data.input.value != NULL) {
       Buffer* buffer = &e->data.input.buffer;
       switch (e->data.input.value_type) {
@@ -2065,7 +2093,7 @@ void ui_update_input(UI_state* ui, Element* e) {
       }
     }
     ui->input = NULL;
-    e->onenter(e);
+    e->onmodify(e);
     if (e->data.input.callback) {
       e->data.input.callback(&e->data.input);
     }

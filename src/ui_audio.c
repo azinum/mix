@@ -74,16 +74,23 @@ Result ui_audio_load_sample(const char* path, Audio_source* source) {
 }
 
 Element ui_audio_canvas(const char* title, i32 height, Audio_source* source, bool drawable) {
+  return ui_audio_canvas_ex(title, height, source, drawable, NULL);
+}
+
+Element ui_audio_canvas_ex(const char* title, i32 height, Audio_source* source, bool drawable, Element** canvas) {
   Element container = ui_container((char*)title);
   container.data.container.auto_adjust_height = true;
   source->drawable = drawable;
   {
     Element e = ui_canvas(true);
-    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, 100, height, };
+    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 100, .y = height, };
     e.userdata = source;
     e.onrender = ui_audio_render_sample;
     e.onhover = ui_audio_drag_and_drop_sample;
-    ui_attach_element(&container, &e);
+    Element* canvas_element = ui_attach_element(&container, &e);
+    if (canvas) {
+      *canvas = canvas_element;
+    }
   }
   return container;
 }
@@ -117,9 +124,9 @@ void ui_audio_render_curve(const f32* samples, const size_t count, Box box, Colo
   }
   if (render_cursor) {
     DrawLine(
-      x + width * (cursor/(f32)count),
+      box.x + width * (cursor/(f32)count),
       box.y,
-      x + width * (cursor/(f32)count),
+      box.x + width * (cursor/(f32)count),
       box.y + height,
       brighten_color(saturate_color(color, -0.3f), 0.2f)
     );

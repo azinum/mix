@@ -78,12 +78,12 @@ void control_panel_ui_new(Mix* mix, Element* container) {
   }
 #ifndef TARGET_ANDROID
   {
-    Element e = ui_text_ex("timed tick", false);
+    Element e = ui_text_ex("tick", false);
     e.box.h = button_height;
     ui_attach_element(rhs_container, &e);
   }
   {
-    Element e = ui_input_int("timed tick", (i32*)&mix->timed_tick);
+    Element e = ui_input_int("tick", (i32*)&mix->timed_tick);
     e.box.w = FONT_SIZE * 4;
     e.box.h = button_height;
     ui_attach_element(rhs_container, &e);
@@ -98,7 +98,7 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     e.box.w = FONT_SIZE * 4;
     e.box.h = button_height;
     e.tooltip = "changing the sample rate restarts the audio engine";
-    e.onenter = control_panel_change_audio_setting;
+    e.onmodify = control_panel_change_audio_setting;
     ui_attach_element(rhs_container, &e);
   }
 #endif

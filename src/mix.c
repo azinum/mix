@@ -40,6 +40,7 @@
 #include "noise.c"
 #include "audio_input.c"
 #include "basic_poly_synth.c"
+#include "tracker.c"
 // effects/filters
 #include "effect.c"
 #include "fx_clip_distortion.c"

@@ -10,6 +10,7 @@ Instrument instruments[MAX_INSTRUMENT_ID] = {
   DEFINE_INSTRUMENT(INSTRUMENT_NOISE, noise, "noise"),
   DEFINE_INSTRUMENT(INSTRUMENT_AUDIO_INPUT, audio_input, "audio input"),
   DEFINE_INSTRUMENT(INSTRUMENT_BASIC_POLY_SYNTH, basic_poly_synth, "basic poly synth"),
+  DEFINE_INSTRUMENT(INSTRUMENT_TRACKER, tracker, "tracker"),
 };
 
 void instrument_init_default(Instrument* ins) {
@@ -67,6 +68,7 @@ void instrument_ui_new(Instrument* ins, Element* container) {
   container->scissor = true;
   container->placement = PLACEMENT_BLOCK;
   container->background = true;
+  container->background_color = UI_BACKGROUND_COLOR;
   ins->ui_new(ins, container);
   ins->ui = container;
 }

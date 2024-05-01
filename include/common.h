@@ -118,7 +118,8 @@ const char* bool_str[] = { "false", "true" };
 #define Mb(n) (Kb(n * 1024))
 #define Gb(n) (Mb(n * 1024))
 
-#define PI32 3.14159265359f
+#define PI32  3.14159265359f
+#define TAU32 6.28318530717f
 
 #ifndef RANDOM_MAX
   #define RANDOM_MAX (u32)((~0-1) >> 1)

@@ -44,6 +44,7 @@ struct Mix;
 #define SUBTICKS 8
 
 #include "common.h"
+#include "flags.h"
 #include "platform.h"
 #include "memory.h"
 #include "thread.h"
@@ -69,6 +70,7 @@ struct Mix;
 #include "noise.h"
 #include "audio_input.h"
 #include "basic_poly_synth.h"
+#include "tracker.h"
 // effects/filters
 #include "effect.h"
 #include "fx_clip_distortion.h"

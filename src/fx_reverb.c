@@ -267,7 +267,7 @@ void fx_reverb_ui_new(Instrument* ins, Element* container) {
     Element e = ui_input_int("model seed", &reverb->model_seed);
     e.sizing = SIZING_PERCENT(50, 0);
     e.box.h = button_height;
-    e.onenter = update_model_seed;
+    e.onmodify = update_model_seed;
     e.userdata = reverb;
     ui_attach_element(container, &e);
   }

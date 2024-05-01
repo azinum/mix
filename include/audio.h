@@ -13,7 +13,7 @@
 
 #define RECORD_BUFFER_LENGTH_SECS (MINUTES(10))
 
-// convert from milliseconds to number of samples, based on the channel rate and channel count
+// convert from milliseconds to number of samples, based on the sample rate and channel count
 #define MS_TO_SAMPLES(sample_rate, channels, ms) ((sample_rate) * ((ms / 1000.0f) * channels))
 #define SECS_TO_SAMPLES(sample_rate, channels, seconds) (MS_TO_SAMPLES(sample_rate, channels, seconds * 1000.0f))
 
@@ -64,6 +64,7 @@ void audio_unload_audio(Audio_source* source);
 void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples);
 Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, const u32 channel_count);
 void audio_source_copy(Audio_source* dest, Audio_source* source); // basic copy, but keeps the mutex from source as is
+Audio_source audio_source_empty(void);
 f32 audio_calc_rms(f32* buffer, size_t size);
 f32 audio_calc_rms_clamp(f32* buffer, size_t size);
 Result audio_engine_process(const void* in, void* out, i32 frames);

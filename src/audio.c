@@ -201,6 +201,7 @@ void audio_unload_audio(Audio_source* source) {
   if (source->internal) {
     return;
   }
+  ticket_mutex_begin(&source->mutex);
   memory_free(source->buffer);
   source->buffer = NULL;
   source->samples = 0;
@@ -208,6 +209,7 @@ void audio_unload_audio(Audio_source* source) {
   source->ready = false;
   source->drawable = false;
   source->cursor = 0;
+  ticket_mutex_end(&source->mutex);
 }
 
 void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples) {
@@ -247,6 +249,20 @@ void audio_source_copy(Audio_source* dest, Audio_source* source) {
   dest->mutex = ticket;
   dest->drawable = drawable;
   dest->cursor = 0;
+}
+
+Audio_source audio_source_empty(void) {
+  Audio_source source = (Audio_source) {
+    .buffer = NULL,
+    .samples = 0,
+    .channel_count = 0,
+    .ready = true,
+    .internal = true,
+    .drawable = true,
+    .cursor = 0,
+    .mutex = ticket_mutex_new()
+  };
+  return source;
 }
 
 f32 audio_calc_rms(f32* buffer, size_t size) {
