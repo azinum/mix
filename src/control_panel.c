@@ -130,4 +130,23 @@ void control_panel_ui_new(Mix* mix, Element* container) {
     ui_attach_element(rhs_container, &e);
   }
 #endif
+  ui_attach_element_v2(rhs_container, ui_line_break(0));
+  {
+    Element e = ui_button("?");
+    e.readonly = true;
+    e.background_color = lerp_color(UI_BUTTON_COLOR, COLOR_RGB(127, 127, 127), 0.4f);
+    e.box = BOX(0, 0, button_height, button_height);
+    e.tooltip =
+      "CONTROLS\n\n"
+      "spacebar           - play/pause\n"
+      "number keys/numpad - change menu\n"
+      "ctrl + spacebar    - stop\n"
+      "ctrl + c           - copy (when hovering input elements)\n"
+      "ctrl + v           - paste (when hovering input elements)\n"
+      "ctrl + scroll      - increment/decrement\n    value (when hovering input or slider elements)\n"
+      "ctrl + f           - zoom/unzoom\n"
+      "escape             - unzoom (if zoomed), otherwise switch\n    to default menu"
+    ;
+    ui_attach_element(rhs_container, &e);
+  }
 }
