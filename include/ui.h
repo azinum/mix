@@ -83,6 +83,7 @@ typedef enum Value_type {
   VALUE_TYPE_NONE = 0,
   VALUE_TYPE_FLOAT,
   VALUE_TYPE_INTEGER,
+  VALUE_TYPE_STRING,
 
   MAX_VALUE_TYPE,
 } Value_type;
@@ -117,6 +118,7 @@ typedef struct Input {
   Hash value_hash; // hash the current value to detect changes, update the buffer if a change is detected
   void* value;
   void (*callback)(struct Input*);
+  u32 max_length;
 } Input;
 
 typedef enum Slider_type {
@@ -364,5 +366,6 @@ Element ui_input_ex(char* preview, Input_type input_type);
 Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type);
 Element ui_input_int(char* preview, i32* value);
 Element ui_input_float(char* preview, f32* value);
+Element ui_input_text(char* preview, char* str, u32 max_length);
 
 #endif // _UI_H

@@ -245,6 +245,16 @@ void ui_update_elements(UI_state* ui, Element* e) {
           e->data.input.cursor = e->data.input.buffer.count;
         }
       }
+      else if (e->data.input.input_type == INPUT_TEXT && e->data.input.value) {
+        u32 max_length = e->data.input.max_length;
+        Hash hash = ui_hash(e->data.input.value, max_length);
+        if (hash != e->data.input.value_hash && ui->input != e) {
+          u32 length = strnlen(e->data.input.value, max_length);
+          e->data.input.value_hash = hash;
+          buffer_from_fmt(&e->data.input.buffer, max_length, "%.*s", (i32)length, (char*)e->data.input.value);
+          e->data.input.cursor = e->data.input.buffer.count;
+        }
+      }
       break;
     }
     default:
@@ -1742,6 +1752,12 @@ Element ui_input_float(char* preview, f32* value) {
   return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_FLOAT);
 }
 
+Element ui_input_text(char* preview, char* str, u32 max_length) {
+  Element e = ui_input_ex2(preview, str, INPUT_TEXT, VALUE_TYPE_STRING);
+  e.data.input.max_length = max_length;
+  return e;
+}
+
 void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
   stb_dprintf(fd, "{\n");
   level += 1;
@@ -2086,6 +2102,13 @@ void ui_update_input(UI_state* ui, Element* e) {
         case VALUE_TYPE_INTEGER: {
           i32* value = (i32*)e->data.input.value;
           *value = buffer_to_int(buffer);
+          break;
+        }
+        case VALUE_TYPE_STRING: {
+          u32 length = CLAMP((i32)buffer->count, 0, (i32)e->data.input.max_length);
+          if (length > 0) {
+            strncpy((char*)e->data.input.value, (char*)buffer->data, length);
+          }
           break;
         }
         default:

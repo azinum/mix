@@ -13,12 +13,15 @@ typedef enum {
   MAX_SAMPLE_STATE,
 } Sample_state;
 
+#define TRACKER_SOURCE_NAME_LENGTH 24
+
 typedef struct Tracker_source {
   Audio_source source;
   struct {
     i32 start;
     i32 length;
     i32 pingpong;
+    char name[TRACKER_SOURCE_NAME_LENGTH];
   } settings;
 } Tracker_source;
 
@@ -93,6 +96,12 @@ static void paste_pattern(Element* e);
 void tracker_default(Tracker* tracker) {
   Tracker_source source = (Tracker_source) {
     .source = audio_source_empty(),
+    .settings = {
+      .start  = 0,
+      .length = 0,
+      .pingpong = 0,
+      .name = {0},
+    },
   };
   for (size_t i = 0; i < MAX_AUDIO_SOURCE; ++i) {
     tracker->sources[i] = source;
@@ -368,6 +377,18 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     Element e = ui_line_break(2);
     e.render = e.background = true;
     e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.4f);
+    ui_attach_element(canvas, &e);
+  }
+  {
+    Element e = ui_text("name");
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(canvas, &e);
+  }
+  {
+    Element e = ui_input_text("name", (char*)&tracker->source.settings.name[0], TRACKER_SOURCE_NAME_LENGTH);
+    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 65, .y = line_height, };
+    e.userdata = tracker;
+    e.onmodify = modify_source_setting;
     ui_attach_element(canvas, &e);
   }
   {
