@@ -6,6 +6,7 @@
 
 static void control_panel_render_waveform(Element* e);
 static void control_panel_change_audio_setting(Element* e);
+static void control_panel_stop(Element* e);
 
 static void control_panel_render_waveform(Element* e) {
   TIMER_START();
@@ -22,6 +23,11 @@ static void control_panel_render_waveform(Element* e) {
 void control_panel_change_audio_setting(Element* e) {
   (void)e;
   audio_engine_restart();
+}
+
+void control_panel_stop(Element* e) {
+  (void)e;
+  mix_stop();
 }
 
 void control_panel_ui_new(Mix* mix, Element* container) {
@@ -105,6 +111,13 @@ void control_panel_ui_new(Mix* mix, Element* container) {
   {
     Element e = ui_toggle_ex2(&mix->paused, "pause", "play");
     e.box = BOX(0, 0, FONT_SIZE * 7, button_height);
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_button("stop");
+    e.box = BOX(0, 0, FONT_SIZE * 7, button_height);
+    e.background_color = lerp_color(UI_BUTTON_COLOR, COLOR_RGB(175, 80, 85), 0.3f);
+    e.onclick = control_panel_stop;
     ui_attach_element(rhs_container, &e);
   }
 #ifndef NO_RECORD_BUFFER

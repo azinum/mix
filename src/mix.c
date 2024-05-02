@@ -127,7 +127,7 @@ i32 mix_main(i32 argc, char** argv) {
 
     const f32 bps = 60.0f / mix->bpm;
     f32 timestamp = (bps / SUBTICKS);
-    if (mix->timer >= timestamp) {
+    if (mix->timer >= timestamp && !mix->paused) {
       f32 delta = mix->timer - timestamp;
       mix->timed_tick += 1;
       mix->tick_delta = delta;
@@ -168,6 +168,17 @@ void mix_send_midi_event(Midi_event event) {
   if (mix->midi_event_count < MAX_MIDI_EVENTS) {
     mix->midi_events[mix->midi_event_count++] = event;
   }
+}
+
+void mix_pause(void) {
+  Mix* mix = &mix_state;
+  mix->paused = true;
+}
+
+void mix_stop(void) {
+  Mix* mix = &mix_state;
+  mix_pause();
+  mix->tick = mix->timed_tick = 0;
 }
 
 void mix_update_and_render(Mix* mix) {
@@ -212,27 +223,32 @@ void mix_update_and_render(Mix* mix) {
       if (IsKeyPressed(KEY_M)) {
         memory_print_info(STDOUT_FILENO);
       }
+      if (IsKeyPressed(KEY_SPACE)) {
+        mix_stop();
+      }
     }
-    if (IsKeyPressed(KEY_SPACE)) {
-      mix->paused = !mix->paused;
-    }
-    if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_ONE)) {
-      ui_switch_state(0);
-    }
-    if (IsKeyPressed(KEY_KP_2) || IsKeyPressed(KEY_TWO)) {
-      ui_switch_state(1);
-    }
-    if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_THREE)) {
-      ui_switch_state(2);
-    }
-    if (IsKeyPressed(KEY_KP_4) || IsKeyPressed(KEY_FOUR)) {
-      ui_switch_state(3);
-    }
-    if (IsKeyPressed(KEY_KP_5) || IsKeyPressed(KEY_FIVE)) {
-      ui_switch_state(4);
-    }
-    if (IsKeyPressed(KEY_TAB)) {
-      ui_switch_state(ui_get_current_tag() + 1);
+    else {
+      if (IsKeyPressed(KEY_SPACE)) {
+        mix->paused = !mix->paused;
+      }
+      if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_ONE)) {
+        ui_switch_state(0);
+      }
+      if (IsKeyPressed(KEY_KP_2) || IsKeyPressed(KEY_TWO)) {
+        ui_switch_state(1);
+      }
+      if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_THREE)) {
+        ui_switch_state(2);
+      }
+      if (IsKeyPressed(KEY_KP_4) || IsKeyPressed(KEY_FOUR)) {
+        ui_switch_state(3);
+      }
+      if (IsKeyPressed(KEY_KP_5) || IsKeyPressed(KEY_FIVE)) {
+        ui_switch_state(4);
+      }
+      if (IsKeyPressed(KEY_TAB)) {
+        ui_switch_state(ui_get_current_tag() + 1);
+      }
     }
   }
   instrument_update(&audio->instrument, mix);
