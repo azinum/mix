@@ -81,7 +81,6 @@ static void increment_source_id(Element* e);
 static void change_source_id(Tracker* tracker);
 static void load_source(Tracker* tracker);
 static void save_source(Tracker* tracker);
-static void load_source_onclick(Element* e);
 static void save_source_onclick(Element* e);
 static void modify_source_id(Element* e);
 static void modify_source_setting(Element* e);
@@ -243,11 +242,6 @@ void save_source(Tracker* tracker) {
   dest->settings = src_copy.settings;
 }
 
-void load_source_onclick(Element* e) {
-  Tracker* tracker = (Tracker*)e->userdata;
-  load_source(tracker);
-}
-
 void save_source_onclick(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   save_source(tracker);
@@ -364,14 +358,6 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.onclick = save_source_onclick;
     ui_attach_element(canvas, &e);
   }
-  // {
-  //   Element e = ui_button("load");
-  //   e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 50, .y = line_height, };
-  //   e.userdata = tracker;
-  //   e.onclick = load_source_onclick;
-  //   ui_attach_element(canvas, &e);
-  // }
-  (void)load_source_onclick;
 
   {
     Element e = ui_line_break(2);
@@ -514,6 +500,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.onupdate = tracker_editor_update;
     inner = ui_attach_element(&outer, &e);
   }
+  const i32 subdivision = 4;
   for (size_t row_index = 0; row_index < MAX_TRACKER_ROW; ++row_index) {
     {
       Element e = ui_input_int(NULL, &tracker->pattern.channels[0].rows[row_index].id);
@@ -531,6 +518,11 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     {
       Element e = ui_none();
       e.box = BOX(0, 0, line_height, line_height);
+      if (!(row_index % subdivision)) {
+        e.render = true;
+        e.background = true;
+        e.background_color = lerp_color(UI_BACKGROUND_COLOR, invert_color(UI_INTERPOLATION_COLOR), 0.35f);
+      }
       ui_attach_element(inner, &e);
     }
     for (size_t channel_index = 0; channel_index < MAX_TRACKER_CHANNELS; ++channel_index) {
@@ -561,6 +553,11 @@ void tracker_ui_new(Instrument* ins, Element* container) {
       {
         Element e = ui_none();
         e.box = BOX(0, 0, line_height * 2, line_height);
+        if (!(row_index % subdivision)) {
+          e.render = true;
+          e.background = true;
+          e.background_color = lerp_color(UI_BACKGROUND_COLOR, invert_color(UI_INTERPOLATION_COLOR), 0.35f);
+        }
         ui_attach_element(inner, &e);
       }
     }
