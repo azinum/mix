@@ -2,9 +2,9 @@
 
 main_background_color   = "121212"
 ui_background_color     = "181818"
-ui_border_color         = "020202"
+ui_border_color         = "383838"
 ui_button_color         = "405075"
-ui_text_color           = "f0f0f0"
+ui_text_color           = "fefefe"
 ui_focus_color          = "b0b0b0"
 ui_title_bar_color      = "202027"
 ui_interpolation_color  = "ffffff"
