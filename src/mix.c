@@ -267,13 +267,13 @@ void mix_update_and_render(Mix* mix) {
       debug_text,
       sizeof(debug_text),
       "%zu/%zu bytes (%.2g %%)\n"
-      "%.2g ms ui latency\n"
+      "%.2g ms ui latency (rendering)\n"
       "%u/%u ui element updates\n"
       "%.2g/%.2g ms audio latency (%zu samples)"
       ,
       memory_state.usage, memory_state.max_usage,
       100 * ((f32)memory_state.usage / memory_state.max_usage),
-      1000 * ui_state.latency,
+      1000 * ui_state.render_latency,
       ui_state.element_update_count,
       ui_state.element_count,
       audio->dt * 1000,

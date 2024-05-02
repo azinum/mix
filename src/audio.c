@@ -367,7 +367,7 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
   // write to output buffer and calculate RMS (root mean square)
   for (i32 i = 0; i < sample_count; ++i) {
     f32 sample = audio->out_buffer[i];
-    buffer[i] = sample;
+    buffer[i] = CLAMP(sample, -1, 1);
     db += sample * sample;
   }
   audio->db = sqrtf(db / (f32)sample_count);
@@ -378,7 +378,11 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
     for (i32 i = 0; i < sample_count; ++i) {
       size_t index = audio->record_buffer_index;
       audio->record_buffer[index] = (i16)(audio->out_buffer[i] * INT16_MAX);
-      audio->record_buffer_index = (audio->record_buffer_index + 1) % audio->record_buffer_size;
+      audio->record_buffer_index += 1;
+      if (audio->record_buffer_index >= audio->record_buffer_size) {
+        audio->recording = false;
+        break;
+      }
     }
   }
 #endif

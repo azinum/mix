@@ -267,7 +267,7 @@ void ui_update_container(UI_state* ui, Element* e) {
 
   // placement offsets
   i32 px = 0;
-  i32 py = scroll_y;
+  i32 py = scroll_y + e->y_padding;
   // block placement offsets
   i32 py_offset = 0; // element with the greatest height
 
@@ -1699,7 +1699,7 @@ Element ui_input(char* preview) {
   e.background = true;
   e.border = true;
   e.scissor = false;
-  e.roundness = UI_BUTTON_ROUNDNESS;
+  e.roundness = UI_ROUNDNESS;
   e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
   return e;
 }

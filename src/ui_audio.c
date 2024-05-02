@@ -87,6 +87,7 @@ Element ui_audio_canvas_ex(const char* title, i32 height, Audio_source* source, 
     e.userdata = source;
     e.onrender = ui_audio_render_sample;
     e.onhover = ui_audio_drag_and_drop_sample;
+    e.tooltip = "drag and drop audio file here";
     Element* canvas_element = ui_attach_element(&container, &e);
     if (canvas) {
       *canvas = canvas_element;
