@@ -124,6 +124,7 @@ void mix_assets_load(void);
 void mix_assets_unload(void);
 void mix_send_midi_event(Midi_event event);
 void mix_pause(void);
+void mix_play(void);
 void mix_stop(void);
 
 #endif // _MIX_H

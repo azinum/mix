@@ -236,6 +236,7 @@ void tracker_add_pattern_in_song(Tracker* tracker) {
   song->length = CLAMP(song->length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
 
   const i32 line_height = FONT_SIZE + UI_Y_PADDING / 2;
+  song->pattern_sequence[song->length] = tracker->pattern_id;
   Element e = ui_input_int("pattern id", &song->pattern_sequence[song->length]);
   e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .x = 100, .y_mode = SIZE_MODE_PIXELS, .y = line_height, };
   e.v.i = song->length;
@@ -503,6 +504,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PIXELS(input_width, line_height);
     e.userdata = tracker;
     e.onclick = add_pattern_in_song;
+    e.tooltip = "add current pattern to song sequence";
     ui_attach_element(tracker->song_editor, &e);
   }
   {

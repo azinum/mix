@@ -178,6 +178,11 @@ void mix_pause(void) {
   mix->paused = true;
 }
 
+void mix_play(void) {
+  Mix* mix = &mix_state;
+  mix->paused = false;
+}
+
 void mix_stop(void) {
   Mix* mix = &mix_state;
   mix_pause();
