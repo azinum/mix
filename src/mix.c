@@ -142,6 +142,9 @@ i32 mix_main(i32 argc, char** argv) {
   }
   config_free();
   mix_free(mix);
+  if (memory_state.usage != 0) {
+    log_print(STDERR_FILENO, LOG_TAG_ERROR, "memory leak (%zu Kb)\n", memory_state.usage / Kb(1));
+  }
   return EXIT_SUCCESS;
 }
 

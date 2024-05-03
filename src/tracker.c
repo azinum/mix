@@ -1,9 +1,13 @@
 // tracker.c
+// TODO:
+//  - fix memory leak
+//  - fix saving/loading of patterns when paused
 
 #define MAX_AUDIO_SOURCE 128
 #define MAX_TRACKER_ROW 32
 #define MAX_TRACKER_CHANNELS 8
 #define MAX_PATTERN 128
+#define MAX_SONG_PATTERN_SEQUENCE 180
 
 #define ROOT_NOTE 24
 
@@ -44,6 +48,12 @@ typedef struct Pattern {
   bool dirty;
 } Pattern;
 
+typedef struct Song {
+  i32 pattern_sequence[MAX_SONG_PATTERN_SEQUENCE];
+  i32 length;
+  i32 index;
+} Song;
+
 typedef struct Tracker {
   Tracker_source sources[MAX_AUDIO_SOURCE];
   Tracker_source source; // current editable source
@@ -53,12 +63,16 @@ typedef struct Tracker {
   size_t prev_tick;
   size_t active_row;
   i32 follow_pattern;
+  i32 loop_pattern;
 
   Pattern patterns[MAX_PATTERN];
   Pattern pattern;
   Pattern pattern_copy;
   i32 pattern_id;
   i32 prev_pattern_id;
+
+  Song song;
+  Element* song_editor;
 
   Color background_color;
   Color highlight_color;
@@ -71,11 +85,16 @@ static void tracker_default(Tracker* tracker);
 static void tracker_channel_init(Tracker_channel* channel);
 static void tracker_pattern_init(Pattern* pattern);
 static void tracker_patterns_init(Tracker* tracker);
+static void tracker_song_init(Song* song);
 static void tracker_row_update(Element* e);
 static void tracker_sample_input_update(Element* e);
 static void tracker_editor_update(Element* e);
 static void tracker_copy_pattern(Tracker* tracker);
 static void tracker_paste_pattern(Tracker* tracker);
+static void tracker_add_pattern_in_song(Tracker* tracker);
+static void add_pattern_in_song(Element* e);
+static void modify_song_index(Element* e);
+static void song_pattern_row_update(Element* e);
 static void decrement_source_id(Element* e);
 static void increment_source_id(Element* e);
 static void change_source_id(Tracker* tracker);
@@ -86,6 +105,8 @@ static void modify_source_id(Element* e);
 static void modify_source_setting(Element* e);
 static void decrement_pattern_id(Element* e);
 static void increment_pattern_id(Element* e);
+static void modify_pattern_id(Element* e);
+static void change_pattern_id(Tracker* tracker);
 static void modify_item_in_pattern_editor(Element* e);
 static void load_pattern(Tracker* tracker);
 static void save_pattern(Tracker* tracker);
@@ -111,11 +132,15 @@ void tracker_default(Tracker* tracker) {
   tracker->tick = 0;
   tracker->prev_tick = 0;
   tracker->active_row = 0;
-  tracker->follow_pattern = 0;
+  tracker->follow_pattern = false;
+  tracker->loop_pattern = true;
 
   tracker_patterns_init(tracker);
   tracker->pattern_id = 0;
   tracker->prev_pattern_id = 0;
+
+  tracker_song_init(&tracker->song);
+  tracker->song_editor = NULL;
 
   tracker->background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
   tracker->highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, -0.1f), 0.2f);
@@ -149,6 +174,12 @@ void tracker_patterns_init(Tracker* tracker) {
   for (size_t i = 0; i < MAX_PATTERN; ++i) {
     tracker_pattern_init(&tracker->patterns[i]);
   }
+}
+
+void tracker_song_init(Song* song) {
+  memset(song->pattern_sequence, 0, sizeof(song->pattern_sequence));
+  song->length = 0;
+  song->index = 0;
 }
 
 void tracker_row_update(Element* e) {
@@ -196,6 +227,45 @@ void tracker_copy_pattern(Tracker* tracker) {
 void tracker_paste_pattern(Tracker* tracker) {
   memcpy(&tracker->pattern, &tracker->pattern_copy, sizeof(Pattern));
   tracker->pattern.dirty = true;
+}
+
+void tracker_add_pattern_in_song(Tracker* tracker) {
+  ASSERT(tracker->song_editor);
+  Song* song = &tracker->song;
+  song->index = (u32)song->index % MAX_SONG_PATTERN_SEQUENCE;
+  song->length = CLAMP(song->length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
+
+  const i32 line_height = FONT_SIZE + UI_Y_PADDING / 2;
+  Element e = ui_input_int("pattern id", &song->pattern_sequence[song->length]);
+  e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .x = 100, .y_mode = SIZE_MODE_PIXELS, .y = line_height, };
+  e.v.i = song->length;
+  e.userdata = tracker;
+  e.onupdate = song_pattern_row_update;
+  ui_attach_element(tracker->song_editor, &e);
+  song->length += 1;
+  song->length = CLAMP(song->length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
+}
+
+void add_pattern_in_song(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker_add_pattern_in_song(tracker);
+}
+
+void modify_song_index(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker->song.index = (u32)tracker->song.index % MAX_SONG_PATTERN_SEQUENCE;
+  tracker->song.length = CLAMP(tracker->song.length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
+}
+
+void song_pattern_row_update(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  Song* song = &tracker->song;
+  if ((e->v.i % MAX_SONG_PATTERN_SEQUENCE) == song->index) {
+    e->background_color = tracker->highlight_color;
+  }
+  else {
+    e->background_color = tracker->background_color;
+  }
 }
 
 void decrement_source_id(Element* e) {
@@ -263,11 +333,21 @@ void decrement_pattern_id(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   tracker->pattern_id -= 1;
   tracker->pattern_id = (u32)tracker->pattern_id % MAX_PATTERN;
+  change_pattern_id(tracker);
 }
 
 void increment_pattern_id(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   tracker->pattern_id += 1;
+  change_pattern_id(tracker);
+}
+
+void modify_pattern_id(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  change_pattern_id(tracker);
+}
+
+void change_pattern_id(Tracker* tracker) {
   tracker->pattern_id = (u32)tracker->pattern_id % MAX_PATTERN;
 }
 
@@ -311,7 +391,6 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   Tracker* tracker = (Tracker*)ins->userdata;
   const i32 input_width = FONT_SIZE + UI_X_PADDING / 2;
   const i32 line_height = FONT_SIZE + UI_Y_PADDING / 2;
-  const i32 audio_source_width = 320;
   const i32 audio_source_height = 180;
   container->background_color = lerp_color(UI_BACKGROUND_COLOR, COLOR_RGB(255, 25, 255), 0.08f);
 
@@ -319,8 +398,8 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   Element audio_canvas = ui_audio_canvas("sample editor", audio_source_height, &tracker->source.source, false);
   audio_canvas.border = true;
   audio_canvas.background = true;
-  audio_canvas.sizing.x_mode = SIZE_MODE_PIXELS;
-  audio_canvas.sizing.x = audio_source_width;
+  audio_canvas.sizing.x_mode = SIZE_MODE_PERCENT;
+  audio_canvas.sizing.x = 50;
 
   Element* canvas = ui_attach_element(container, &audio_canvas);
 
@@ -411,7 +490,38 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(canvas, &e);
   }
 
-  ui_attach_element_v2(container, ui_line_break(0));
+  // song editor/pattern sequencer
+
+  Element song_container = ui_container("song editor");
+  song_container.background = true;
+  song_container.border = true;
+  song_container.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 50, .y = 2 * audio_source_height, };
+  tracker->song_editor = ui_attach_element(container, &song_container);
+
+  {
+    Element e = ui_button("+");
+    e.sizing = SIZING_PIXELS(input_width, line_height);
+    e.userdata = tracker;
+    e.onclick = add_pattern_in_song;
+    ui_attach_element(tracker->song_editor, &e);
+  }
+  {
+    Element e = ui_input_int("index", &tracker->song.index);
+    e.sizing = SIZING_PIXELS(input_width * 3, line_height);
+    e.userdata = tracker;
+    e.onmodify = modify_song_index;
+    ui_attach_element(tracker->song_editor, &e);
+  }
+  {
+    Element e = ui_line_break(2);
+    e.render = e.background = true;
+    e.background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.4f);
+    ui_attach_element(tracker->song_editor, &e);
+  }
+
+  // pattern list here
+
+  tracker_add_pattern_in_song(tracker);
 
   Element outer = ui_container(NULL);
   outer.background = false;
@@ -440,6 +550,8 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   {
     Element e = ui_input_int("pattern id", &tracker->pattern_id);
     e.sizing = SIZING_PIXELS(input_width * 2, line_height);
+    e.userdata = tracker;
+    e.onmodify = modify_pattern_id;
     ui_attach_element(&settings, &e);
   }
   {
@@ -472,14 +584,18 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   }
 
   ui_attach_element_v2(&settings, ui_line_break(0));
-#if 1
   {
     Element e = ui_toggle_ex(&tracker->follow_pattern, "follow");
     e.sizing = SIZING_PIXELS(input_width * 4, line_height);
     e.tooltip = "follow pattern editor cursor";
     ui_attach_element(&settings, &e);
   }
-#endif
+  {
+    Element e = ui_toggle_ex(&tracker->loop_pattern, "loop");
+    e.sizing = SIZING_PIXELS(input_width * 4, line_height);
+    e.tooltip = "loop current pattern";
+    ui_attach_element(&settings, &e);
+  }
 
   ui_attach_element(&outer, &settings);
 
@@ -574,16 +690,25 @@ void tracker_update(Instrument* ins, Mix* mix) {
   tracker->tick = mix->timed_tick;
   tracker->active_row = tracker->tick % MAX_TRACKER_ROW;
 
-  if (tracker->prev_pattern_id != tracker->pattern_id) {
-    i32 pattern_id = tracker->pattern_id;
-    tracker->pattern_id = tracker->prev_pattern_id;
-    save_pattern(tracker);
-    tracker->pattern_id = pattern_id;
-    load_pattern(tracker);
-  }
-  tracker->prev_pattern_id = tracker->pattern_id;
+  Song* song = &tracker->song;
 
   if (tracker->prev_tick != tracker->tick) {
+    if ((tracker->tick % MAX_TRACKER_ROW) == 0 && !tracker->loop_pattern) {
+      song->index += 1;
+      song->index = ((u32)song->index % MAX_SONG_PATTERN_SEQUENCE) % song->length;
+      tracker->pattern_id = song->pattern_sequence[song->index];
+      change_pattern_id(tracker);
+    }
+
+    if (tracker->prev_pattern_id != tracker->pattern_id) {
+      i32 pattern_id = tracker->pattern_id;
+      tracker->pattern_id = tracker->prev_pattern_id;
+      save_pattern(tracker);
+      tracker->pattern_id = pattern_id;
+      load_pattern(tracker);
+    }
+
+    tracker->prev_pattern_id = tracker->pattern_id;
     for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
       Tracker_channel* channel = &tracker->pattern.channels[i];
       Tracker_row* row = &channel->rows[tracker->active_row];
@@ -595,7 +720,12 @@ void tracker_update(Instrument* ins, Mix* mix) {
           freq = -row->note / 100.0f;
         }
         channel->freq = freq / base_freq;
-        channel->sample_index = src->settings.start;
+        if (src->source.samples > 0) {
+          channel->sample_index = src->settings.start % src->source.samples;
+        }
+        else {
+          channel->sample_index = src->settings.start;
+        }
         channel->state = SAMPLE_STATE_PLAY;
         channel->active_row = row;
       }
@@ -710,3 +840,5 @@ void tracker_destroy(Instrument* ins) {
 #undef MAX_TRACKER_ROW
 #undef MAX_TRACKER_CHANNELS
 #undef MAX_PATTERN
+#undef MAX_SONG_PATTERN_SEQUENCE
+#undef ROOT_NOTE
