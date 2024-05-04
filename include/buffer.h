@@ -13,6 +13,8 @@ Buffer buffer_new(size_t size);
 Buffer buffer_new_from_str(const char* str);
 Buffer buffer_new_from_fmt(size_t size, const char* fmt, ...);
 i32 buffer_to_int(Buffer* buffer);
+i16 buffer_to_int16(Buffer* buffer);
+i8 buffer_to_int8(Buffer* buffer);
 f32 buffer_to_float(Buffer* buffer);
 void buffer_from_fmt(Buffer* buffer, size_t size, const char* fmt, ...);
 void buffer_reset(Buffer* buffer);

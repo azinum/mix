@@ -82,11 +82,22 @@ const char* element_type_str[] = {
 typedef enum Value_type {
   VALUE_TYPE_NONE = 0,
   VALUE_TYPE_FLOAT,
-  VALUE_TYPE_INTEGER,
+  VALUE_TYPE_INT32,
+  VALUE_TYPE_INT16,
+  VALUE_TYPE_INT8,
   VALUE_TYPE_STRING,
 
   MAX_VALUE_TYPE,
 } Value_type;
+
+const size_t value_type_size[MAX_VALUE_TYPE] = {
+  [VALUE_TYPE_NONE]   = 0,
+  [VALUE_TYPE_FLOAT]  = sizeof(f32),
+  [VALUE_TYPE_INT32]  = sizeof(i32),
+  [VALUE_TYPE_INT16]  = sizeof(i16),
+  [VALUE_TYPE_INT8]   = sizeof(i8),
+  [VALUE_TYPE_STRING] = 0,
+};
 
 typedef union {
   struct {
@@ -365,6 +376,8 @@ Element ui_input(char* preview);
 Element ui_input_ex(char* preview, Input_type input_type);
 Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_type value_type);
 Element ui_input_int(char* preview, i32* value);
+Element ui_input_int16(char* preview, i16* value);
+Element ui_input_int8(char* preview, i8* value);
 Element ui_input_float(char* preview, f32* value);
 Element ui_input_text(char* preview, char* str, u32 max_length);
 

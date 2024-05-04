@@ -42,6 +42,22 @@ i32 buffer_to_int(Buffer* buffer) {
   return value;
 }
 
+i16 buffer_to_int16(Buffer* buffer) {
+  i16 value = 0;
+  if (buffer->count > 0) {
+    sscanf((char*)buffer->data, "%hd", &value);
+  }
+  return value;
+}
+
+i8 buffer_to_int8(Buffer* buffer) {
+  i8 value = 0;
+  if (buffer->count > 0) {
+    sscanf((char*)buffer->data, "%hhd", &value);
+  }
+  return value;
+}
+
 f32 buffer_to_float(Buffer* buffer) {
   f32 value = 0.0f;
   if (buffer->count > 0) {

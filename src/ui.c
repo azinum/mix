@@ -211,32 +211,28 @@ void ui_update_elements(UI_state* ui, Element* e) {
     }
     case ELEMENT_INPUT: {
       if (e->data.input.input_type == INPUT_NUMBER && e->data.input.value) {
-        size_t size = 0;
-        switch (e->data.input.value_type) {
-          case VALUE_TYPE_FLOAT: {
-            size = sizeof(f32);
-            break;
-          }
-          case VALUE_TYPE_INTEGER: {
-            size = sizeof(i32);
-            break;
-          }
-          default: {
-            ASSERT(!"invalid numerical value type of input element");
-            break;
-          }
-        }
+        Value_type value_type = e->data.input.value_type;
+        ASSERT(value_type >= 0 && value_type < MAX_VALUE_TYPE);
+        size_t size = value_type_size[value_type];
         Hash hash = ui_hash(e->data.input.value, size);
         if (hash != e->data.input.value_hash && ui->input != e) {
           e->data.input.value_hash = hash;
-          switch (e->data.input.value_type) {
+          switch (value_type) {
             case VALUE_TYPE_FLOAT: {
               f32 value = *(f32*)e->data.input.value;
               buffer_from_fmt(&e->data.input.buffer, 24, "%.7g", value);
               break;
             }
-            case VALUE_TYPE_INTEGER: {
+            case VALUE_TYPE_INT32: {
               buffer_from_fmt(&e->data.input.buffer, 24, "%d", *(i32*)e->data.input.value);
+              break;
+            }
+            case VALUE_TYPE_INT16: {
+              buffer_from_fmt(&e->data.input.buffer, 24, "%hd", *(i16*)e->data.input.value);
+              break;
+            }
+            case VALUE_TYPE_INT8: {
+              buffer_from_fmt(&e->data.input.buffer, 24, "%hhd", *(i16*)e->data.input.value);
               break;
             }
             default:
@@ -556,7 +552,7 @@ void ui_render_elements(UI_state* ui, Element* e) {
           factor = (*e->data.slider.v.f - range.f_min) / range_length;
           break;
         }
-        case VALUE_TYPE_INTEGER: {
+        case VALUE_TYPE_INT32: {
           i32 range_length = -(range.i_min - range.i_max);
           factor = (*e->data.slider.v.i - range.i_min) / (f32)range_length;
           break;
@@ -976,7 +972,7 @@ void ui_slider_onclick(UI_state* ui, struct Element* e) {
       *e->data.slider.v.f = value;
       break;
     }
-    case VALUE_TYPE_INTEGER: {
+    case VALUE_TYPE_INT32: {
       i32 value = (i32)lerp_f32(range.i_min, range.i_max, factor);
       if (factor - deadzone <= 0.0f) {
         value = range.i_min;
@@ -1242,7 +1238,7 @@ void ui_update(f32 dt) {
             f32 increment = (0.05f * (f_max - f_min)) * ui->scroll.y;
             *e->data.slider.v.f = CLAMP(*e->data.slider.v.f + increment, f_min, f_max);
           }
-          else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
+          else if (e->data.slider.type == VALUE_TYPE_INT32) {
             i32 i_min = e->data.slider.range.i_min;
             i32 i_max = e->data.slider.range.i_max;
             i32 increment = (0.05f * (i_max - i_min)) * ui->scroll.y;
@@ -1258,9 +1254,17 @@ void ui_update(f32 dt) {
             f32 increment = 0.1f * ui->scroll.y; // NOTE: arbitrary
             *(f32*)e->data.input.value += increment;
           }
-          else if (e->data.input.value_type == VALUE_TYPE_INTEGER) {
+          else if (e->data.input.value_type == VALUE_TYPE_INT32) {
             i32 increment = 1 * ui->scroll.y; // NOTE: arbitrary
             *(i32*)e->data.input.value += increment;
+          }
+          else if (e->data.input.value_type == VALUE_TYPE_INT16) {
+            i16 increment = 1 * ui->scroll.y; // NOTE: arbitrary
+            *(i16*)e->data.input.value += increment;
+          }
+          else if (e->data.input.value_type == VALUE_TYPE_INT8) {
+            i8 increment = 1 * ui->scroll.y; // NOTE: arbitrary
+            *(i8*)e->data.input.value += increment;
           }
           break;
         }
@@ -1658,7 +1662,7 @@ Element ui_slider(void* value, Value_type type, Range range) {
     case VALUE_TYPE_FLOAT:
       e.data.slider.v.f = (f32*)value;
       break;
-    case VALUE_TYPE_INTEGER:
+    case VALUE_TYPE_INT32:
       e.data.slider.v.i = (i32*)value;
       break;
     default:
@@ -1679,7 +1683,7 @@ Element ui_slider(void* value, Value_type type, Range range) {
 }
 
 Element ui_slider_int(i32* value, i32 min_value, i32 max_value) {
-  Element e = ui_slider(value, VALUE_TYPE_INTEGER, RANGE(min_value, max_value));
+  Element e = ui_slider(value, VALUE_TYPE_INT32, RANGE(min_value, max_value));
   return e;
 }
 
@@ -1726,15 +1730,22 @@ Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_ty
   Element e = ui_input_ex(preview, input_type);
   e.data.input.value_type = value_type;
   e.data.input.value = value;
+  MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt");
   switch (value_type) {
     case VALUE_TYPE_FLOAT: {
-      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt");
       e.data.input.buffer = buffer_new_from_fmt(32, "%g", *(f32*)value);
       break;
     }
-    case VALUE_TYPE_INTEGER: {
-      MEMORY_TAG("ui.ui_input_ex2: buffer_new_from_fmt");
+    case VALUE_TYPE_INT32: {
       e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i32*)value);
+      break;
+    }
+    case VALUE_TYPE_INT16: {
+      e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i16*)value);
+      break;
+    }
+    case VALUE_TYPE_INT8: {
+      e.data.input.buffer = buffer_new_from_fmt(32, "%d", *(i8*)value);
       break;
     }
     default:
@@ -1745,7 +1756,15 @@ Element ui_input_ex2(char* preview, void* value, Input_type input_type, Value_ty
 }
 
 Element ui_input_int(char* preview, i32* value) {
-  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INTEGER);
+  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INT32);
+}
+
+Element ui_input_int16(char* preview, i16* value) {
+  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INT16);
+}
+
+Element ui_input_int8(char* preview, i8* value) {
+  return ui_input_ex2(preview, value, INPUT_NUMBER, VALUE_TYPE_INT8);
 }
 
 Element ui_input_float(char* preview, f32* value) {
@@ -1790,7 +1809,7 @@ void ui_print_elements(UI_state* ui, i32 fd, Element* e, u32 level) {
         stb_dprintf(fd, "value: %g, ", *e->data.slider.v.f);
         stb_dprintf(fd, "range: { %g, %g }", e->data.slider.range.f_min, e->data.slider.range.f_max);
       }
-      else if (e->data.slider.type == VALUE_TYPE_INTEGER) {
+      else if (e->data.slider.type == VALUE_TYPE_INT32) {
         stb_dprintf(fd, "value: %d, ", *e->data.slider.v.i);
         stb_dprintf(fd, "range: { %d, %d }", e->data.slider.range.i_min, e->data.slider.range.i_max);
       }
@@ -2099,14 +2118,26 @@ void ui_update_input(UI_state* ui, Element* e) {
           *value = buffer_to_float(buffer);
           break;
         }
-        case VALUE_TYPE_INTEGER: {
+        case VALUE_TYPE_INT32: {
           i32* value = (i32*)e->data.input.value;
           *value = buffer_to_int(buffer);
           break;
         }
+        case VALUE_TYPE_INT16: {
+          i16* value = (i16*)e->data.input.value;
+          *value = buffer_to_int16(buffer);
+          break;
+        }
+        case VALUE_TYPE_INT8: {
+          i8* value = (i8*)e->data.input.value;
+          *value = buffer_to_int8(buffer);
+          break;
+        }
         case VALUE_TYPE_STRING: {
-          u32 length = CLAMP((i32)buffer->count, 0, (i32)e->data.input.max_length);
+          u32 max_length = e->data.input.max_length;
+          u32 length = CLAMP((i32)buffer->count, 0, (i32)max_length);
           if (length > 0) {
+            memset((char*)e->data.input.value, 0, max_length);
             strncpy((char*)e->data.input.value, (char*)buffer->data, length);
           }
           break;

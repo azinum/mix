@@ -30,9 +30,9 @@ typedef struct Tracker_source {
 } Tracker_source;
 
 typedef struct Tracker_row {
-  i32 id;
-  i32 note;
-  i32 source_id;
+  i16 id;
+  i16 note;
+  i16 source_id;
 } Tracker_row;
 
 typedef struct Tracker_channel {
@@ -196,7 +196,7 @@ void tracker_sample_input_update(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   ASSERT(e->type == ELEMENT_INPUT);
   ASSERT(e->data.input.value != NULL);
-  if (e->data.input.value_type == VALUE_TYPE_INTEGER) {
+  if (e->data.input.value_type == VALUE_TYPE_INT32) {
     i32 value = *(i32*)e->data.input.value;
     if (value >= 0 && value < MAX_AUDIO_SOURCE) {
       e->background_color = tracker->active_color;
@@ -621,7 +621,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   const i32 subdivision = 4;
   for (size_t row_index = 0; row_index < MAX_TRACKER_ROW; ++row_index) {
     {
-      Element e = ui_input_int(NULL, &tracker->pattern.channels[0].rows[row_index].id);
+      Element e = ui_input_int16(NULL, &tracker->pattern.channels[0].rows[row_index].id);
       e.readonly = true;
       e.background = true;
       e.background_color = tracker->background_color;
@@ -647,7 +647,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
       Tracker_channel* channel = &tracker->pattern.channels[channel_index];
       Tracker_row* row = &channel->rows[row_index];
       {
-        Element e = ui_input_int(NULL, &row->note);
+        Element e = ui_input_int16(NULL, &row->note);
         e.border = true;
         e.box = BOX(0, 0, 1.5 * input_width, line_height);
         e.tooltip = "note";
@@ -658,7 +658,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
         ui_attach_element(inner, &e);
       }
       {
-        Element e = ui_input_int(NULL, &row->source_id);
+        Element e = ui_input_int16(NULL, &row->source_id);
         e.border = true;
         e.box = BOX(0, 0, 1.5 * input_width, line_height);
         e.tooltip = "sample id";
