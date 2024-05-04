@@ -1,6 +1,5 @@
 // tracker.c
 // TODO:
-//  - fix memory leak
 //  - fix saving/loading of patterns when paused
 
 #define MAX_AUDIO_SOURCE 128
@@ -10,6 +9,17 @@
 #define MAX_SONG_PATTERN_SEQUENCE 180
 
 #define ROOT_NOTE 24
+
+static const char* channel_str[MAX_TRACKER_CHANNELS] = {
+  "ch #0",
+  "ch #1",
+  "ch #2",
+  "ch #3",
+  "ch #4",
+  "ch #5",
+  "ch #6",
+  "ch #7",
+};
 
 typedef enum {
   SAMPLE_STATE_END,
@@ -24,6 +34,7 @@ typedef struct Tracker_source {
   struct {
     i32 start;
     i32 length;
+    f32 gain;
     i32 pingpong;
     char name[TRACKER_SOURCE_NAME_LENGTH];
   } settings;
@@ -64,6 +75,7 @@ typedef struct Tracker {
   size_t active_row;
   i32 follow_pattern;
   i32 loop_pattern;
+  i32 active_channels[MAX_TRACKER_CHANNELS];
 
   Pattern patterns[MAX_PATTERN];
   Pattern pattern;
@@ -119,6 +131,7 @@ void tracker_default(Tracker* tracker) {
     .settings = {
       .start  = 0,
       .length = 0,
+      .gain = 1,
       .pingpong = 0,
       .name = {0},
     },
@@ -134,7 +147,9 @@ void tracker_default(Tracker* tracker) {
   tracker->active_row = 0;
   tracker->follow_pattern = false;
   tracker->loop_pattern = true;
-
+  for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
+    tracker->active_channels[i] = true;
+  }
   tracker_patterns_init(tracker);
   tracker->pattern_id = 0;
   tracker->prev_pattern_id = 0;
@@ -484,6 +499,19 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(canvas, &e);
   }
   {
+    Element e = ui_text("gain");
+    e.sizing = SIZING_PERCENT(35, 0);
+    ui_attach_element(canvas, &e);
+  }
+  {
+    Element e = ui_input_float("gain", &tracker->source.settings.gain);
+    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 65, .y = line_height, };
+    e.userdata = tracker;
+    e.onmodify = modify_source_setting;
+    e.tooltip = "gain";
+    ui_attach_element(canvas, &e);
+  }
+  {
     Element e = ui_toggle_ex(&tracker->source.settings.pingpong, "pingpong");
     e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 100, .y = line_height, };
     e.userdata = tracker;
@@ -618,6 +646,26 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.onupdate = tracker_editor_update;
     inner = ui_attach_element(&outer, &e);
   }
+
+  {
+    Element e = ui_none();
+    e.box = BOX(0, 0, input_width + line_height, line_height);
+    ui_attach_element(inner, &e);
+  }
+  for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
+    {
+      Element e = ui_toggle_ex(&tracker->active_channels[i], (char*)channel_str[i]);
+      e.box = BOX(0, 0, 3 * input_width, line_height);
+      ui_attach_element(inner, &e);
+    }
+    {
+      Element e = ui_none();
+      e.box = BOX(0, 0, 2 * line_height, line_height);
+      ui_attach_element(inner, &e);
+    }
+  }
+  ui_attach_element_v2(inner, ui_line_break(0));
+
   const i32 subdivision = 4;
   for (size_t row_index = 0; row_index < MAX_TRACKER_ROW; ++row_index) {
     {
@@ -745,13 +793,14 @@ void tracker_update(Instrument* ins, Mix* mix) {
   }
 
   if (!ui_input_interacting() && !IsKeyDown(KEY_LEFT_CONTROL)) {
-    // add keyboard shortcut
+    // add keyboard shortcut(s)
   }
 }
 
 void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   (void)mix; (void)audio; (void)dt;
   Tracker* tracker = (Tracker*)ins->userdata;
+  ticket_mutex_begin(&tracker->source.source.mutex);
   for (size_t i = 0; i < MAX_AUDIO_SOURCE; ++i) {
     Tracker_source* src = &tracker->sources[i];
     ticket_mutex_begin(&src->source.mutex);
@@ -760,6 +809,9 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   memset(ins->out_buffer, 0, sizeof(f32) * ins->samples);
 
   for (size_t channel_index = 0; channel_index < MAX_TRACKER_CHANNELS; ++channel_index) {
+    if (!tracker->active_channels[channel_index]) {
+      continue;
+    }
     Tracker_channel* channel = &tracker->pattern.channels[channel_index];
     Tracker_row* row = channel->active_row;
     if (!row) {
@@ -799,12 +851,13 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
             break;
           }
         }
-        ins->out_buffer[i] += src->source.buffer[(size_t)channel->sample_index];
+        ins->out_buffer[i] += src->settings.gain * src->source.buffer[(size_t)channel->sample_index];
         channel->sample_index += channel->freq;
       }
     }
   }
 
+  ticket_mutex_end(&tracker->source.source.mutex);
   for (size_t i = 0; i < MAX_AUDIO_SOURCE; ++i) {
     Tracker_source* src = &tracker->sources[i];
     ticket_mutex_end(&src->source.mutex);
@@ -823,19 +876,11 @@ void tracker_destroy(Instrument* ins) {
   (void)ins;
   Tracker* tracker = (Tracker*)ins->userdata;
 
-  Hash source_hash = hash_djb2((u8*)&tracker->source.source, sizeof(Audio_source));
-  bool source_is_alias = false;
   for (size_t i = 0; i < MAX_AUDIO_SOURCE; ++i) {
     Tracker_source* src = &tracker->sources[i];
-    if (!source_is_alias) {
-      Hash hash = hash_djb2((u8*)&src->source, sizeof(Audio_source));
-      source_is_alias = hash == source_hash;
-    }
     audio_unload_audio(&src->source);
   }
-  if (!source_is_alias) {
-    audio_unload_audio(&tracker->source.source);
-  }
+  audio_unload_audio(&tracker->source.source);
 }
 
 #undef MAX_AUDIO_SOURCE
