@@ -69,8 +69,8 @@ void instrument_ui_new(Instrument* ins, Element* container) {
   container->placement = PLACEMENT_BLOCK;
   container->background = true;
   container->background_color = UI_BACKGROUND_COLOR;
-  ins->ui_new(ins, container);
   ins->ui = container;
+  ins->ui_new(ins, container);
 }
 
 void instrument_update(Instrument* ins, struct Mix* mix) {

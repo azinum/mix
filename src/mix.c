@@ -189,6 +189,14 @@ void mix_stop(void) {
   mix->tick = mix->timed_tick = 0;
 }
 
+void mix_reload_ui(void) {
+  Mix* mix = &mix_state;
+  ui_free();
+  ui_init();
+  mix_reset(mix);
+  mix_ui_new(mix);
+}
+
 void mix_update_and_render(Mix* mix) {
   Audio_engine* audio = &audio_engine;
 
@@ -259,10 +267,12 @@ void mix_update_and_render(Mix* mix) {
       }
     }
   }
+
   instrument_update(&audio->instrument, mix);
 
   ui_update(mix->dt);
   ui_render();
+
 
 #ifdef DEVELOPER
   static size_t debug_tick = 0;

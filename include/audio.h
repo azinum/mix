@@ -63,6 +63,7 @@ Audio_source audio_load_audio(const char* path);
 void audio_unload_audio(Audio_source* source);
 void audio_copy_split(const f32* input, f32* left_output, f32* right_output, const size_t samples);
 Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, const u32 channel_count);
+Audio_source audio_source_new_from_i16_buffer(const i16* input, const size_t samples, const u32 channel_count);
 void audio_source_copy(Audio_source* dest, Audio_source* source); // basic copy, but keeps the mutex from source as is
 Audio_source audio_source_empty(void);
 f32 audio_calc_rms(f32* buffer, size_t size);

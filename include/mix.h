@@ -126,5 +126,6 @@ void mix_send_midi_event(Midi_event event);
 void mix_pause(void);
 void mix_play(void);
 void mix_stop(void);
+void mix_reload_ui(void);
 
 #endif // _MIX_H

@@ -281,7 +281,7 @@ i32 STB_WRAP(vsnprintf(char* str, size_t size, const char* fmt, va_list argp));
 
 #define NOT_IMPLEMENTED() ASSERT(!"not implemented")
 
-#define INIT_ITEMS_SIZE 24
+#define INIT_ITEMS_SIZE 48
 #define list_init(list, desired_size) \
   if ((list)->size < desired_size) { \
     (list)->size = desired_size; \

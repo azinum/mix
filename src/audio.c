@@ -216,8 +216,11 @@ done:
 }
 
 void audio_unload_audio(Audio_source* source) {
-  ASSERT(source);
+  ASSERT(source != NULL);
   if (!source->buffer) {
+    return;
+  }
+  if (!source->samples) {
     return;
   }
   if (source->internal) {
@@ -263,12 +266,34 @@ Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, 
   return source;
 }
 
+Audio_source audio_source_new_from_i16_buffer(const i16* input, const size_t samples, const u32 channel_count) {
+  Audio_source source = (Audio_source) {
+    .buffer = memory_alloc(sizeof(f32) * samples),
+    .samples = samples,
+    .channel_count = channel_count,
+    .ready = true,
+    .internal = false,
+    .drawable = true,
+    .cursor = 0,
+    .mutex = ticket_mutex_new()
+  };
+  if (!source.buffer) {
+    source.samples = 0;
+    source.ready = false;
+    return source;
+  }
+  for (size_t i = 0; i < samples; ++i) {
+    source.buffer[i] = input[i] / (f32)INT16_MAX;
+  }
+  return source;
+}
+
 void audio_source_copy(Audio_source* dest, Audio_source* source) {
   ASSERT(dest != NULL && source != NULL);
-  Ticket ticket = dest->mutex; // keep the old ticket
+  Ticket mutex = dest->mutex; // keep the old ticket
   bool drawable = dest->drawable;
   *dest = *source;
-  dest->mutex = ticket;
+  dest->mutex = mutex;
   dest->drawable = drawable;
   dest->cursor = 0;
 }
