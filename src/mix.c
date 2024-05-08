@@ -18,6 +18,12 @@
 #define THREAD_IMPLEMENTATION
 #include "thread.h"
 
+#ifdef DEVELOPER
+
+static bool show_debug_info = true;
+
+#endif
+
 #include "platform.c"
 #include "memory.c"
 #include "glob.c"
@@ -265,6 +271,11 @@ void mix_update_and_render(Mix* mix) {
       if (IsKeyPressed(KEY_TAB)) {
         ui_switch_state(ui_get_current_tag() + 1);
       }
+#ifdef DEVELOPER
+      if (IsKeyPressed(KEY_F1)) {
+        show_debug_info = !show_debug_info;
+      }
+#endif
     }
   }
 
@@ -273,36 +284,37 @@ void mix_update_and_render(Mix* mix) {
   ui_update(mix->dt);
   ui_render();
 
-
 #ifdef DEVELOPER
-  static size_t debug_tick = 0;
-  const size_t debug_text_update_interval = 2;
-  static char debug_text[256] = {0};
-  debug_tick += 1;
-  bool update_text = !(debug_tick % debug_text_update_interval);
-  if (update_text) {
-    stb_snprintf(
-      debug_text,
-      sizeof(debug_text),
-      "%zu/%zu bytes (%.2g %%)\n"
-      "%.2g ms ui latency (rendering)\n"
-      "%u/%u ui element updates\n"
-      "%.2g/%.2g ms audio latency (%zu samples)"
-      ,
-      memory_state.usage, memory_state.max_usage,
-      100 * ((f32)memory_state.usage / memory_state.max_usage),
-      1000 * ui_state.render_latency,
-      ui_state.element_update_count,
-      ui_state.element_count,
-      audio->dt * 1000,
-      ((audio->frames_per_buffer * audio->channel_count) / (f32)audio->sample_rate) * 1000,
-      audio->frames_per_buffer * audio->channel_count
-    );
+  if (show_debug_info) {
+    static size_t debug_tick = 0;
+    const size_t debug_text_update_interval = 2;
+    static char debug_text[256] = {0};
+    debug_tick += 1;
+    bool update_text = !(debug_tick % debug_text_update_interval);
+    if (update_text) {
+      stb_snprintf(
+        debug_text,
+        sizeof(debug_text),
+        "%zu/%zu bytes (%.2g %%)\n"
+        "%.2g ms ui latency (rendering)\n"
+        "%u/%u ui element updates\n"
+        "%.2g/%.2g ms audio latency (%zu samples)"
+        ,
+        memory_state.usage, memory_state.max_usage,
+        100 * ((f32)memory_state.usage / memory_state.max_usage),
+        1000 * ui_state.render_latency,
+        ui_state.element_update_count,
+        ui_state.element_count,
+        audio->dt * 1000,
+        ((audio->frames_per_buffer * audio->channel_count) / (f32)audio->sample_rate) * 1000,
+        audio->frames_per_buffer * audio->channel_count
+      );
+    }
+    SetTextLineSpacing(FONT_SIZE_SMALLEST);
+    DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 4 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
+    SetTextLineSpacing(UI_LINE_SPACING);
+    render_delta_buffer(mix, update_text);
   }
-  SetTextLineSpacing(FONT_SIZE_SMALLEST);
-  DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 4 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
-  SetTextLineSpacing(UI_LINE_SPACING);
-  render_delta_buffer(mix, update_text);
 #else
   (void)render_delta_buffer;
 #endif

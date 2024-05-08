@@ -3,7 +3,7 @@
 //  - fix saving/loading of patterns when paused
 
 #define MAX_AUDIO_SOURCE 128
-#define MAX_TRACKER_ROW 32
+#define MAX_TRACKER_ROW 64
 #define MAX_TRACKER_CHANNELS 8
 #define MAX_PATTERN 128
 #define MAX_SONG_PATTERN_SEQUENCE 180
@@ -88,7 +88,8 @@ typedef struct Tracker {
   size_t active_row;
   i32 follow_pattern;
   i32 loop_pattern;
-  i32 active_channels[MAX_TRACKER_CHANNELS];
+  i32 muted_channels[MAX_TRACKER_CHANNELS];
+  f32 channel_panning[MAX_TRACKER_CHANNELS];
 
   Pattern patterns[MAX_PATTERN];
   Pattern pattern;
@@ -137,6 +138,7 @@ static void tracker_editor_update(Element* e);
 static void tracker_copy_pattern(Tracker* tracker);
 static void tracker_paste_pattern(Tracker* tracker);
 static void tracker_modify_song_index(Tracker* tracker);
+static void tracker_change_pattern(Tracker* tracker);
 static Result tracker_save_song(Tracker* tracker);
 static Result tracker_load_song(Tracker* tracker);
 static Result tracker_insert_pattern_in_song(Tracker* tracker, size_t index);
@@ -188,8 +190,10 @@ void tracker_default(Tracker* tracker) {
   tracker->follow_pattern = false;
   tracker->loop_pattern = true;
   for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
-    tracker->active_channels[i] = true;
+    tracker->muted_channels[i] = false;
+    tracker->channel_panning[i] = 0.5f;
   }
+
   tracker_patterns_init(tracker);
   tracker->pattern_id = 0;
   tracker->prev_pattern_id = 0;
@@ -303,6 +307,15 @@ void tracker_modify_song_index(Tracker* tracker) {
   tracker->song.index = (u32)tracker->song.index % MAX_SONG_PATTERN_SEQUENCE;
   tracker->song.length = CLAMP(tracker->song.length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
   tracker->song.loop_counter = 0;
+  tracker_change_pattern(tracker);
+}
+
+void tracker_change_pattern(Tracker* tracker) {
+  i16 pattern_id = tracker->pattern_id;
+  tracker->pattern_id = tracker->prev_pattern_id;
+  save_pattern(tracker);
+  tracker->pattern_id = pattern_id;
+  load_pattern(tracker);
 }
 
 Result tracker_save_song(Tracker* tracker) {
@@ -438,7 +451,6 @@ Result tracker_load_song(Tracker* tracker) {
     total_size
   );
 
-  // tracker_destroy(tracker->self);
   for (size_t i = 0; i < MAX_AUDIO_SOURCE; ++i) {
     Tracker_source* src = &tracker->sources[i];
     audio_unload_audio(&src->source);
@@ -824,7 +836,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
 
   {
     Element e = ui_input_text("song name", tracker->song.name, sizeof(tracker->song.name));
-    e.sizing = SIZING_PIXELS(input_width * 4, line_height);
+    e.sizing = SIZING_PIXELS(input_width * 7, line_height);
     e.tooltip = "song name";
     ui_attach_element(tracker->song_editor, &e);
   }
@@ -938,7 +950,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   const i32 height = 380;
   Element* inner = NULL;
   {
-    Element e = ui_container("pattern editor - 8 channels");
+    Element e = ui_container("pattern editor");
     e.background = true;
     e.border = true;
     e.sizing = (Sizing) {
@@ -952,6 +964,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     inner = ui_attach_element(&outer, &e);
   }
 
+  // row 0
   {
     Element e = ui_none();
     e.box = BOX(0, 0, input_width + line_height, line_height);
@@ -959,8 +972,28 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   }
   for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
     {
-      Element e = ui_toggle_ex(&tracker->active_channels[i], (char*)channel_str[i]);
+      Element e = ui_toggle_ex(&tracker->muted_channels[i], (char*)channel_str[i]);
       e.box = BOX(0, 0, 3 * input_width, line_height);
+      ui_attach_element(inner, &e);
+    }
+    {
+      Element e = ui_none();
+      e.box = BOX(0, 0, line_height, line_height);
+      ui_attach_element(inner, &e);
+    }
+  }
+  // row 1 - panning
+  ui_attach_element_v2(inner, ui_line_break(0));
+  {
+    Element e = ui_none();
+    e.box = BOX(0, 0, input_width + line_height, line_height);
+    ui_attach_element(inner, &e);
+  }
+  for (size_t i = 0; i < MAX_TRACKER_CHANNELS; ++i) {
+    {
+      Element e = ui_slider_float(&tracker->channel_panning[i], 0, 1);
+      e.box = BOX(0, 0, 3 * input_width, line_height);
+      e.tooltip = "channel panning";
       ui_attach_element(inner, &e);
     }
     {
@@ -1070,11 +1103,7 @@ void tracker_update(Instrument* ins, Mix* mix) {
     }
 
     if (tracker->prev_pattern_id != tracker->pattern_id) {
-      i16 pattern_id = tracker->pattern_id;
-      tracker->pattern_id = tracker->prev_pattern_id;
-      save_pattern(tracker);
-      tracker->pattern_id = pattern_id;
-      load_pattern(tracker);
+      tracker_change_pattern(tracker);
     }
 
     tracker->prev_pattern_id = tracker->pattern_id;
@@ -1125,11 +1154,12 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   //   Tracker_source* src = &tracker->sources[i];
   //   ticket_mutex_begin(&src->source.mutex);
   // }
+  const size_t channel_count = audio->channel_count;
 
   memset(ins->out_buffer, 0, sizeof(f32) * ins->samples);
 
   for (size_t channel_index = 0; channel_index < MAX_TRACKER_CHANNELS; ++channel_index) {
-    if (!tracker->active_channels[channel_index]) {
+    if (tracker->muted_channels[channel_index]) {
       continue;
     }
     Tracker_channel* channel = &tracker->pattern.channels[channel_index];
@@ -1152,30 +1182,37 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
       else {
         sample_end = src->settings.start + src->settings.length;
       }
+      f32 pan_map[2] = {
+        1 - tracker->channel_panning[channel_index], // left channel
+        tracker->channel_panning[channel_index], // right channel
+      };
 
-      for (size_t i = 0; i < ins->samples; ++i) {
-        if (channel->sample_index >= sample_end || channel->sample_index >= src->source.samples) {
-          if (src->settings.pingpong) {
-            channel->sample_index = sample_end - 1;
-            channel->freq = -channel->freq;
+      for (size_t i = 0; i < ins->samples; i += channel_count) {
+        for (size_t channel_index_out = 0; channel_index_out < channel_count; ++channel_index_out) {
+          f32 pan = pan_map[channel_index_out % channel_count];
+          if (channel->sample_index >= sample_end || channel->sample_index >= src->source.samples) {
+            if (src->settings.pingpong) {
+              channel->sample_index = sample_end - 1;
+              channel->freq = -channel->freq;
+            }
+            else {
+              channel->state = SAMPLE_STATE_END;
+              channel->active_row = -1;
+              break;
+            }
           }
-          else {
-            channel->state = SAMPLE_STATE_END;
-            channel->active_row = -1;
-            break;
+          if (channel->sample_index < src->settings.start || channel->sample_index < 0) {
+            if (src->settings.pingpong) {
+              channel->sample_index = src->settings.start;
+              channel->freq = -channel->freq;
+            }
+            else {
+              break;
+            }
           }
+          ins->out_buffer[i + channel_index_out] += pan * src->settings.gain * src->source.buffer[(size_t)channel->sample_index];
+          channel->sample_index += channel->freq;
         }
-        if (channel->sample_index < src->settings.start || channel->sample_index < 0) {
-          if (src->settings.pingpong) {
-            channel->sample_index = src->settings.start;
-            channel->freq = -channel->freq;
-          }
-          else {
-            break;
-          }
-        }
-        ins->out_buffer[i] += src->settings.gain * src->source.buffer[(size_t)channel->sample_index];
-        channel->sample_index += channel->freq;
       }
     }
   }
