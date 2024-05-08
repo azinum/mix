@@ -61,7 +61,8 @@ Bps_voice* basic_poly_synth_find_silent_voice(Bps* bps) {
   return NULL;
 }
 
-void basic_poly_synth_init(Instrument* ins) {
+void basic_poly_synth_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   Bps* bps = memory_alloc(sizeof(Bps));
   ASSERT(bps != NULL);
   ins->userdata = bps;

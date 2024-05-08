@@ -19,7 +19,8 @@ void fx_filter_default(Filter* filter) {
   filter->buffer = NULL;
 }
 
-void fx_filter_init(Instrument* ins) {
+void fx_filter_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   MEMORY_TAG("fx_filter: userdata");
   Filter* filter = memory_alloc(sizeof(Filter));
   ASSERT(filter != NULL);

@@ -33,7 +33,8 @@ void fx_delay_default(Delay* delay) {
   delay->offset_right = (i32)MS_TO_SAMPLES(SAMPLE_RATE, CHANNEL_COUNT, 500);
 }
 
-void fx_delay_init(Instrument* ins) {
+void fx_delay_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   Delay* delay = memory_alloc(sizeof(Delay));
   ASSERT(delay != NULL); // out of memory, handle this gracefully
 

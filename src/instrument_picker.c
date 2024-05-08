@@ -9,7 +9,7 @@ void picker_load_instrument(Element* e) {
   ASSERT(mix != NULL);
   if (id >= 0 && id < MAX_INSTRUMENT_ID) {
     Instrument ins = instrument_new(id);
-    Instrument* instrument = audio_engine_attach_instrument(&ins);
+    Instrument* instrument = audio_engine_attach_instrument(&ins, mix);
     instrument_ui_new(instrument, mix->ins_container);
   }
 }

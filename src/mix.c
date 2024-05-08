@@ -195,6 +195,11 @@ void mix_stop(void) {
   mix->tick = mix->timed_tick = 0;
 }
 
+void mix_set_bpm(i32 bpm) {
+  Mix* mix = &mix_state;
+  mix->bpm = CLAMP(bpm, BPM_MIN, BPM_MAX);
+}
+
 void mix_reload_ui(void) {
   Mix* mix = &mix_state;
   ui_free();
@@ -346,7 +351,7 @@ void mix_reset(Mix* mix) {
   mix->tick = 0;
   mix->timed_tick = 0;
   mix->tick_delta = 0;
-  mix->bpm = BPM;
+  mix->bpm = BPM_DEFAULT;
   mix->timer = 0.0f;
   mix->paused = false;
   mix->midi_event_count = 0;

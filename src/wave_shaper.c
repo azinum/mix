@@ -251,7 +251,8 @@ void waveshaper_play_voice(Drumpad* drumpad, f32* source, size_t samples, f32 am
   voice->silent = false;
 }
 
-void waveshaper_init(Instrument* ins) {
+void waveshaper_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   Waveshaper* w = memory_alloc(sizeof(Waveshaper));
   ASSERT(w != NULL);
   ins->userdata = w;

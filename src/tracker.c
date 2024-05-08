@@ -6,7 +6,7 @@
 #define MAX_TRACKER_ROW 64
 #define MAX_TRACKER_CHANNELS 8
 #define MAX_PATTERN 128
-#define MAX_SONG_PATTERN_SEQUENCE 180
+#define MAX_SONG_PATTERN_SEQUENCE 160
 
 #define ROOT_NOTE 24
 
@@ -14,6 +14,7 @@
 #define TRACKER_MAGIC   0xbeef
 
 #define ANIMATION_SPEED 15.0f
+#define FREQ_INTERP_SPEED 200.0f
 
 static const char* channel_str[MAX_TRACKER_CHANNELS] = {
   "ch #0",
@@ -56,6 +57,7 @@ typedef struct Tracker_channel {
   i32 active_row;
   f32 freq;
   f32 sample_index;
+  f32 freq_target;
   Sample_state state;
 } Tracker_channel;
 
@@ -101,9 +103,11 @@ typedef struct Tracker {
   Element* song_editor;
 
   Instrument* self;
-  bool should_reload_ui;
 
   f32 dt;
+  i32 samples_per_subtick;
+
+  i32 bpm;
 
   Color background_color;
   Color highlight_color;
@@ -126,8 +130,7 @@ typedef struct Tracker_header {
   // Hash checksum;
 } Tracker_header;
 
-static void tracker_default(Tracker* tracker);
-static void tracker_reload_ui(Tracker* tracker);
+static void tracker_default(Tracker* tracker, Mix* mix);
 static void tracker_channel_init(Tracker_channel* channel);
 static void tracker_pattern_init(Pattern* pattern);
 static void tracker_patterns_init(Tracker* tracker);
@@ -166,8 +169,11 @@ static void copy_pattern(Element* e);
 static void paste_pattern(Element* e);
 static void save_song(Element* e);
 static void load_song(Element* e);
+static void modify_bpm(Element* e);
+static void decrement_bpm(Element* e);
+static void increment_bpm(Element* e);
 
-void tracker_default(Tracker* tracker) {
+void tracker_default(Tracker* tracker, Mix* mix) {
   Tracker_source source = (Tracker_source) {
     .source = audio_source_empty(),
     .settings = {
@@ -202,8 +208,10 @@ void tracker_default(Tracker* tracker) {
   tracker->song_editor = NULL;
   tracker->self = NULL;
 
-  tracker->should_reload_ui = false;
   tracker->dt = 0;
+  tracker->samples_per_subtick = 0;
+
+  tracker->bpm = mix->bpm;
 
   tracker->background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
   tracker->highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, -0.1f), 0.2f);
@@ -211,14 +219,6 @@ void tracker_default(Tracker* tracker) {
   tracker->inactive_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.05f);
 
   tracker->loop_highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, 0.1f), 0.6f);
-}
-
-void tracker_reload_ui(Tracker* tracker) {
-  if (!tracker->should_reload_ui) {
-    return;
-  }
-  mix_reload_ui();
-  tracker->should_reload_ui = false;
 }
 
 void tracker_channel_init(Tracker_channel* channel) {
@@ -231,6 +231,7 @@ void tracker_channel_init(Tracker_channel* channel) {
   }
   channel->active_row = -1;
   channel->freq = 1;
+  channel->freq_target = 1;
   channel->sample_index = 0;
   channel->state = SAMPLE_STATE_END;
 }
@@ -304,7 +305,14 @@ void tracker_paste_pattern(Tracker* tracker) {
 }
 
 void tracker_modify_song_index(Tracker* tracker) {
-  tracker->song.index = (u32)tracker->song.index % MAX_SONG_PATTERN_SEQUENCE;
+
+  if (tracker->song.index < 0) {
+    tracker->song.index = MAX_SONG_PATTERN_SEQUENCE - 1;
+  }
+  if (tracker->song.index >= MAX_SONG_PATTERN_SEQUENCE) {
+    tracker->song.index = 0;
+  }
+
   tracker->song.length = CLAMP(tracker->song.length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
   tracker->song.loop_counter = 0;
   tracker_change_pattern(tracker);
@@ -458,7 +466,8 @@ Result tracker_load_song(Tracker* tracker) {
   audio_unload_audio(&tracker->source.source);
 
   *tracker = tracker_state;
-  tracker->should_reload_ui = true;
+  mix_reload_ui();
+  mix_set_bpm(tracker->bpm);
 defer:
   buffer_free(&save);
 #undef READ
@@ -512,13 +521,12 @@ void modify_song_index(Element* e) {
 void decrement_song_index(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   tracker->song.index -= 1;
-  tracker->song.index = (u32)tracker->song.index % MAX_SONG_PATTERN_SEQUENCE;
   tracker_modify_song_index(tracker);
 }
 
 void increment_song_index(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
-  tracker->song.index = (tracker->song.index + 1) % MAX_SONG_PATTERN_SEQUENCE;
+  tracker->song.index += 1;
   tracker_modify_song_index(tracker);
 }
 
@@ -655,27 +663,44 @@ void paste_pattern(Element* e) {
 void save_song(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   if (tracker_save_song(tracker) != Ok) {
-    ui_alert("failed to save song %s", tracker->song.name);
+    ui_alert("failed to save song '%s.tp'", tracker->song.name);
     return;
   }
-  ui_alert("song %s saved", tracker->song.name);
+  ui_alert("song '%s.tp' saved", tracker->song.name);
 }
 
 void load_song(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   if (tracker_load_song(tracker) != Ok) {
-    ui_alert("failed to load song %s", tracker->song.name);
+    ui_alert("failed to load song '%s.tp'", tracker->song.name);
     return;
   }
-  ui_alert("song %s loaded", tracker->song.name);
+  ui_alert("song '%s.tp' loaded", tracker->song.name);
 }
 
+void modify_bpm(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker->bpm = CLAMP(tracker->bpm, BPM_MIN, BPM_MAX);
+  mix_set_bpm(tracker->bpm);
+}
 
-void tracker_init(Instrument* ins) {
+void decrement_bpm(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker->bpm = CLAMP(tracker->bpm - 1, BPM_MIN, BPM_MAX);
+  mix_set_bpm(tracker->bpm);
+}
+
+void increment_bpm(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker->bpm = CLAMP(tracker->bpm + 1, BPM_MIN, BPM_MAX);
+  mix_set_bpm(tracker->bpm);
+}
+
+void tracker_init(Instrument* ins, Mix* mix) {
   (void)ins;
   Tracker* tracker = memory_alloc(sizeof(Tracker));
   ins->userdata = tracker;
-  tracker_default(tracker);
+  tracker_default(tracker, mix);
   tracker->self = ins;
 }
 
@@ -817,6 +842,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PIXELS(input_width * 2, line_height);
     e.userdata = tracker;
     e.onmodify = modify_song_index;
+    e.tooltip = "song position/bar";
     ui_attach_element(tracker->song_editor, &e);
   }
   {
@@ -891,7 +917,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
 
   {
     Element e = ui_text("pattern");
-    e.sizing = SIZING_PIXELS(input_width * 4, line_height);
+    e.sizing = SIZING_PIXELS(input_width * 3, line_height);
     ui_attach_element(&settings, &e);
   }
   {
@@ -927,6 +953,35 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.sizing = SIZING_PIXELS(input_width * 2, line_height);
     e.userdata = tracker;
     e.onclick = paste_pattern;
+    ui_attach_element(&settings, &e);
+  }
+
+  ui_attach_element_v2(&settings, ui_line_break(0));
+  {
+    Element e = ui_text("bpm");
+    e.sizing = SIZING_PIXELS(input_width * 3, line_height);
+    ui_attach_element(&settings, &e);
+  }
+
+  {
+    Element e = ui_input_int("bpm", &tracker->bpm);
+    e.sizing = SIZING_PIXELS(input_width * 2, line_height);
+    e.userdata = tracker;
+    e.onmodify = modify_bpm;
+    ui_attach_element(&settings, &e);
+  }
+  {
+    Element e = ui_button("<");
+    e.sizing = SIZING_PIXELS(input_width, line_height);
+    e.userdata = tracker;
+    e.onclick = decrement_bpm;
+    ui_attach_element(&settings, &e);
+  }
+  {
+    Element e = ui_button(">");
+    e.sizing = SIZING_PIXELS(input_width, line_height);
+    e.userdata = tracker;
+    e.onclick = increment_bpm;
     ui_attach_element(&settings, &e);
   }
 
@@ -1075,10 +1130,7 @@ void tracker_update(Instrument* ins, Mix* mix) {
   (void)ins; (void)mix;
   Tracker* tracker = (Tracker*)ins->userdata;
   tracker->dt = mix->dt;
-
-  if (tracker->should_reload_ui) {
-    tracker_reload_ui(tracker);
-  }
+  tracker->samples_per_subtick = (SAMPLE_RATE / (f32)mix->bpm);
 
   tracker->prev_tick = tracker->tick;
   tracker->tick = mix->timed_tick;
@@ -1117,12 +1169,12 @@ void tracker_update(Instrument* ins, Mix* mix) {
         if (row->note < 0) {
           freq = -row->note / 100.0f;
         }
-        channel->freq = freq / base_freq;
+        channel->freq_target = freq / base_freq;
         if (src->source.samples > 0) {
-          channel->sample_index = src->settings.start % src->source.samples;
+          channel->sample_index = (src->settings.start * tracker->samples_per_subtick) % src->source.samples;
         }
         else {
-          channel->sample_index = src->settings.start;
+          channel->sample_index = (src->settings.start * tracker->samples_per_subtick);
         }
         channel->state = SAMPLE_STATE_PLAY;
         channel->active_row = tracker->active_row;
@@ -1155,7 +1207,7 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   //   ticket_mutex_begin(&src->source.mutex);
   // }
   const size_t channel_count = audio->channel_count;
-
+  const f32 sample_dt = dt / ins->samples;
   memset(ins->out_buffer, 0, sizeof(f32) * ins->samples);
 
   for (size_t channel_index = 0; channel_index < MAX_TRACKER_CHANNELS; ++channel_index) {
@@ -1180,7 +1232,7 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
         sample_end = src->source.samples;
       }
       else {
-        sample_end = src->settings.start + src->settings.length;
+        sample_end = (src->settings.start * tracker->samples_per_subtick) + (src->settings.length * tracker->samples_per_subtick);
       }
       f32 pan_map[2] = {
         1 - tracker->channel_panning[channel_index], // left channel
@@ -1194,6 +1246,7 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
             if (src->settings.pingpong) {
               channel->sample_index = sample_end - 1;
               channel->freq = -channel->freq;
+              channel->freq_target = -channel->freq_target;
             }
             else {
               channel->state = SAMPLE_STATE_END;
@@ -1201,10 +1254,11 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
               break;
             }
           }
-          if (channel->sample_index < src->settings.start || channel->sample_index < 0) {
+          if (channel->sample_index < (src->settings.start * tracker->samples_per_subtick) || channel->sample_index < 0) {
             if (src->settings.pingpong) {
-              channel->sample_index = src->settings.start;
+              channel->sample_index = (src->settings.start * tracker->samples_per_subtick);
               channel->freq = -channel->freq;
+              channel->freq_target = -channel->freq_target;
             }
             else {
               break;
@@ -1212,6 +1266,7 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
           }
           ins->out_buffer[i + channel_index_out] += pan * src->settings.gain * src->source.buffer[(size_t)channel->sample_index];
           channel->sample_index += channel->freq;
+          channel->freq = lerp_f32(channel->freq, channel->freq_target, sample_dt * FREQ_INTERP_SPEED);
         }
       }
     }
@@ -1248,3 +1303,7 @@ void tracker_destroy(Instrument* ins) {
 #undef MAX_PATTERN
 #undef MAX_SONG_PATTERN_SEQUENCE
 #undef ROOT_NOTE
+#undef TRACKER_VERSION
+#undef TRACKER_MAGIC
+#undef ANIMATION_SPEED
+#undef FREQ_INTERP_SPEED

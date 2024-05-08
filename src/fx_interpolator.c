@@ -12,7 +12,8 @@ void fx_interpolator_default(Interpolator* interp) {
   interp->interval = 4;
 }
 
-void fx_interpolator_init(Instrument* ins) {
+void fx_interpolator_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   MEMORY_TAG("fx_interpolator: userdata");
   Interpolator* interp = memory_alloc(sizeof(Interpolator));
   ins->userdata = interp;

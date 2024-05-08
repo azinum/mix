@@ -43,7 +43,7 @@ Instrument instrument_new_from_path(const char* path) {
   return ins;
 }
 
-void instrument_init(Instrument* ins, Audio_engine* audio) {
+void instrument_init(Instrument* ins, Audio_engine* audio, Mix* mix) {
   ticket_mutex_begin(&ins->blocking_mutex);
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
   MEMORY_TAG("instrument.instrument_init: audio buffer");
@@ -55,7 +55,7 @@ void instrument_init(Instrument* ins, Audio_engine* audio) {
     ins->samples = samples;
   }
   MEMORY_TAG("instrument userdata");
-  ins->init(ins);
+  ins->init(ins, mix);
   ins->initialized = true;
   ins->blocking = false;
   ticket_mutex_end(&ins->blocking_mutex);

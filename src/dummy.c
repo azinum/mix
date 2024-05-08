@@ -95,7 +95,8 @@ void pluck(Element* e) {
   dummy->pluck = true;
 }
 
-void dummy_init(Instrument* ins) {
+void dummy_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   Dummy* dummy = memory_alloc(sizeof(Dummy));
   ASSERT(dummy != NULL);
   ins->userdata = dummy;

@@ -32,7 +32,8 @@ f32 fx_smooth(f32* input, f32* output, f32 bias, f32 prev, size_t samples) {
   return prev;
 }
 
-void fx_smooth_init(Instrument* ins) {
+void fx_smooth_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   MEMORY_TAG("fx_smooth: userdata");
   Smooth* smooth = memory_alloc(sizeof(Smooth));
   ASSERT(smooth != NULL);

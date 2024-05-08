@@ -11,7 +11,7 @@ void add_effect(Element* e) {
   ASSERT(mix != NULL);
   if (id >= 0 && id < MAX_EFFECT_ID) {
     Effect ef = effect_new(id);
-    Effect* effect = audio_engine_attach_effect(&ef);
+    Effect* effect = audio_engine_attach_effect(&ef, mix);
     if (!effect) {
       ui_alert("could not add effect, exceeded the maximum number (%d) of effects", MAX_EFFECTS);
       return;

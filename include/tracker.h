@@ -3,7 +3,7 @@
 #ifndef _TRACKER_H
 #define _TRACKER_H
 
-void tracker_init(Instrument* ins);
+void tracker_init(Instrument* ins, struct Mix* mix);
 void tracker_ui_new(Instrument* ins, Element* container);
 void tracker_update(Instrument* ins, struct Mix* mix);
 void tracker_process(Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);

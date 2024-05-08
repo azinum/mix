@@ -243,7 +243,13 @@ typedef struct Element {
 
   struct {
     f32 f;
-    i32 i;
+    union {
+      i32 i;
+      struct {
+        i16 i16_a;
+        i16 i16_b;
+      };
+    };
     char* s;
   } v;
 

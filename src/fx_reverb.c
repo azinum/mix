@@ -215,7 +215,8 @@ void reverb_model_render_nodes(const Box* box, Reverb_node* root, i32 center_x, 
   }
 }
 
-void fx_reverb_init(Instrument* ins) {
+void fx_reverb_init(Instrument* ins, Mix* mix) {
+  (void)mix;
   Reverb* reverb = memory_alloc(sizeof(Reverb));
   ASSERT(reverb != NULL);
   ASSERT((size_t)(powf(MAX_REVERB_CHILD_NODE, MAX_REVERB_NODE_DEPTH) == MAX_REVERB_NODE_TOTAL));

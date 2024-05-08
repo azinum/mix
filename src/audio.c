@@ -68,20 +68,20 @@ Result audio_engine_detach_instrument(void) {
   return Ok;
 }
 
-Instrument* audio_engine_attach_instrument(Instrument* ins) {
+Instrument* audio_engine_attach_instrument(Instrument* ins, Mix* mix) {
   Audio_engine* audio = &audio_engine;
   if (audio->instrument.initialized) {
     audio_engine_detach_instrument();
   }
-  instrument_init(ins, audio);
+  instrument_init(ins, audio, mix);
   audio->instrument = *ins;
   return &audio->instrument;
 }
 
-Effect* audio_engine_attach_effect(Effect* effect) {
+Effect* audio_engine_attach_effect(Effect* effect, Mix* mix) {
   Audio_engine* audio = &audio_engine;
   if (audio->effect_count < MAX_EFFECTS) {
-    instrument_init(effect, audio);
+    instrument_init(effect, audio, mix);
     audio->effect_chain[audio->effect_count] = *effect;
     return &audio->effect_chain[audio->effect_count++];
   }

@@ -40,7 +40,9 @@ struct Mix;
   #define DATA_PATH "data"
 #endif
 #define CONFIG_PATH DATA_PATH "/init.lua"
-#define BPM 80
+#define BPM_DEFAULT 80
+#define BPM_MIN 1
+#define BPM_MAX 999
 #define SUBTICKS 8
 
 #include "common.h"
@@ -126,6 +128,7 @@ void mix_send_midi_event(Midi_event event);
 void mix_pause(void);
 void mix_play(void);
 void mix_stop(void);
+void mix_set_bpm(i32 bpm);
 void mix_reload_ui(void);
 
 #endif // _MIX_H

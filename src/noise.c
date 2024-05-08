@@ -1,7 +1,8 @@
 // noise.c
 
-void noise_init(Instrument* ins) {
+void noise_init(Instrument* ins, Mix* mix) {
   (void)ins;
+  (void)mix;
 }
 
 void noise_ui_new(Instrument* ins, Element* container) {

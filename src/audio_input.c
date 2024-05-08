@@ -1,7 +1,8 @@
 // audio_input.c
 
-void audio_input_init(Instrument* ins) {
+void audio_input_init(Instrument* ins, Mix* mix) {
   (void)ins;
+  (void)mix;
 }
 
 void audio_input_ui_new(Instrument* ins, Element* container) {

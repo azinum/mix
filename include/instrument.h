@@ -23,7 +23,7 @@ typedef struct Instrument {
   void* userdata;
   char* title;
 
-  void (*init)(struct Instrument*);
+  void (*init)(struct Instrument*, struct Mix*);
   void (*ui_new)(struct Instrument*, Element*);
   void (*update)(struct Instrument*, struct Mix*);
   void (*process)(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);
@@ -50,7 +50,7 @@ extern Instrument instruments[MAX_INSTRUMENT_ID];
 void instrument_init_default(Instrument* ins);
 Instrument instrument_new(Instrument_id id);
 Instrument instrument_new_from_path(const char* path);
-void instrument_init(Instrument* ins, struct Audio_engine* audio);
+void instrument_init(Instrument* ins, struct Audio_engine* audio, struct Mix* mix);
 void instrument_ui_new(Instrument* ins, Element* container);
 void instrument_update(Instrument* ins, struct Mix* mix);
 void instrument_process(Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt);

@@ -54,8 +54,8 @@ Audio_engine audio_engine_new(i32 sample_rate, i32 frames_per_buffer, i32 channe
 Result audio_engine_start(Audio_engine* audio);
 Result audio_engine_start_new(Audio_engine* audio);
 Result audio_engine_detach_instrument(void);
-Instrument* audio_engine_attach_instrument(Instrument* ins);
-Effect* audio_engine_attach_effect(Effect* effect);
+Instrument* audio_engine_attach_instrument(Instrument* ins, struct Mix* mix);
+Effect* audio_engine_attach_effect(Effect* effect, struct Mix* mix);
 void audio_engine_clear_effects(void);
 void audio_engine_restart(void);
 void audio_engine_exit(Audio_engine* audio);
