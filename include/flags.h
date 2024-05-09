@@ -35,4 +35,6 @@
 
 // #define MAX_THREADS 64
 
+// #define WARN_SIMD_FALLBACK
+
 #endif // _FLAGS_H

@@ -39,5 +39,6 @@ extern i32 fd_open(const char* path, i32 flags, ...);
 extern char* file_extension(const char* path);
 extern f32 dot_product(f32 a, f32 b);
 extern f32 v2_dot_product(Vector2 a, Vector2 b);
+extern bool is_aligned(const void* p, size_t boundary);
 
 #endif // _MISC_H

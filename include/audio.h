@@ -29,11 +29,11 @@ typedef struct Audio_source {
 } Audio_source;
 
 typedef struct Audio_engine {
+  f32* out_buffer;
+  f32* in_buffer;
   i32 sample_rate;
   i32 frames_per_buffer;
   i32 channel_count;
-  f32* out_buffer;
-  f32* in_buffer;
   f32 dt;
   bool quit; // set to true to stop processing audio
   bool done; // done is set to true when audio processing has stopped
@@ -68,6 +68,11 @@ void audio_source_move(Audio_source* dest, Audio_source* source); // move data f
 Audio_source audio_source_empty(void);
 f32 audio_calc_rms(const f32* buffer, size_t size);
 f32 audio_calc_rms_clamp(const f32* buffer, size_t size);
+void audio_buffer_sum(f32* dest, const f32* src, size_t size);
+void audio_buffer_add(f32* dest, size_t size, f32 amount);
+void audio_buffer_mul(f32* dest, size_t size, f32 amount);
+void audio_buffer_zero(f32* dest, size_t size);
+void audio_buffer_copy(f32* dest, const f32* src, size_t size);
 Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H

@@ -244,3 +244,7 @@ inline f32 dot_product(f32 a, f32 b) {
 inline f32 v2_dot_product(Vector2 a, Vector2 b) {
   return dot_product(a.x, b.x) + dot_product(a.y, b.y);
 }
+
+inline bool is_aligned(const void* p, size_t boundary) {
+  return ((size_t)p % boundary) == 0;
+}
