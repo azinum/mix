@@ -865,7 +865,7 @@ void ui_render_tooltip(UI_state* ui, char* tooltip) {
     Box box = ui_expand_box_ex(BOX(x, y, text_size.x, text_size.y), UI_X_PADDING, UI_Y_PADDING);
     if (roundness > 0) {
       DrawRectangleRounded((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, background_color);
-      DrawRectangleRoundedLines((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, border_thickness, border_color);
+      DrawRectangleRoundedLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, border_thickness, border_color);
     }
     else {
       DrawRectangle(box.x, box.y, box.w, box.h, background_color);
@@ -1352,7 +1352,7 @@ void ui_render(void) {
         Element* e = ui->hover;
         if (e->roundness > 0) {
           const i32 segments = 8;
-          DrawRectangleRoundedLines((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, 1.1f, color);
+          DrawRectangleRoundedLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, e->roundness, segments, 1.1f, color);
         }
         else {
           DrawRectangleLinesEx((Rectangle) { e->box.x, e->box.y, e->box.w, e->box.h}, 1.1f, color);
@@ -1857,7 +1857,7 @@ void ui_render_rectangle(Box box, f32 roundness, Color color) {
 void ui_render_rectangle_lines(Box box, f32 thickness, f32 roundness, Color color) {
   const i32 segments = 8;
   if (roundness > 0) {
-    DrawRectangleRoundedLines((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, thickness, color);
+    DrawRectangleRoundedLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, roundness, segments, thickness, color);
     return;
   }
   DrawRectangleLinesEx((Rectangle) { box.x, box.y, box.w, box.h }, thickness, color);

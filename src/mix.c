@@ -316,9 +316,8 @@ void mix_update_and_render(Mix* mix) {
         audio->frames_per_buffer * audio->channel_count
       );
     }
-    SetTextLineSpacing(FONT_SIZE_SMALLEST);
+    SetTextLineSpacing(0);
     DrawText(debug_text, 32, GetScreenHeight() - (FONT_SIZE_SMALLEST) * 4 - 16, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
-    SetTextLineSpacing(UI_LINE_SPACING);
     render_delta_buffer(mix, update_text);
   }
 #else
@@ -495,7 +494,7 @@ void render_delta_buffer(Mix* mix, bool update_text) {
   if (update_text) {
     snprintf(text, sizeof(text), "%g ms (average)\n%d fps", dt_avg * 1000, (i32)mix->fps);
   }
-  SetTextLineSpacing(FONT_SIZE_SMALLEST);
+  SetTextLineSpacing(0);
   DrawText(text, x, y - (FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
   SetTextLineSpacing(UI_LINE_SPACING);
 }

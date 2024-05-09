@@ -1,6 +1,9 @@
 // midi_settings.c
 // midi/keyboard piano settings
 
+// TODO:
+//  - clamp values
+
 Element midi_settings_ui_new(Mix* mix) {
   (void)mix;
 
