@@ -312,18 +312,50 @@ Audio_source audio_source_empty(void) {
   return source;
 }
 
-f32 audio_calc_rms(f32* buffer, size_t size) {
+f32 audio_calc_rms(const f32* buffer, size_t size) {
   ASSERT(buffer != NULL);
-
-  f32 db = 0.0f;
-  for (size_t i = 0; i < size; ++i) {
-    f32 sample = buffer[i];
-    db += sample * sample;
+  ASSERT(sizeof(f32) == 4);
+  if (size == 0) {
+    return 0;
   }
-  return sqrtf(db / (f32)size);
+#ifdef USE_SIMD
+  // check if the data size is good
+  if (((size * sizeof(f32)) % sizeof(__m128)) != 0) {
+    goto fallback;
+  }
+  // check if the pointer is aligned properly
+  if (((size_t)buffer % sizeof(__m128)) != 0) {
+    goto fallback;
+  }
+  __m128 zero = _mm_set_ps1(0);
+  __m128 db = zero;
+  __m128 result = zero;
+  __m128* buf = (__m128*)buffer;
+  __m128 siz = _mm_set_ps1((f32)size);
+  for (size_t i = 0; i < size / 4; ++i, ++buf) {
+    db = _mm_add_ps(db, _mm_mul_ps(*buf, *buf)); // db += buffer[i] * buffer[i]
+  }
+
+  result = _mm_add_ps(result, _mm_shuffle_ps(db, db, 0));
+  result = _mm_add_ps(result, _mm_shuffle_ps(db, db, 1));
+  result = _mm_add_ps(result, _mm_shuffle_ps(db, db, 2));
+  result = _mm_add_ps(result, _mm_shuffle_ps(db, db, 3));
+  result = _mm_sqrt_ps(_mm_div_ps(result, siz));
+  return ((f32*)&result)[0];
+#endif
+  goto fallback;
+
+fallback: {
+    f32 db = 0.0f;
+    for (size_t i = 0; i < size; ++i) {
+      f32 sample = buffer[i];
+      db += sample * sample;
+    }
+    return sqrtf(db / (f32)size);
+  }
 }
 
-f32 audio_calc_rms_clamp(f32* buffer, size_t size) {
+f32 audio_calc_rms_clamp(const f32* buffer, size_t size) {
   return CLAMP(audio_calc_rms(buffer, size), 0, 1);
 }
 
@@ -409,15 +441,13 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
       ticket_mutex_end(&ins->blocking_mutex);
     }
   }
-
-  f32 db = 0.0f;
-  // write to output buffer and calculate RMS (root mean square)
+  // write to output buffer
   for (i32 i = 0; i < sample_count; ++i) {
-    f32 sample = audio->out_buffer[i];
-    buffer[i] = CLAMP(sample, -1, 1);
-    db += sample * sample;
+    buffer[i] = CLAMP(audio->out_buffer[i], -1, 1);
   }
-  audio->db = sqrtf(db / (f32)sample_count);
+
+  // calculate RMS (root mean square)
+  audio->db = audio_calc_rms_clamp(audio->out_buffer, 4);
 
   // write to record buffer
 #ifndef NO_RECORD_BUFFER

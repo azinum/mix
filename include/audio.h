@@ -66,8 +66,8 @@ Audio_source audio_source_copy_into_new(const f32* input, const size_t samples, 
 Audio_source audio_source_new_from_i16_buffer(const i16* input, const size_t samples, const u32 channel_count);
 void audio_source_move(Audio_source* dest, Audio_source* source); // move data from source, keeps dest mutex as is
 Audio_source audio_source_empty(void);
-f32 audio_calc_rms(f32* buffer, size_t size);
-f32 audio_calc_rms_clamp(f32* buffer, size_t size);
+f32 audio_calc_rms(const f32* buffer, size_t size);
+f32 audio_calc_rms_clamp(const f32* buffer, size_t size);
 Result audio_engine_process(const void* in, void* out, i32 frames);
 
 #endif // _AUDIO_H
