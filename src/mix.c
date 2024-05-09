@@ -110,6 +110,7 @@ i32 mix_main(i32 argc, char** argv) {
 
   SetConfigFlags(config_flags);
   SetTraceLogLevel(LOG_WARNING);
+  SetTextLineSpacing(0);
 
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "mix");
   SetTargetFPS(TARGET_FPS);
@@ -496,7 +497,6 @@ void render_delta_buffer(Mix* mix, bool update_text) {
   }
   SetTextLineSpacing(0);
   DrawText(text, x, y - (FONT_SIZE_SMALLEST) * 2, FONT_SIZE_SMALLEST, COLOR_RGB(0xfc, 0xeb, 0x2f));
-  SetTextLineSpacing(UI_LINE_SPACING);
 }
 
 void assets_load(Assets* assets) {

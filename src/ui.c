@@ -12,6 +12,7 @@
 //  - make layout design more versatile (constraints, vertical+horizontal padding, min/max sizes, e.t.c)
 //  - floating containers
 //  - drop-down menu
+//  - dynamic tooltip, and combine built-in and user defined tooltip
 
 #define DRAW_SIMPLE_TEXT_EX(X, Y, SIZE, COLOR, FORMAT_STR, ...) do { \
   static char _text##__LINE__[SIZE] = {0}; \
