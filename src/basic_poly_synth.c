@@ -170,11 +170,11 @@ void basic_poly_synth_ui_new(Instrument* ins, Element* container) {
   }
 }
 
-void basic_poly_synth_update(Instrument* ins, struct Mix* mix) {
+void basic_poly_synth_update(Instrument* ins, Mix* mix) {
   (void)ins; (void)mix;
 }
 
-void basic_poly_synth_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+void basic_poly_synth_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   (void)mix;
   Bps* bps = (Bps*)ins->userdata;
 
@@ -239,7 +239,7 @@ voice_finished: {}
   }
 }
 
-void basic_poly_synth_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+void basic_poly_synth_noteon(Instrument* ins, u8 note, f32 velocity) {
   Bps* bps = (Bps*)ins->userdata;
 
   Bps_voice* voice = basic_poly_synth_find_silent_voice(bps);
@@ -256,11 +256,11 @@ void basic_poly_synth_noteon(struct Instrument* ins, u8 note, f32 velocity) {
   }
 }
 
-void basic_poly_synth_noteoff(struct Instrument* ins, u8 note) {
+void basic_poly_synth_noteoff(Instrument* ins, u8 note) {
   (void)ins; (void)note;
 }
 
-void basic_poly_synth_destroy(struct Instrument* ins) {
+void basic_poly_synth_destroy(Instrument* ins) {
   (void)ins;
 }
 

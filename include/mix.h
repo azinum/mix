@@ -45,6 +45,10 @@ struct Mix;
 #define BPM_MAX 999
 #define SUBTICKS 8
 
+typedef struct Mix Mix;
+typedef struct Audio_engine Audio_engine;
+typedef struct Instrument Instrument;
+
 #include "common.h"
 #include "flags.h"
 #include "platform.h"
@@ -66,6 +70,7 @@ struct Mix;
 #include "midi.h"
 #include "midi_settings.h"
 #include "keyboard.h"
+
 // instruments
 #include "instrument.h"
 #include "wave_shaper.h"
@@ -74,6 +79,7 @@ struct Mix;
 #include "audio_input.h"
 #include "basic_poly_synth.h"
 #include "tracker.h"
+
 // effects/filters
 #include "effect.h"
 #include "fx_clip_distortion.h"

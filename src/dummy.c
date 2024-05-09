@@ -292,7 +292,7 @@ void dummy_ui_new(Instrument* ins, Element* container) {
   }
 }
 
-void dummy_update(Instrument* ins, struct Mix* mix) {
+void dummy_update(Instrument* ins, Mix* mix) {
   (void)ins;
   (void)mix;
   Dummy* dummy = (Dummy*)ins->userdata;
@@ -310,7 +310,7 @@ void dummy_update(Instrument* ins, struct Mix* mix) {
   }
 }
 
-void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine* audio, f32 dt) {
+void dummy_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   (void)ins;
   (void)mix;
   (void)audio;
@@ -347,18 +347,18 @@ void dummy_process(struct Instrument* ins, struct Mix* mix, struct Audio_engine*
   ticket_mutex_end(&dummy->source_mutex);
 }
 
-void dummy_noteon(struct Instrument* ins, u8 note, f32 velocity) {
+void dummy_noteon(Instrument* ins, u8 note, f32 velocity) {
   (void)ins; (void)note; (void)velocity;
   Dummy* dummy = (Dummy*)ins->userdata;
   dummy->pluck = true;
   dummy->frequency = freq_table[note % LENGTH(freq_table)];
 }
 
-void dummy_noteoff(struct Instrument* ins, u8 note) {
+void dummy_noteoff(Instrument* ins, u8 note) {
   (void)ins; (void)note;
 }
 
-void dummy_destroy(struct Instrument* ins) {
+void dummy_destroy(Instrument* ins) {
   Dummy* dummy = (Dummy*)ins->userdata;
   memory_free(dummy->feedback_buffer);
   audio_unload_audio(&dummy->source);
