@@ -288,7 +288,7 @@ Audio_source audio_source_new_from_i16_buffer(const i16* input, const size_t sam
   return source;
 }
 
-void audio_source_copy(Audio_source* dest, Audio_source* source) {
+void audio_source_move(Audio_source* dest, Audio_source* source) {
   ASSERT(dest != NULL && source != NULL);
   Ticket mutex = dest->mutex; // keep the old ticket
   bool drawable = dest->drawable;

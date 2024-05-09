@@ -158,7 +158,9 @@ static void increment_source_id(Element* e);
 static void change_source_id(Tracker* tracker);
 static void load_source(Tracker* tracker);
 static void save_source(Tracker* tracker);
+static void kill_source(Tracker* tracker);
 static void save_source_onclick(Element* e);
+static void kill_source_onclick(Element* e);
 static void modify_source_id(Element* e);
 static void modify_source_setting(Element* e);
 static void decrement_pattern_id(Element* e);
@@ -595,9 +597,20 @@ void save_source(Tracker* tracker) {
   dest->settings = src_copy.settings;
 }
 
+void kill_source(Tracker* tracker) {
+  Tracker_source* src = &tracker->sources[tracker->source_id];
+  audio_unload_audio(&src->source);
+  load_source(tracker);
+}
+
 void save_source_onclick(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   save_source(tracker);
+}
+
+void kill_source_onclick(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  kill_source(tracker);
 }
 
 void modify_source_id(Element* e) {
@@ -752,9 +765,18 @@ void tracker_ui_new(Instrument* ins, Element* container) {
   }
   {
     Element e = ui_button("save");
-    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 100, .y = line_height, };
+    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 50, .y = line_height, };
     e.userdata = tracker;
     e.onclick = save_source_onclick;
+    ui_attach_element(canvas, &e);
+  }
+  {
+    Element e = ui_button("kill");
+    e.background_color = warmer_color(e.background_color, 80);
+    e.sizing = (Sizing) { .x_mode = SIZE_MODE_PERCENT, .y_mode = SIZE_MODE_PIXELS, .x = 50, .y = line_height, };
+    e.userdata = tracker;
+    e.onclick = kill_source_onclick;
+    e.tooltip = "kill sample";
     ui_attach_element(canvas, &e);
   }
 

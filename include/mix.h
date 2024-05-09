@@ -64,6 +64,7 @@ struct Mix;
 #include "ui.h"
 #include "settings.h"
 #include "midi.h"
+#include "midi_settings.h"
 #include "keyboard.h"
 // instruments
 #include "instrument.h"

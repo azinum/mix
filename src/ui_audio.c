@@ -67,7 +67,7 @@ Result ui_audio_load_sample(const char* path, Audio_source* source) {
   audio_unload_audio(&copy);
   if (loaded_source.buffer != NULL && loaded_source.samples > 0) {
     ticket_mutex_begin(&copy.mutex);
-    audio_source_copy(source, &loaded_source);
+    audio_source_move(source, &loaded_source);
     ticket_mutex_end(&copy.mutex);
     source->mutex = copy.mutex;
     return Ok;

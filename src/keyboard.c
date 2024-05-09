@@ -1,11 +1,6 @@
 // keyboard.c
 
-static struct {
-  Midi_event events[MAX_KEYBOARD_EVENT];
-  u32 event_count;
-  i32 octave;
-  f32 velocity;
-} keyboard = {
+Keyboard keyboard = (Keyboard) {
   .event_count = 0,
   .octave = 2,
   .velocity = 0.8,
@@ -45,6 +40,7 @@ void keyboard_init(void) {
   keyboard.event_count = 0;
   keyboard.octave = 2;
   keyboard.velocity = 0.8f;
+  keyboard.channel = 0;
 }
 
 void keyboard_update(void) {
@@ -64,7 +60,7 @@ void keyboard_update(void) {
           .message = MIDI_NOTE_ON,
           .velocity = keyboard.velocity,
           .note = note,
-          .channel = 0,
+          .channel = keyboard.channel,
         };
         keyboard_add_event(&event);
       }

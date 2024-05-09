@@ -38,6 +38,7 @@ static bool show_debug_info = true;
 #include "ui.c"
 #include "settings.c"
 #include "midi.c"
+#include "midi_settings.c"
 #include "keyboard.c"
 // instruments
 #include "instrument.c"
@@ -442,8 +443,10 @@ void mix_ui_new(Mix* mix) {
     effect_picker_ui_new(mix, effect_picker);
   }
   ui_switch_state(UI_TAG_SETTINGS);
-
   ui_attach_element_v2(NULL, settings_ui_new(mix));
+
+  ui_switch_state(UI_TAG_MIDI_SETTINGS);
+  ui_attach_element_v2(NULL, midi_settings_ui_new(mix));
 
   ui_switch_state(UI_TAG_MAIN);
 #endif
