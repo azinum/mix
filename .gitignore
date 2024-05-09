@@ -4,6 +4,7 @@
 *.o
 *.so
 *.dSYM
+*.tp
 
 docs/
 

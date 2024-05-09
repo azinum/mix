@@ -1,6 +1,7 @@
 // tracker.c
 // TODO:
 //  - fix saving/loading of patterns when paused
+//  - drag and drop to load songs
 
 #define MAX_AUDIO_SOURCE 128
 #define MAX_TRACKER_ROW 64
@@ -15,6 +16,8 @@
 
 #define ANIMATION_SPEED 15.0f
 #define FREQ_INTERP_SPEED 200.0f
+
+#define TRACKER_FILE_EXT "tp" // i.e. tracker project
 
 static const char* channel_str[MAX_TRACKER_CHANNELS] = {
   "ch #0",
@@ -305,7 +308,6 @@ void tracker_paste_pattern(Tracker* tracker) {
 }
 
 void tracker_modify_song_index(Tracker* tracker) {
-
   if (tracker->song.index < 0) {
     tracker->song.index = MAX_SONG_PATTERN_SEQUENCE - 1;
   }
@@ -328,7 +330,7 @@ void tracker_change_pattern(Tracker* tracker) {
 
 Result tracker_save_song(Tracker* tracker) {
   char path[MAX_PATH_LENGTH] = {0};
-  snprintf(path, MAX_PATH_LENGTH, "%s.tp", tracker->song.name);
+  snprintf(path, MAX_PATH_LENGTH, "%s.%s", tracker->song.name, TRACKER_FILE_EXT);
 
   i32 fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0664);
   if (fd < 0) {
@@ -380,7 +382,7 @@ Result tracker_load_song(Tracker* tracker) {
   Result result = Ok;
 
   char path[MAX_PATH_LENGTH] = {0};
-  snprintf(path, MAX_PATH_LENGTH, "%s.tp", tracker->song.name);
+  snprintf(path, MAX_PATH_LENGTH, "%s.%s", tracker->song.name, TRACKER_FILE_EXT);
 
   Buffer save = buffer_new_from_file(path);
   if (!save.data) {
@@ -1192,10 +1194,19 @@ void tracker_update(Instrument* ins, Mix* mix) {
       }
     }
   }
-
-  if (!ui_input_interacting() && !IsKeyDown(KEY_LEFT_CONTROL)) {
-    // add keyboard shortcut(s)
+  if (!ui_input_interacting()) {
+    if (IsKeyDown(KEY_LEFT_CONTROL)) {
+      if (IsKeyDown(KEY_S)) {
+        if (tracker_save_song(tracker) == Ok) {
+          ui_alert("song '%s.%s' saved", tracker->song.name, TRACKER_FILE_EXT);
+        }
+      }
+    }
+    else {
+      // add keyboard shortcut(s)
+    }
   }
+
 }
 
 void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
@@ -1307,3 +1318,4 @@ void tracker_destroy(Instrument* ins) {
 #undef TRACKER_MAGIC
 #undef ANIMATION_SPEED
 #undef FREQ_INTERP_SPEED
+#undef TRACKER_FILE_EXT
