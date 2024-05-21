@@ -1,4 +1,6 @@
 // audio.c
+// TODO:
+//  - allocate data only on main thread
 
 #if defined(WARN_SIMD_FALLBACK) && defined(USE_SIMD)
   #define warn_simd_fallback_info_none "none"
@@ -112,6 +114,34 @@ void audio_engine_restart(void) {
   audio->restart = true;
 }
 
+Result audio_engine_export_recording(void) {
+  Audio_engine* audio = &audio_engine;
+  if (!audio->record_buffer) {
+    return Error;
+  }
+  Wave wave = {
+    .frameCount = audio->record_buffer_index / CHANNEL_COUNT,
+    .sampleRate = SAMPLE_RATE,
+    .sampleSize = 8 * sizeof(i16),
+    .channels   = CHANNEL_COUNT,
+    .data       = audio->record_buffer,
+  };
+  if (wave.frameCount > 0) {
+    time_t current_time = time(0);
+    struct tm t = *localtime(&current_time);
+    char record_path[MAX_PATH_LENGTH] = {0};
+    snprintf(record_path, sizeof(record_path), "record-%d-%02d-%02d-%02d-%02d-%02d.wav", 1900 + t.tm_year, 1 + t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+    if (ExportWave(wave, record_path)) {
+      audio->record_buffer_index = 0;
+      audio->recording = false;
+      ui_alert("recording exported to '%s'", record_path);
+      return Ok;
+    }
+    ui_alert("failed to export recording '%s'", record_path);
+  }
+  return Error;
+}
+
 void audio_engine_exit(Audio_engine* audio) {
   TIMER_START();
   f32 dt = 0;
@@ -129,22 +159,7 @@ void audio_engine_exit(Audio_engine* audio) {
   memory_free(audio->out_buffer);
   memory_free(audio->in_buffer);
 #ifndef NO_RECORD_BUFFER
-  if (audio->record_buffer) {
-    Wave wave = {
-      .frameCount = audio->record_buffer_index / CHANNEL_COUNT,
-      .sampleRate = SAMPLE_RATE,
-      .sampleSize = 8 * sizeof(i16),
-      .channels   = CHANNEL_COUNT,
-      .data       = audio->record_buffer,
-    };
-    if (wave.frameCount > 0) {
-      time_t current_time = time(0);
-      struct tm t = *localtime(&current_time);
-      char record_path[MAX_PATH_LENGTH] = {0};
-      snprintf(record_path, sizeof(record_path), "record-%d-%02d-%02d-%02d-%02d-%02d.wav", 1900 + t.tm_year, 1 + t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
-      ExportWave(wave, record_path);
-    }
-  }
+  audio_engine_export_recording();
 #endif
   memory_free(audio->record_buffer);
   audio_exit(audio);

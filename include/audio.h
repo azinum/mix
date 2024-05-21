@@ -58,6 +58,7 @@ Instrument* audio_engine_attach_instrument(Instrument* ins, struct Mix* mix);
 Effect* audio_engine_attach_effect(Effect* effect, struct Mix* mix);
 void audio_engine_clear_effects(void);
 void audio_engine_restart(void);
+Result audio_engine_export_recording(void);
 void audio_engine_exit(Audio_engine* audio);
 Audio_source audio_load_audio(const char* path);
 void audio_unload_audio(Audio_source* source);

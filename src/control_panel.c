@@ -7,6 +7,8 @@
 static void control_panel_render_waveform(Element* e);
 static void control_panel_change_audio_setting(Element* e);
 static void control_panel_stop(Element* e);
+static void control_panel_export_recording(Element* e);
+static void control_panel_export_update(Element* e);
 
 static void control_panel_render_waveform(Element* e) {
   TIMER_START();
@@ -28,6 +30,16 @@ void control_panel_change_audio_setting(Element* e) {
 void control_panel_stop(Element* e) {
   (void)e;
   mix_stop();
+}
+
+void control_panel_export_recording(Element* e) {
+  (void)e;
+  audio_engine_export_recording();
+}
+
+void control_panel_export_update(Element* e) {
+  Audio_engine* audio = (Audio_engine*)e->userdata;
+  e->render = audio->recording;
 }
 
 void control_panel_ui_new(Mix* mix, Element* container) {
@@ -122,11 +134,20 @@ void control_panel_ui_new(Mix* mix, Element* container) {
   }
 #ifndef NO_RECORD_BUFFER
   {
-    Audio_engine* audio = &audio_engine;
     Element e = ui_toggle_ex2(&audio->recording, "record", "recording");
     e.box.w = FONT_SIZE * 7;
     e.box.h = button_height;
     e.background_color = COLOR_RGB(175, 80, 85);
+    ui_attach_element(rhs_container, &e);
+  }
+  {
+    Element e = ui_button("export");
+    e.box.w = FONT_SIZE * 7;
+    e.box.h = button_height;
+    e.tooltip = "export recorded audio";
+    e.onclick = control_panel_export_recording;
+    e.onupdate = control_panel_export_update;
+    e.userdata = audio;
     ui_attach_element(rhs_container, &e);
   }
 #endif
