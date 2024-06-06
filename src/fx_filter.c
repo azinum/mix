@@ -119,7 +119,7 @@ void fx_filter_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
 #else
   f32 cutoff = dt * (filter->cutoff / FREQ_RANGE);
 #endif
-  lowpass_filter(ins->out_buffer, filter->buffer, ins->samples, cutoff, dt);
+  lowpass_filter(ins->in_buffer, filter->buffer, ins->samples, cutoff, dt);
   smooth(filter->buffer, ins->out_buffer, ins->samples);
 #if 0
     i32 peaks = 0;

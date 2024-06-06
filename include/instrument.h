@@ -15,6 +15,7 @@ typedef struct Instrument {
   f32 volume;
   f32 latency;
   f32 audio_latency;
+  f32 wet;
   bool blocking;
   bool initialized;
 

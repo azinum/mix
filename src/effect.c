@@ -19,5 +19,6 @@ Effect effect_new(Effect_id id) {
   effect = effects[id];
   instrument_init_default(&effect);
   effect.volume = 1;
+  effect.wet = 0.4f;
   return effect;
 }

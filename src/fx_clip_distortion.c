@@ -96,7 +96,7 @@ void fx_clip_distortion_process(struct Instrument* ins, struct Mix* mix, struct 
   Clip_distortion* d = (Clip_distortion*)ins->userdata;
 
   for (size_t i = 0; i < ins->samples; ++i) {
-    f32 sample = ins->out_buffer[i] + d->offset;
+    f32 sample = ins->in_buffer[i] + d->offset;
     ins->out_buffer[i] = CLAMP(sample * d->input_gain, -d->clip, d->clip) * d->output_gain - d->offset;
   }
 }

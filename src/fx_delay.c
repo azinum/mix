@@ -40,6 +40,7 @@ void fx_delay_init(Instrument* ins, Mix* mix) {
 
   ins->userdata = delay;
   fx_delay_default(delay);
+  ins->wet = 0.4f;
 }
 
 void fx_delay_ui_new(Instrument* ins, Element* container) {

@@ -71,6 +71,28 @@ void effect_controls_new(Element* container, Effect* effect) {
     };
     ui_attach_element(container, &e);
   }
+
+  ui_attach_element_v2(container, ui_text_line("dry/wet"));
+  {
+    Element e = ui_input_float("wet", &effect->wet);
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 20,
+      .y = button_height,
+    };
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_float(&effect->wet, 0, 1);
+    e.sizing = (Sizing) {
+      .x_mode = SIZE_MODE_PERCENT,
+      .y_mode = SIZE_MODE_PIXELS,
+      .x = 80,
+      .y = button_height,
+    };
+    ui_attach_element(container, &e);
+  }
   ui_attach_element_v2(container, ui_line_break(0));
 }
 

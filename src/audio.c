@@ -384,7 +384,7 @@ f32 audio_calc_rms_clamp(const f32* buffer, size_t size) {
   return CLAMP(audio_calc_rms(buffer, size), 0, 1);
 }
 
-void audio_buffer_sum(f32* dest, const f32* src, size_t size) {
+void audio_buffer_sum(f32* dest, const f32* source, size_t size) {
   if (size == 0) {
     return;
   }
@@ -392,14 +392,15 @@ void audio_buffer_sum(f32* dest, const f32* src, size_t size) {
   if (((size * sizeof(f32)) % sizeof(__m128)) != 0) {
     goto fallback;
   }
-  if (!is_aligned(dest, sizeof(__m128)) || !is_aligned(src, sizeof(__m128))) {
+  if (!is_aligned(dest, sizeof(__m128)) || !is_aligned(source, sizeof(__m128))) {
     goto fallback;
   }
   {
-    __m128* dest = (__m128*)dest;
-    __m128* src = (__m128*)src;
-    for (size_t i = 0; i < size / 4; ++i, ++dest, ++src) {
-      *dest = _mm_add_ps(*dest, *src);
+    __m128* dst = (__m128*)dest;
+    __m128* src = (__m128*)source;
+    const size_t chunks = size / 4;
+    for (size_t i = 0; i < chunks; ++i, ++dst, ++src) {
+      *dst = _mm_add_ps(*dst, *src);
     }
     return;
   }
@@ -407,7 +408,7 @@ void audio_buffer_sum(f32* dest, const f32* src, size_t size) {
 fallback:
   PRINT_WARM_SIMD_FALLBACK();
   for (size_t i = 0; i < size; ++i) {
-    dest[i] += src[i];
+    dest[i] += source[i];
   }
 }
 
@@ -423,10 +424,11 @@ void audio_buffer_add(f32* dest, size_t size, f32 amount) {
     goto fallback;
   }
   {
-    __m128* dest = (__m128*)dest;
+    __m128* dst = (__m128*)dest;
     __m128 value = _mm_set_ps1(amount);
-    for (size_t i = 0; i < size / 4; ++i, ++dest) {
-      *dest = _mm_add_ps(*dest, value);
+    const size_t chunks = size / 4;
+    for (size_t i = 0; i < chunks; ++i, ++dst) {
+      *dst = _mm_add_ps(*dst, value);
     }
   }
 #endif
@@ -449,10 +451,11 @@ void audio_buffer_mul(f32* dest, size_t size, f32 amount) {
     goto fallback;
   }
   {
-    __m128* dest = (__m128*)dest;
+    __m128* dst = (__m128*)dest;
     __m128 value = _mm_set_ps1(amount);
-    for (size_t i = 0; i < size / 4; ++i, ++dest) {
-      *dest = _mm_mul_ps(*dest, value);
+    const size_t chunks = size / 4;
+    for (size_t i = 0; i < chunks; ++i, ++dst) {
+      *dst = _mm_mul_ps(*dst, value);
     }
   }
 #endif
@@ -475,10 +478,11 @@ void audio_buffer_zero(f32* dest, size_t size) {
     goto fallback;
   }
   {
-    __m128* dest = (__m128*)dest;
+    __m128* dst = (__m128*)dest;
     __m128 value = _mm_set_ps1(0);
-    for (size_t i = 0; i < size / 4; ++i, ++dest) {
-      *dest = value;
+    const size_t chunks = size / 4;
+    for (size_t i = 0; i < chunks; ++i, ++dst) {
+      *dst = value;
     }
   }
 #endif
@@ -489,7 +493,7 @@ fallback:
   }
 }
 
-void audio_buffer_copy(f32* dest, const f32* src, size_t size) {
+void audio_buffer_copy(f32* dest, const f32* source, size_t size) {
   if (size == 0) {
     return;
   }
@@ -497,14 +501,15 @@ void audio_buffer_copy(f32* dest, const f32* src, size_t size) {
   if (((size * sizeof(f32)) % sizeof(__m128)) != 0) {
     goto fallback;
   }
-  if (!is_aligned(dest, sizeof(__m128)) || !is_aligned(src, sizeof(__m128))) {
+  if (!is_aligned(dest, sizeof(__m128)) || !is_aligned(source, sizeof(__m128))) {
     goto fallback;
   }
   {
-    __m128* dest = (__m128*)dest;
-    __m128* src = (__m128*)src;
-    for (size_t i = 0; i < size / 4; ++i, ++dest, ++src) {
-      *dest = *src;
+    __m128* dst = (__m128*)dest;
+    __m128* src = (__m128*)source;
+    const size_t chunks = size / 4;
+    for (size_t i = 0; i < chunks; ++i, ++dst, ++src) {
+      *dst = *src;
     }
     return;
   }
@@ -512,7 +517,7 @@ void audio_buffer_copy(f32* dest, const f32* src, size_t size) {
 fallback:
   PRINT_WARM_SIMD_FALLBACK();
   for (size_t i = 0; i < size; ++i) {
-    dest[i] = src[i];
+    dest[i] = source[i];
   }
 }
 
@@ -577,14 +582,14 @@ Result audio_engine_process(const void* in, void* out, i32 frames) {
           Effect* effect = &audio->effect_chain[i];
           if (i == 0) {
             WARN_SIMD_FALLBACK_INFO("copy buffer from instrument to effect");
-            audio_buffer_copy(effect->out_buffer, ins->out_buffer, ins->samples);
+            audio_buffer_copy(effect->in_buffer, ins->out_buffer, ins->samples);
           }
           last = effect;
           instrument_process(effect, mix, audio, process_dt);
           if (i + 1 < audio->effect_count) {
             Effect* next = &audio->effect_chain[i + 1];
             WARN_SIMD_FALLBACK_INFO("copy buffer from instrument to effect");
-            audio_buffer_copy(next->out_buffer, effect->out_buffer, ins->samples);
+            audio_buffer_copy(next->in_buffer, effect->out_buffer, ins->samples);
           }
         }
         if (last) {

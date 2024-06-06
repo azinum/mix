@@ -1,5 +1,6 @@
 // fx_reverb.c
 // cpu intensive, experimental reverb effect
+// TODO: fix infinite feedback
 
 #define MAX_REVERB_CHILD_NODE 4
 #define MAX_REVERB_NODE_DEPTH 3
@@ -28,9 +29,6 @@ typedef struct Reverb_node {
 
 typedef struct Reverb {
   f32 amount;
-  // TODO:
-  // f32 dry;
-  // f32 wet;
   f32 node_buffer[NODE_BUFFER_SIZE];
   size_t node_buffer_index;
   Reverb_node nodes[MAX_REVERB_NODE_TOTAL];
@@ -96,7 +94,7 @@ void fx_reverb_tree_new(Reverb* reverb) {
 f32* alloc_reverb_buffer(Reverb* reverb, size_t size) {
   if (reverb->node_buffer_index + size < NODE_BUFFER_SIZE) {
     f32* buffer = &reverb->node_buffer[reverb->node_buffer_index];
-    memset(buffer, 0, size);
+    audio_buffer_zero(buffer, size);
     reverb->node_buffer_index += size;
     return buffer;
   }
@@ -171,8 +169,11 @@ void process_reverb_node(Instrument* ins, Reverb* reverb, Reverb_node* node, u32
 #else
     size_t offset  = reverb->offset_base;
 #endif
-    for (size_t i = 0; i < ins->samples; i += 2) {
-      Random grain_index = random_number();
+    Random grain_index = random_number();
+    for (size_t i = 0; i < ins->samples; i += 2, grain_index += 2) {
+      if (!(i % 64)) {
+        grain_index = random_number();
+      }
       f32 grain_left  = 1 + (reverb->grain * node->buffer[grain_index % node->length] - (reverb->grain * .5f));
       f32 grain_right = 1 + (reverb->grain * node->buffer[(grain_index + offset) % node->length] - (reverb->grain * .5f));
 

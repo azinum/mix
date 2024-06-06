@@ -20,14 +20,14 @@ void fx_smooth_default(Smooth* smooth) {
 }
 
 f32 fx_smooth(f32* input, f32* output, f32 bias, f32 prev, size_t samples) {
-  const f32 remainder = 1.0f - bias;
+  const f32 rem = 1.0f - bias;
 
-  output[0] = bias * input[0] + remainder * input[1];
+  output[0] = bias * input[0] + rem * input[1];
   f32 sample = prev;
   for (size_t i = 1; i < samples; ++i) {
     prev = sample;
     sample = input[i];
-    output[i] = bias * sample + remainder * prev;
+    output[i] = bias * sample + rem * prev;
   }
   return prev;
 }
@@ -102,9 +102,11 @@ void fx_smooth_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
   (void)audio;
   (void)dt;
   Smooth* smooth = (Smooth*)ins->userdata;
+  audio_buffer_zero(ins->out_buffer, ins->samples);
   f32 prev = 0;
   for (i32 i = 0; i < smooth->iterations && i < MAX_ITERATIONS; ++i) {
-    prev = fx_smooth(ins->out_buffer, ins->out_buffer, smooth->smoothness, smooth->prev_sample, ins->samples);
+    prev = fx_smooth(ins->in_buffer, ins->out_buffer, smooth->smoothness, smooth->prev_sample, ins->samples);
+    audio_buffer_copy(ins->out_buffer, ins->in_buffer, ins->samples);
   }
   smooth->prev_sample = prev;
 }

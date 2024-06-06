@@ -60,7 +60,7 @@ void fx_interpolator_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32
   (void)mix; (void)audio; (void)dt;
   Interpolator* interp = (Interpolator*)ins->userdata;
   for (size_t i = 0; i < ins->samples; ++i) {
-    f32 sample = ins->out_buffer[i];
+    f32 sample = ins->in_buffer[i];
     for (i32 index = 0; index < interp->interval && index+i < ins->samples; ++index) {
       f32 next = ins->out_buffer[(i + index) % ins->samples];
       ins->out_buffer[(i + index) % ins->samples] = lerp_f32(next, sample, interp->amount);

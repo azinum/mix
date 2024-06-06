@@ -20,6 +20,7 @@ void instrument_init_default(Instrument* ins) {
   ins->volume = INSTRUMENT_VOLUME_DEFAULT;
   ins->latency = 0;
   ins->audio_latency = 0;
+  ins->wet = 1;
   ins->blocking = true;
   ins->blocking_mutex = ticket_mutex_new();
   ins->initialized = false;
@@ -47,11 +48,9 @@ void instrument_init(Instrument* ins, Audio_engine* audio, Mix* mix) {
   ticket_mutex_begin(&ins->blocking_mutex);
   const size_t samples = audio->frames_per_buffer * audio->channel_count;
   MEMORY_TAG("instrument.instrument_init: audio buffer");
-  if (AUDIO_INPUT) {
-    ins->in_buffer = memory_calloc(samples, sizeof(f32));
-  }
+  ins->in_buffer = memory_calloc(samples, sizeof(f32));
   ins->out_buffer = memory_calloc(samples, sizeof(f32));
-  if (ins->out_buffer) {
+  if (ins->in_buffer && ins->out_buffer) {
     ins->samples = samples;
   }
   MEMORY_TAG("instrument userdata");
@@ -110,8 +109,9 @@ void instrument_process(Instrument* ins, struct Mix* mix, Audio_engine* audio, f
   ins->blocking = true;
   if (LIKELY(ins->initialized)) {
     ins->process(ins, mix, audio, dt);
+    f32 dry = 1 - ins->wet;
     for (size_t i = 0; i < ins->samples; ++i) {
-      ins->out_buffer[i] *= ins->volume;
+      ins->out_buffer[i] = ins->volume * (dry * ins->in_buffer[i] + ins->wet * ins->out_buffer[i]);
     }
   }
   ins->audio_latency = TIMER_END();
