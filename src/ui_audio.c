@@ -16,8 +16,12 @@ void ui_audio_draw_sample(i32 mouse_x, i32 mouse_y, i32 width, i32 height, Audio
     f32 x = mouse_x / (f32)width;
     f32 sample = -(mouse_y / (f32)height - 0.5f) * 2.0f;
     i32 sample_index = x * source->samples;
-    i32 window_size = ((source->channel_count * source->samples) / width) * 4;
+    i32 window_size = ((source->channel_count * source->samples) / (f32)width) * 4;
     sample_index = CLAMP(sample_index - (window_size / 2), 0, (i32)source->samples - window_size);
+    if (window_size == 0) {
+      // too small of a buffer to select samples from, set the window size to 2
+      window_size = 2;
+    }
     if (window_size > 0) {
       f32 step = 2.0f / window_size;
       f32 interpolator = 0.0f;
