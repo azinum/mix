@@ -388,4 +388,48 @@ Element ui_input_int8(char* preview, i8* value);
 Element ui_input_float(char* preview, f32* value);
 Element ui_input_text(char* preview, char* str, u32 max_length);
 
+#define UI_EASY_INPUT_F32(container, desc, ref_value, min_value, max_value) { \
+  {                                                                           \
+    Element e = ui_text(desc);                                                \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(100, 0);                                        \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+  {                                                                           \
+    Element e = ui_input_float(desc, ref_value);                              \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(15, 0);                                         \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+  {                                                                           \
+    Element e = ui_slider_float(ref_value, min_value, max_value);             \
+    e.name = desc;                                                            \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(35, 0);                                         \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+}
+
+#define UI_EASY_INPUT_INT(container, desc, ref_value, min_value, max_value) { \
+  {                                                                           \
+    Element e = ui_text(desc);                                                \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(100, 0);                                        \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+  {                                                                           \
+    Element e = ui_input_int(desc, ref_value);                                \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(15, 0);                                         \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+  {                                                                           \
+    Element e = ui_slider_int(ref_value, min_value, max_value);               \
+    e.name = desc;                                                            \
+    e.box = BOX(0, 0, 0, FONT_SIZE);                                          \
+    e.sizing = SIZING_PERCENT(35, 0);                                         \
+    ui_attach_element(container, &e);                                         \
+  }                                                                           \
+}
+
 #endif // _UI_H
