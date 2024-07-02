@@ -313,6 +313,25 @@ Audio_source audio_source_new_from_i16_buffer(const i16* input, const size_t sam
   return source;
 }
 
+Audio_source audio_source_new(const size_t samples, const u32 channel_count) {
+  Audio_source source = (Audio_source) {
+    .buffer = memory_calloc(sizeof(f32), samples),
+    .samples = samples,
+    .channel_count = channel_count,
+    .ready = true,
+    .internal = false,
+    .drawable = true,
+    .cursor = 0,
+    .mutex = ticket_mutex_new()
+  };
+  if (!source.buffer) {
+    source.samples = 0;
+    source.ready = false;
+    return source;
+  }
+  return source;
+}
+
 void audio_source_move(Audio_source* dest, Audio_source* source) {
   ASSERT(dest != NULL && source != NULL);
   Ticket mutex = dest->mutex; // keep the old ticket

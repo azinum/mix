@@ -219,9 +219,9 @@ void tracker_default(Tracker* tracker, Mix* mix) {
   tracker->bpm = mix->bpm;
 
   tracker->background_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
-  tracker->highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, -0.1f), 0.2f);
-  tracker->active_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
-  tracker->inactive_color = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.05f);
+  tracker->highlight_color  = brighten_color(saturate_color(UI_BUTTON_COLOR, -0.1f), 0.2f);
+  tracker->active_color     = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.2f);
+  tracker->inactive_color   = lerp_color(UI_BACKGROUND_COLOR, UI_INTERPOLATION_COLOR, 0.05f);
 
   tracker->loop_highlight_color = brighten_color(saturate_color(UI_BUTTON_COLOR, 0.1f), 0.6f);
 }
@@ -319,6 +319,10 @@ void tracker_modify_song_index(Tracker* tracker) {
 
   tracker->song.length = CLAMP(tracker->song.length, 0, MAX_SONG_PATTERN_SEQUENCE - 1);
   tracker->song.loop_counter = 0;
+  Song_step* step = &tracker->song.pattern_sequence[tracker->song.index];
+  tracker->pattern_id = step->pattern_id;
+  mix_reset_tick();
+  tracker->active_row = 0;
   tracker_change_pattern(tracker);
 }
 
@@ -328,6 +332,7 @@ void tracker_change_pattern(Tracker* tracker) {
   save_pattern(tracker);
   tracker->pattern_id = pattern_id;
   load_pattern(tracker);
+  tracker->active_row = 0;
 }
 
 Result tracker_save_song(Tracker* tracker) {

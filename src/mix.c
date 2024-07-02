@@ -202,6 +202,11 @@ void mix_set_bpm(i32 bpm) {
   mix->bpm = CLAMP(bpm, BPM_MIN, BPM_MAX);
 }
 
+void mix_reset_tick(void) {
+  Mix* mix = &mix_state;
+  mix->tick = mix->timed_tick = 0;
+}
+
 void mix_reload_ui(void) {
   Mix* mix = &mix_state;
   ui_free();
