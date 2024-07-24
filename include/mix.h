@@ -76,12 +76,12 @@ typedef struct Instrument Instrument;
 
 // effects/filters
 #include "effect.h"
-#include "fx_clip_distortion.h"
-#include "fx_filter.h"
-#include "fx_delay.h"
-#include "fx_smooth.h"
-#include "fx_interpolator.h"
-#include "fx_reverb.h"
+// #include "fx_clip_distortion.h"
+// #include "fx_filter.h"
+// #include "fx_delay.h"
+// #include "fx_smooth.h"
+// #include "fx_interpolator.h"
+// #include "fx_reverb.h"
 
 #include "instrument_picker.h"
 #include "control_panel.h"
