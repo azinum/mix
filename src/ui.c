@@ -1281,7 +1281,7 @@ void ui_update(f32 dt) {
   i32 prev_cursor = ui->cursor;
   i32 cursor = MOUSE_CURSOR_DEFAULT;
   if (ui->hover) {
-    if (!ui->hover->readonly) {
+    if (!ui->hover->readonly && !ui->hover->hidden && ui->hover->render) {
       switch (ui->hover->type) {
         case ELEMENT_BUTTON:
         case ELEMENT_TOGGLE:
@@ -1364,7 +1364,7 @@ void ui_render(void) {
         DrawLine(x1, y1, x2, y2, color);
       }
     }
-    if (ui->tooltip_timer >= UI_TOOLTIP_DELAY) {
+    if (ui->tooltip_timer >= UI_TOOLTIP_DELAY && !e->hidden && e->render) {
       if (e->tooltip) {
         ui_render_tooltip(ui, e->tooltip);
       }
