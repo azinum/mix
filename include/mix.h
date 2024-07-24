@@ -137,6 +137,7 @@ void mix_play(void);
 void mix_stop(void);
 void mix_set_bpm(i32 bpm);
 void mix_reset_tick(void);
+size_t mix_get_tick(void);
 void mix_reload_ui(void);
 
 #endif // _MIX_H

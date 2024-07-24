@@ -207,6 +207,11 @@ void mix_reset_tick(void) {
   mix->tick = mix->timed_tick = 0;
 }
 
+size_t mix_get_tick(void) {
+  Mix* mix = &mix_state;
+  return mix->tick;
+}
+
 void mix_reload_ui(void) {
   Mix* mix = &mix_state;
   ui_free();

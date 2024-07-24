@@ -2,6 +2,7 @@
 // TODO:
 //  - fix saving/loading of patterns when paused
 //  - drag and drop to load songs
+//  - fix random crash when loading audio files
 
 #define MAX_AUDIO_SOURCE 128
 #define MAX_TRACKER_ROW 64
@@ -33,6 +34,7 @@ static const char* channel_str[MAX_TRACKER_CHANNELS] = {
 typedef enum {
   SAMPLE_STATE_END,
   SAMPLE_STATE_PLAY,
+
   MAX_SAMPLE_STATE,
 } Sample_state;
 
@@ -133,12 +135,18 @@ typedef struct Tracker_header {
   // Hash checksum;
 } Tracker_header;
 
+// HACK: to not contaminate Tracker struct with additional fields
+static size_t noteon_tick = 0;
+static u8 noteon_note = 0;
+
 static void tracker_default(Tracker* tracker, Mix* mix);
 static void tracker_channel_init(Tracker_channel* channel);
 static void tracker_pattern_init(Pattern* pattern);
 static void tracker_patterns_init(Tracker* tracker);
 static void tracker_song_init(Song* song);
 static void tracker_row_update(Element* e);
+static void tracker_hover_note(Element* e);
+static void tracker_hover_sample_id(Element* e);
 static void tracker_sample_input_update(Element* e);
 static void tracker_editor_update(Element* e);
 static void tracker_copy_pattern(Tracker* tracker);
@@ -174,6 +182,7 @@ static void copy_pattern(Element* e);
 static void paste_pattern(Element* e);
 static void save_song(Element* e);
 static void load_song(Element* e);
+static void restart_song(Element* e);
 static void modify_bpm(Element* e);
 static void decrement_bpm(Element* e);
 static void increment_bpm(Element* e);
@@ -272,6 +281,21 @@ void tracker_row_update(Element* e) {
   }
 }
 
+void tracker_hover_note(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  i16* note_value = (i16*)e->data.input.value;
+  ASSERT(value != NULL);
+  if (noteon_tick == mix_get_tick()) {
+    *note_value = noteon_note;
+    noteon_tick = (size_t)-1;
+  }
+}
+
+void tracker_hover_sample_id(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  (void)tracker;
+}
+
 void tracker_sample_input_update(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   ASSERT(e->type == ELEMENT_INPUT);
@@ -313,7 +337,7 @@ void tracker_modify_song_index(Tracker* tracker) {
   if (tracker->song.index < 0) {
     tracker->song.index = MAX_SONG_PATTERN_SEQUENCE - 1;
   }
-  if (tracker->song.index >= MAX_SONG_PATTERN_SEQUENCE) {
+  if (tracker->song.index >= MAX_SONG_PATTERN_SEQUENCE || tracker->song.index >= tracker->song.length) {
     tracker->song.index = 0;
   }
 
@@ -323,7 +347,6 @@ void tracker_modify_song_index(Tracker* tracker) {
   tracker->pattern_id = step->pattern_id;
   mix_reset_tick();
   tracker->active_row = 0;
-  tracker_change_pattern(tracker);
 }
 
 void tracker_change_pattern(Tracker* tracker) {
@@ -333,6 +356,7 @@ void tracker_change_pattern(Tracker* tracker) {
   tracker->pattern_id = pattern_id;
   load_pattern(tracker);
   tracker->active_row = 0;
+  mix_reset_tick();
 }
 
 Result tracker_save_song(Tracker* tracker) {
@@ -698,6 +722,13 @@ void load_song(Element* e) {
   ui_alert("song '%s.tp' loaded", tracker->song.name);
 }
 
+void restart_song(Element* e) {
+  Tracker* tracker = (Tracker*)e->userdata;
+  tracker->song.index = 0;
+  tracker->song.loop_counter = 0;
+  tracker_modify_song_index(tracker);
+}
+
 void modify_bpm(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   tracker->bpm = CLAMP(tracker->bpm, BPM_MIN, BPM_MAX);
@@ -910,6 +941,14 @@ void tracker_ui_new(Instrument* ins, Element* container) {
     e.userdata = tracker;
     e.onclick = load_song;
     e.tooltip = "load song from disk";
+    ui_attach_element(tracker->song_editor, &e);
+  }
+  {
+    Element e = ui_button("restart");
+    e.sizing = SIZING_PIXELS(3 * input_width, line_height);
+    e.userdata = tracker;
+    e.onclick = restart_song;
+    e.tooltip = "restart song from the top";
     ui_attach_element(tracker->song_editor, &e);
   }
 
@@ -1125,6 +1164,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
         e.userdata = tracker;
         e.onupdate = tracker_row_update;
         e.onmodify = modify_item_in_pattern_editor;
+        e.onhover = tracker_hover_note;
         ui_attach_element(inner, &e);
       }
       {
@@ -1136,6 +1176,7 @@ void tracker_ui_new(Instrument* ins, Element* container) {
         e.userdata = tracker;
         e.onupdate = tracker_sample_input_update;
         e.onmodify = modify_item_in_pattern_editor;
+        e.onhover = tracker_hover_sample_id;
         ui_attach_element(inner, &e);
       }
       {
@@ -1169,9 +1210,9 @@ void tracker_update(Instrument* ins, Mix* mix) {
 
   if (tracker->prev_tick != tracker->tick) {
     if ((tracker->tick % MAX_TRACKER_ROW) == 0 && !tracker->loop_pattern) {
-      tracker->song.loop_counter += 1;
       Song_step* step = &song->pattern_sequence[song->index];
-      if (tracker->song.loop_counter >= step->loop) {
+      tracker->song.loop_counter += 1;
+      if (tracker->song.loop_counter >= step->loop + 1) {
         song->index += 1;
         song->index = ((u32)song->index % MAX_SONG_PATTERN_SEQUENCE) % song->length;
         tracker->pattern_id = song->pattern_sequence[song->index].pattern_id;
@@ -1233,7 +1274,6 @@ void tracker_update(Instrument* ins, Mix* mix) {
       // add keyboard shortcut(s)
     }
   }
-
 }
 
 void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
@@ -1318,6 +1358,8 @@ void tracker_process(Instrument* ins, Mix* mix, Audio_engine* audio, f32 dt) {
 
 void tracker_noteon(Instrument* ins, u8 note, f32 velocity) {
   (void)ins; (void)note; (void)velocity;
+  noteon_tick = mix_get_tick();
+  noteon_note = note;
 }
 
 void tracker_noteoff(Instrument* ins, u8 note) {
