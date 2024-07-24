@@ -8,6 +8,28 @@
 #define LFO_CONNECTION_STR_SIZE 64
 #define INTERP_SPEED_DEFAULT 100.0f
 
+typedef struct Lfo {
+  f32* lfo_target;
+  f32 lfo;
+  f32 amplitude;
+  f32 hz;
+  f32 offset;
+  size_t tick;
+  const char* connection_name;
+} Lfo;
+
+#define LFO_NO_CONNECTION "none"
+
+#ifdef TARGET_ANDROID
+  #define DRUMPAD_ROWS 5
+  #define DRUMPAD_COLS 16
+  #define MOD_TABLE_LENGTH 8
+#else
+  #define DRUMPAD_ROWS 5
+  #define DRUMPAD_COLS 16
+  #define MOD_TABLE_LENGTH 16
+#endif
+
 // #define EXPERIMENTAL
 
 typedef struct Mod_item {

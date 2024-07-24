@@ -73,12 +73,6 @@ typedef struct Instrument Instrument;
 
 // instruments
 #include "instrument.h"
-#include "wave_shaper.h"
-#include "dummy.h"
-#include "noise.h"
-#include "audio_input.h"
-#include "basic_poly_synth.h"
-#include "tracker.h"
 
 // effects/filters
 #include "effect.h"
