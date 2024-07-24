@@ -284,7 +284,7 @@ void tracker_row_update(Element* e) {
 void tracker_hover_note(Element* e) {
   Tracker* tracker = (Tracker*)e->userdata;
   i16* note_value = (i16*)e->data.input.value;
-  ASSERT(value != NULL);
+  ASSERT(note_value != NULL);
   if (noteon_tick == mix_get_tick()) {
     *note_value = noteon_note;
     noteon_tick = (size_t)-1;
