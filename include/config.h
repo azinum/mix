@@ -28,6 +28,7 @@ static i32 UI_LINE_SPACING        = 20;
 static i32 AUDIO_INPUT            = 0;
 static i32 AUDIO_PA_IN_PORT_ID    = -1;
 static i32 AUDIO_PA_OUT_PORT_ID   = -1;
+static char SDF_SHADER[MAX_CONFIG_STRING_SIZE] = "data/shaders/sdf.fs";
 
 static Color MAIN_BACKGROUND_COLOR            = COLOR_RGB(0x17, 0x17, 0x17);
 static Color UI_BACKGROUND_COLOR              = COLOR_RGB(0x30, 0x30, 0x30);

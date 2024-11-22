@@ -51,6 +51,7 @@ typedef enum {
   INSTRUMENT_AUDIO_INPUT,
   INSTRUMENT_BASIC_POLY_SYNTH,
   INSTRUMENT_TRACKER,
+  INSTRUMENT_PHYSICAL,
 
   MAX_INSTRUMENT_ID,
 } Instrument_id;
@@ -63,6 +64,7 @@ DECLARE_INSTRUMENT(noise);
 DECLARE_INSTRUMENT(audio_input);
 DECLARE_INSTRUMENT(basic_poly_synth);
 DECLARE_INSTRUMENT(tracker);
+DECLARE_INSTRUMENT(physical);
 
 void instrument_init_default(Instrument* ins);
 Instrument instrument_new(Instrument_id id);

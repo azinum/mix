@@ -1,5 +1,7 @@
 # platform.mk
 
+DATA_PATH=
+
 MACHINE=${strip ${shell ${CC} -dumpmachine}}
 ifndef PLATFORM
 	PLATFORM=UNKNOWN

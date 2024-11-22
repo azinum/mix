@@ -81,6 +81,7 @@ static Variable variables[] = {
   { "audio_input", T_INT, &AUDIO_INPUT, hook_restart_audio_engine },
   { "audio_pa_in_port_id", T_INT, &AUDIO_PA_IN_PORT_ID, hook_restart_audio_engine },
   { "audio_pa_out_port_id", T_INT, &AUDIO_PA_OUT_PORT_ID, hook_restart_audio_engine },
+  { "sdf_shader", T_STRING, &SDF_SHADER, hook_warn_restart },
   { "main_background_color", T_COLOR, &MAIN_BACKGROUND_COLOR, hook_default },
   { "ui_background_color", T_COLOR, &UI_BACKGROUND_COLOR, hook_default },
   { "ui_border_color", T_COLOR, &UI_BORDER_COLOR, hook_default },

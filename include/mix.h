@@ -116,6 +116,7 @@ typedef struct Mix {
 
 typedef struct Assets {
   Font font;
+  Shader sdf;
 } Assets;
 
 extern Mix mix_state;

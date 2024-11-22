@@ -48,6 +48,7 @@ static bool show_debug_info = true;
 #include "audio_input.c"
 #include "basic_poly_synth.c"
 #include "tracker.c"
+#include "physical.c"
 // effects/filters
 #include "effect.c"
 #include "fx_clip_distortion.c"
@@ -286,7 +287,12 @@ void mix_update_and_render(Mix* mix) {
         ui_switch_state(4);
       }
       if (IsKeyPressed(KEY_TAB)) {
-        ui_switch_state(ui_get_current_tag() + 1);
+        if (IsKeyDown(KEY_LEFT_SHIFT)) {
+          ui_switch_state(ui_get_current_tag() - 1);
+        }
+        else {
+          ui_switch_state(ui_get_current_tag() + 1);
+        }
       }
 #ifdef DEVELOPER
       if (IsKeyPressed(KEY_F1)) {
@@ -428,6 +434,18 @@ void mix_ui_new(Mix* mix) {
     e.sizing = SIZING_PERCENT(30, 88);
     ui_attach_element(container, &e);
   }
+  ui_switch_state(UI_TAG_EFFECT_CHAIN);
+
+  Element* effect_chain_container = NULL;
+  {
+    Element chain = ui_container_ex(NULL, false);
+    chain.border = false;
+    chain.scissor = false;
+    chain.placement = PLACEMENT_BLOCK;
+    chain.background = true;
+    effect_chain_container = ui_attach_element(NULL, &chain);
+  }
+
   {
     Element e = ui_container("effect chain");
     e.sizing = SIZING_PERCENT(70, 100);
@@ -439,8 +457,8 @@ void mix_ui_new(Mix* mix) {
     e.x_padding = UI_CONTAINER_X_PADDING * 4;
     e.y_padding = UI_CONTAINER_Y_PADDING * 2;
 #endif
-    mix->effect_chain = ui_attach_element(container, &e);
-    effect_chain_ui_new(mix, mix->effect_chain);
+    mix->effect_chain = ui_attach_element(effect_chain_container, &e);
+    effect_chain_ui_new(mix, effect_chain_container);
   }
   {
     Element e = ui_container("effect picker");
@@ -449,9 +467,10 @@ void mix_ui_new(Mix* mix) {
     e.scissor = true;
     e.placement = PLACEMENT_BLOCK;
     e.background = true;
-    Element* effect_picker = ui_attach_element(container, &e);
+    Element* effect_picker = ui_attach_element(effect_chain_container, &e);
     effect_picker_ui_new(mix, effect_picker);
   }
+
   ui_switch_state(UI_TAG_SETTINGS);
   ui_attach_element_v2(NULL, settings_ui_new(mix));
 
@@ -511,6 +530,7 @@ void render_delta_buffer(Mix* mix, bool update_text) {
 
 void assets_load(Assets* assets) {
   assets->font = LoadFontEx(UI_FONT, UI_FONT_BASE_SIZE, NULL, 0);
+  assets->sdf = LoadShader(0, SDF_SHADER);
   SetTextLineSpacing(UI_LINE_SPACING);
 }
 

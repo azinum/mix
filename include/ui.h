@@ -289,6 +289,7 @@ typedef struct Element {
 
 typedef enum UI_tag {
   UI_TAG_MAIN = 0,
+  UI_TAG_EFFECT_CHAIN,
   UI_TAG_SETTINGS,
   UI_TAG_MIDI_SETTINGS,
 

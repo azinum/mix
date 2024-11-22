@@ -1427,6 +1427,9 @@ void ui_alert_simple(const char* message) {
 }
 
 void ui_switch_state(i32 tag) {
+  if (tag < 0) {
+    tag = MAX_UI_TAGS - 1;
+  }
   tag = CLAMP(tag, 0, MAX_UI_TAGS) % MAX_UI_TAGS;
 
   UI_state* ui = &ui_state;
@@ -1964,6 +1967,7 @@ void ui_render_text(
     max_line_width = box->w;
   }
 
+  BeginShaderMode(assets.sdf);
   for (size_t i = 0; i < length;) {
     i32 codepoint_size = 0;
     i32 codepoint = GetCodepointNext(&text[i], &codepoint_size);
@@ -2004,6 +2008,7 @@ void ui_render_text(
     }
     i += codepoint_size;
   }
+  EndShaderMode();
 }
 
 void ui_update_input(UI_state* ui, Element* e) {

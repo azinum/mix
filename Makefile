@@ -16,6 +16,8 @@ release:
 	${CC} src/main.c -o ${PROG} ${FLAGS} ${LIBS} ${FLAGS_RELEASE}
 
 install: release
+	mkdir ${DATA_PATH} -p
+	cp -dr data ${DATA_PATH}
 	chmod o+x ${TARGET}
 	cp ${TARGET} ${PREFIX}/bin/
 

@@ -39,6 +39,7 @@ typedef struct Reverb {
   i32 model_seed;
   f32 offset_base;
   f32 grain;
+  i32 iterations;
 } Reverb;
 
 static void fx_reverb_default(Reverb* reverb);
@@ -57,6 +58,7 @@ void fx_reverb_default(Reverb* reverb) {
   reverb->tick = 0;
   reverb->offset_base = 411;
   reverb->grain = .1f;
+  reverb->iterations = 1;
   fx_reverb_tree_new(reverb);
 }
 
@@ -76,6 +78,7 @@ void fx_reverb_tree_new(Reverb* reverb) {
   reverb->node_buffer_index = 0;
   reverb->node_count = 0;
   memset(reverb->nodes, 0, sizeof(reverb->nodes));
+  memset(reverb->node_buffer, 0, sizeof(reverb->node_buffer));
   {
     Reverb_node* n = &reverb->root;
     n->direction = (Vector2) {0, 0};
@@ -309,6 +312,20 @@ void fx_reverb_ui_new(Instrument* ins, Element* container) {
     ui_attach_element(container, &e);
   }
 
+  ui_attach_element_v2(container, ui_text_line("iterations"));
+  {
+    Element e = ui_input_int("iterations", &reverb->iterations);
+    e.sizing = SIZING_PERCENT(20, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+  {
+    Element e = ui_slider_int(&reverb->iterations, 1, 10);
+    e.sizing = SIZING_PERCENT(30, 0);
+    e.box.h = button_height;
+    ui_attach_element(container, &e);
+  }
+
   {
     Element e = ui_line_break(0);
     ui_attach_element(container, &e);
@@ -337,7 +354,9 @@ void fx_reverb_process(struct Instrument* ins, struct Mix* mix, struct Audio_eng
   (void)ins; (void)mix; (void)audio; (void)dt;
   Reverb* reverb = (Reverb*)ins->userdata;
   ticket_mutex_begin(&reverb->mutex);
-  process_reverb_node(ins, reverb, &reverb->root, 0, 0, dt);
+  for (i32 i = 0; i < reverb->iterations; ++i) {
+    process_reverb_node(ins, reverb, &reverb->root, 0, 0, dt);
+  }
   ticket_mutex_end(&reverb->mutex);
 }
 

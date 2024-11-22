@@ -11,6 +11,7 @@ Instrument instruments[MAX_INSTRUMENT_ID] = {
   DEFINE_INSTRUMENT(INSTRUMENT_AUDIO_INPUT, audio_input, "audio input"),
   DEFINE_INSTRUMENT(INSTRUMENT_BASIC_POLY_SYNTH, basic_poly_synth, "basic poly synth"),
   DEFINE_INSTRUMENT(INSTRUMENT_TRACKER, tracker, "tracker"),
+  DEFINE_INSTRUMENT(INSTRUMENT_PHYSICAL, physical, "physical"),
 };
 
 void instrument_init_default(Instrument* ins) {
