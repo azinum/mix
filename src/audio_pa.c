@@ -82,7 +82,7 @@ Result audio_new(Audio_engine* audio) {
     return Error;
   }
 
-  log_print(STDOUT_FILENO, LOG_TAG_INFO, "using portaudio audio backend\n");
+  log_print(STDOUT_FILENO, LOG_TAG_INFO, "using portaudio (%s)\n", Pa_GetVersionText());
   return open_stream();
 }
 

@@ -52,5 +52,5 @@ endif
 
 ifeq (${PLATFORM}, DARWIN)
 	LIBS+=-lpthread -framework OpenGL -framework Cocoa -framework IOKit -framework CoreAudio -framework CoreVideo
-	FLAGS+=-Wno-missing-braces -DNPROC=`sysctl -n hw.logicalcpu`
+	FLAGS+=-Wno-missing-braces -DNPROC=`sysctl -n hw.logicalcpu` -L./deps/raylib/src -I./deps/raylib/src
 endif
